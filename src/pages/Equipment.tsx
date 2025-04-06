@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Search, Filter, Plus, MapPin, Calendar, AlertTriangle } from 'lucide-react';
+import { Search, Filter, Plus, MapPin, Calendar, AlertTriangle, FilePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
+import { DocumentDialog } from '@/components/equipment/DocumentDialog';
 
 type Equipment = {
   id: string;
@@ -23,6 +24,8 @@ type Equipment = {
   lastMaintenance: string;
   nextMaintenance: string;
   gpsTag: string;
+  // Added for demonstration purposes - would come from database in real implementation
+  tenantId: string;
 };
 
 const equipmentData: Equipment[] = [
@@ -34,7 +37,8 @@ const equipmentData: Equipment[] = [
     location: 'Downtown High-rise',
     lastMaintenance: '2024-03-15',
     nextMaintenance: '2024-05-15',
-    gpsTag: 'GT-7851'
+    gpsTag: 'GT-7851',
+    tenantId: '550e8400-e29b-41d4-a716-446655440000' // Sample UUID
   },
   {
     id: 'EQ-5678',
@@ -44,7 +48,8 @@ const equipmentData: Equipment[] = [
     location: 'Highway Extension',
     lastMaintenance: '2024-02-20',
     nextMaintenance: '2024-04-20',
-    gpsTag: 'GT-9245'
+    gpsTag: 'GT-9245',
+    tenantId: '550e8400-e29b-41d4-a716-446655440000'
   },
   {
     id: 'EQ-9012',
@@ -54,7 +59,8 @@ const equipmentData: Equipment[] = [
     location: 'Commercial Complex',
     lastMaintenance: '2024-03-01',
     nextMaintenance: '2024-05-01',
-    gpsTag: 'GT-3487'
+    gpsTag: 'GT-3487',
+    tenantId: '550e8400-e29b-41d4-a716-446655440000'
   },
   {
     id: 'EQ-3456',
@@ -64,7 +70,8 @@ const equipmentData: Equipment[] = [
     location: 'Warehouse Project',
     lastMaintenance: '2023-12-10',
     nextMaintenance: '2024-04-10',
-    gpsTag: 'GT-6120'
+    gpsTag: 'GT-6120',
+    tenantId: '550e8400-e29b-41d4-a716-446655440000'
   },
   {
     id: 'EQ-7890',
@@ -74,7 +81,8 @@ const equipmentData: Equipment[] = [
     location: 'Warehouse Project',
     lastMaintenance: '2024-03-25',
     nextMaintenance: '2024-05-25',
-    gpsTag: 'GT-1742'
+    gpsTag: 'GT-1742',
+    tenantId: '550e8400-e29b-41d4-a716-446655440000'
   },
   {
     id: 'EQ-1122',
@@ -84,7 +92,8 @@ const equipmentData: Equipment[] = [
     location: 'Highway Extension',
     lastMaintenance: '2024-01-05',
     nextMaintenance: '2024-04-05',
-    gpsTag: 'GT-5390'
+    gpsTag: 'GT-5390',
+    tenantId: '550e8400-e29b-41d4-a716-446655440000'
   }
 ];
 
@@ -162,12 +171,20 @@ const Equipment = () => {
                   <h3 className="font-semibold text-lg">{equipment.name}</h3>
                   <p className="text-sm text-gray-500">{equipment.type}</p>
                 </div>
-                <Badge 
-                  variant="outline" 
-                  className={`${getStatusColor(equipment.status)} capitalize`}
-                >
-                  {equipment.status.replace('-', ' ')}
-                </Badge>
+                <div className="flex gap-2">
+                  <Badge 
+                    variant="outline" 
+                    className={`${getStatusColor(equipment.status)} capitalize`}
+                  >
+                    {equipment.status.replace('-', ' ')}
+                  </Badge>
+                  
+                  <DocumentDialog 
+                    equipmentId={equipment.id} 
+                    equipmentName={equipment.name}
+                    tenantId={equipment.tenantId} 
+                  />
+                </div>
               </div>
               
               <div className="space-y-3 text-sm">

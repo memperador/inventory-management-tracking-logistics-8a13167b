@@ -9,16 +9,228 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      equipment: {
+        Row: {
+          created_at: string
+          csi_code: string | null
+          gps_tag: string | null
+          id: string
+          last_maintenance: string | null
+          location: string | null
+          maintenance_history: Json | null
+          name: string
+          next_maintenance: string | null
+          status: string | null
+          tenant_id: string
+          type: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          csi_code?: string | null
+          gps_tag?: string | null
+          id?: string
+          last_maintenance?: string | null
+          location?: string | null
+          maintenance_history?: Json | null
+          name: string
+          next_maintenance?: string | null
+          status?: string | null
+          tenant_id: string
+          type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          csi_code?: string | null
+          gps_tag?: string | null
+          id?: string
+          last_maintenance?: string | null
+          location?: string | null
+          maintenance_history?: Json | null
+          name?: string
+          next_maintenance?: string | null
+          status?: string | null
+          tenant_id?: string
+          type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      project_equipment: {
+        Row: {
+          assigned_date: string
+          created_at: string
+          equipment_id: string
+          id: string
+          project_id: string
+          removed_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_date?: string
+          created_at?: string
+          equipment_id: string
+          id?: string
+          project_id: string
+          removed_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_date?: string
+          created_at?: string
+          equipment_id?: string
+          id?: string
+          project_id?: string
+          removed_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_equipment_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_equipment_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          geofence_coordinates: Json | null
+          id: string
+          name: string
+          site_address: string | null
+          start_date: string | null
+          status: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          geofence_coordinates?: Json | null
+          id?: string
+          name: string
+          site_address?: string | null
+          start_date?: string | null
+          status?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          geofence_coordinates?: Json | null
+          id?: string
+          name?: string
+          site_address?: string | null
+          start_date?: string | null
+          status?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tenants: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          subscription_status: string | null
+          subscription_tier: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          auth0_org_id: string | null
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          auth0_org_id?: string | null
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          auth0_org_id?: string | null
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      equipment_analytics: {
+        Row: {
+          maintenance_count: number | null
+          maintenance_overdue_count: number | null
+          operational_count: number | null
+          out_of_service_count: number | null
+          tenant_id: string | null
+          total_equipment: number | null
+        }
+        Relationships: []
+      }
+      project_analytics: {
+        Row: {
+          active_projects: number | null
+          completed_projects: number | null
+          planned_projects: number | null
+          tenant_id: string | null
+          total_projects: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      get_current_tenant_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      refresh_materialized_views: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "manager" | "operator" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
