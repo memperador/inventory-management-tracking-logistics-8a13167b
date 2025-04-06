@@ -13,41 +13,55 @@ import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
 import GPSIntegration from "./pages/GPSIntegration";
+import PaymentPage from "./pages/PaymentPage";
+import WorkflowPage from "./pages/WorkflowPage";
+import { TenantProvider } from "./contexts/TenantContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/" element={<AppLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="equipment" element={<Equipment />} />
-            <Route path="projects" element={<Projects />} />
-            <Route path="users" element={<Users />} />
-            <Route path="gps-integration" element={<GPSIntegration />} />
-            <Route path="analytics" element={<Dashboard />} /> 
-            <Route path="reports" element={<Dashboard />} />
-            <Route path="scheduling" element={<Dashboard />} />
-            <Route path="maintenance" element={<Dashboard />} />
-            <Route path="fleet" element={<Dashboard />} />
-            <Route path="inventory" element={<Dashboard />} />
-            <Route path="settings" element={<Dashboard />} />
-            <Route path="notifications" element={<Dashboard />} />
-            <Route path="documentation" element={<Dashboard />} />
-            <Route path="support" element={<Dashboard />} />
-            <Route path="billing" element={<Dashboard />} />
-            <Route path="chat" element={<Dashboard />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TenantProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/" element={<AppLayout />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="equipment" element={<Equipment />} />
+                  <Route path="projects" element={<Projects />} />
+                  <Route path="users" element={<Users />} />
+                  <Route path="gps-integration" element={<GPSIntegration />} />
+                  <Route path="analytics" element={<Dashboard />} /> 
+                  <Route path="reports" element={<Dashboard />} />
+                  <Route path="scheduling" element={<Dashboard />} />
+                  <Route path="maintenance" element={<Dashboard />} />
+                  <Route path="fleet" element={<Dashboard />} />
+                  <Route path="inventory" element={<Dashboard />} />
+                  <Route path="settings" element={<Dashboard />} />
+                  <Route path="notifications" element={<Dashboard />} />
+                  <Route path="documentation" element={<Dashboard />} />
+                  <Route path="support" element={<Dashboard />} />
+                  <Route path="billing" element={<Dashboard />} />
+                  <Route path="chat" element={<Dashboard />} />
+                  {/* New routes */}
+                  <Route path="payments" element={<PaymentPage />} />
+                  <Route path="workflow" element={<WorkflowPage />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </ThemeProvider>
+      </TenantProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

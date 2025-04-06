@@ -19,7 +19,9 @@ import {
   DollarSign,
   ShoppingCart,
   Book,
-  MessageSquare
+  MessageSquare,
+  CreditCard,
+  GitBranch
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -55,6 +57,8 @@ export function AppSidebar() {
     { name: 'Maintenance', href: '/maintenance', icon: Wrench },
     { name: 'Fleet', href: '/fleet', icon: Truck },
     { name: 'Inventory', href: '/inventory', icon: ShoppingCart },
+    { name: 'Payment', href: '/payments', icon: CreditCard },
+    { name: 'Workflow', href: '/workflow', icon: GitBranch },
   ];
   
   const settingsNavigation = [
