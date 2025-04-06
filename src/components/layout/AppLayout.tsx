@@ -93,7 +93,16 @@ const AppLayout = () => {
             >
               {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </Button>
-            <span className="font-bold text-lg text-gray-900 dark:text-white">FleetTrack</span>
+            <div className="flex flex-col">
+              <span className="font-bold text-lg text-gray-900 dark:text-white">
+                {currentTenant?.name || 'FleetTrack'}
+              </span>
+              {currentTenant && (
+                <span className="text-xs text-gray-500">
+                  {userRole} Access
+                </span>
+              )}
+            </div>
           </div>
           
           <div className="flex items-center gap-2">
