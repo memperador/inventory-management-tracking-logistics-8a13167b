@@ -1,13 +1,17 @@
 
 import { useAuth } from '@/contexts/AuthContext';
+import { useTenant } from '@/hooks/useTenantContext';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
+import { Building, User } from 'lucide-react';
+import { EquipmentIcon, ProjectIcon } from '@/components/icons/CustomIcons';
 
 const Index = () => {
   const { user, loading } = useAuth();
+  const { currentTenant, isLoading: tenantLoading } = useTenant();
 
-  if (loading) {
+  if (loading || tenantLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center">
@@ -44,38 +48,84 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center max-w-2xl mx-auto p-6">
-        <h1 className="text-4xl font-bold mb-4">Welcome to FleetTrack</h1>
-        <p className="text-xl text-gray-600 mb-8">You are now signed in!</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Equipment Tracking</CardTitle>
-              <CardDescription>
-                Track and manage all your equipment in one place
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Link to="/equipment">
-                <Button className="w-full">View Equipment</Button>
-              </Link>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Project Management</CardTitle>
-              <CardDescription>
-                Monitor your projects and their resource allocation
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Link to="/projects">
-                <Button className="w-full">View Projects</Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
+    <div className="container mx-auto p-6">
+      <div className="mb-8">
+        <Card className="bg-white shadow-sm border-blue-100">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-2xl flex items-center gap-2">
+              <Building className="h-5 w-5" />
+              {currentTenant?.name || 'Your Organization'}
+            </CardTitle>
+            <CardDescription className="flex items-center gap-1">
+              <User className="h-4 w-4" />
+              {user.email}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-2">
+              {currentTenant ? (
+                <>
+                  <p>
+                    <span className="font-medium">Organization ID:</span> {currentTenant.id}
+                  </p>
+                  <p>
+                    <span className="font-medium">Subscription:</span> {currentTenant.subscription_tier || 'Basic'} - {currentTenant.subscription_status || 'Active'}
+                  </p>
+                </>
+              ) : (
+                <p className="text-amber-600">
+                  No organization data found. Please contact an administrator.
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <EquipmentIcon className="h-5 w-5" />
+              Equipment Tracking
+            </CardTitle>
+            <CardDescription>
+              Track and manage all your equipment in one place
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600">
+              Monitor equipment status, location, and maintenance schedules. Assign equipment to projects and track their usage.
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Link to="/equipment" className="w-full">
+              <Button className="w-full">View Equipment</Button>
+            </Link>
+          </CardFooter>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ProjectIcon className="h-5 w-5" />
+              Project Management
+            </CardTitle>
+            <CardDescription>
+              Monitor your projects and their resource allocation
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600">
+              Create and manage projects, assign equipment, track progress, and generate reports for better decision-making.
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Link to="/projects" className="w-full">
+              <Button className="w-full">View Projects</Button>
+            </Link>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   );
