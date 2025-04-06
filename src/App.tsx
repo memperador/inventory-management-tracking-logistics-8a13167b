@@ -32,6 +32,11 @@ const App = () => (
             <Route path="gps-integration" element={<GPSIntegration />} />
             <Route path="analytics" element={<Dashboard />} /> {/* Placeholder for now */}
             <Route path="settings" element={<Dashboard />} /> {/* Placeholder for now */}
+            <Route path="scheduling" element={<Dashboard />} /> {/* Placeholder for now */}
+            <Route path="maintenance" element={<Dashboard />} /> {/* Placeholder for now */}
+            <Route path="fleet" element={<Dashboard />} /> {/* Placeholder for now */}
+            <Route path="notifications" element={<Dashboard />} /> {/* Placeholder for now */}
+            <Route path="support" element={<Dashboard />} /> {/* Placeholder for now */}
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
