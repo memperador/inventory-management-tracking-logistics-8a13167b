@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,8 +5,8 @@ import { useAuth } from './AuthContext';
 import { Tenant, TenantContextType } from '@/types/tenant';
 import { fetchTenant, updateTenantSettings as updateTenantSettingsService } from '@/services/tenantService';
 
-// Create context with default values
-const TenantContext = createContext<TenantContextType | undefined>(undefined);
+// Create context with default values and export it
+export const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
 // Provider component
 export const TenantProvider = ({ children }: { children: ReactNode }) => {

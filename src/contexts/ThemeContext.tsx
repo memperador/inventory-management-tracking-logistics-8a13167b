@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useTenant } from './TenantContext';
 
@@ -134,20 +133,20 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { currentTenant } = useTenant();
+  const tenantContext = useTenant();
   const [currentTheme, setCurrentTheme] = useState('light');
   const [themeConfig, setThemeConfig] = useState<ThemeConfig>(themePresets.light);
 
   // Update theme when tenant settings change
   useEffect(() => {
-    if (currentTenant?.settings?.theme) {
-      const themeName = currentTenant.settings.theme;
+    if (tenantContext?.currentTenant?.settings?.theme) {
+      const themeName = tenantContext.currentTenant.settings.theme;
       if (themePresets[themeName]) {
         setCurrentTheme(themeName);
         setThemeConfig(themePresets[themeName]);
       }
     }
-  }, [currentTenant]);
+  }, [tenantContext?.currentTenant]);
 
   // Apply CSS variables to document root
   useEffect(() => {
