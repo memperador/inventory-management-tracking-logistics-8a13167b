@@ -12,6 +12,7 @@ import Projects from "./pages/Projects";
 import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
+import GPSIntegration from "./pages/GPSIntegration";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="equipment" element={<Equipment />} />
             <Route path="projects" element={<Projects />} />
             <Route path="users" element={<Users />} />
+            <Route path="gps-integration" element={<GPSIntegration />} />
             <Route path="analytics" element={<Dashboard />} /> {/* Placeholder for now */}
             <Route path="settings" element={<Dashboard />} /> {/* Placeholder for now */}
           </Route>
