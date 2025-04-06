@@ -1,15 +1,24 @@
 
 import { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTenant } from '@/hooks/useTenantContext';
 import { useRole } from '@/hooks/useRoleContext'; 
 import { useTheme } from '@/hooks/useThemeContext';
-import { Menu, X, Sun, Moon, User, MailCheck, Mail } from 'lucide-react';
+import { Menu, X, Sun, Moon, User, MailCheck, Mail, LogOut, Settings } from 'lucide-react';
 import { AppSidebar } from './AppSidebar';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const EmailVerificationIndicator = () => {
   const { user } = useAuth();
@@ -99,32 +108,44 @@ const AppLayout = () => {
               {currentTheme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
             </Button>
             
-            <div className="flex items-center gap-2 ml-2">
-              <div className="hidden sm:block text-right">
-                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {user?.email}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {userRole}
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full"
-                aria-label="User menu"
-              >
-                <User size={20} />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSignOut}
-                className="hidden sm:inline-flex"
-              >
-                Sign out
-              </Button>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src="" />
+                    <AvatarFallback>
+                      {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col">
+                    <span>{user?.email}</span>
+                    <span className="text-xs text-gray-500">{userRole}</span>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/account" className="cursor-pointer flex w-full items-center">
+                    <User className="h-4 w-4 mr-2" />
+                    Account
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings" className="cursor-pointer flex w-full items-center">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>

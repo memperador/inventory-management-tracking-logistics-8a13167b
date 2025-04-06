@@ -15,6 +15,7 @@ import Onboarding from "./pages/Onboarding";
 import GPSIntegration from "./pages/GPSIntegration";
 import PaymentPage from "./pages/PaymentPage";
 import WorkflowPage from "./pages/WorkflowPage";
+import AccountPage from "./pages/AccountPage";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Unauthorized from "./pages/Unauthorized";
@@ -58,6 +59,7 @@ const App = () => (
                         <Route index element={<Dashboard />} />
                         <Route path="equipment" element={<Equipment />} />
                         <Route path="projects" element={<Projects />} />
+                        <Route path="account" element={<AccountPage />} />
                         
                         {/* Admin-only routes */}
                         <Route element={<ProtectedRoute requiredRoles={['admin']} redirectTo="/unauthorized" />}>
