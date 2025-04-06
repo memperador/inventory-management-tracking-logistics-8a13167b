@@ -143,28 +143,49 @@ export type Database = {
       }
       tenants: {
         Row: {
+          address: string | null
+          city: string | null
+          country: string | null
           created_at: string
           id: string
           name: string
+          onboarding_completed: boolean | null
+          state: string | null
           subscription_status: string | null
           subscription_tier: string | null
+          tax_id: string | null
           updated_at: string
+          zip_code: string | null
         }
         Insert: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           id?: string
           name: string
+          onboarding_completed?: boolean | null
+          state?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
+          tax_id?: string | null
           updated_at?: string
+          zip_code?: string | null
         }
         Update: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           id?: string
           name?: string
+          onboarding_completed?: boolean | null
+          state?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
+          tax_id?: string | null
           updated_at?: string
+          zip_code?: string | null
         }
         Relationships: []
       }
