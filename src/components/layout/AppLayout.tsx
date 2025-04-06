@@ -10,6 +10,7 @@ import { AppSidebar } from './AppSidebar';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -151,19 +152,19 @@ const AppLayout = () => {
       </header>
 
       <div className="flex flex-grow">
-        <div
-          className={`${
+        <SidebarProvider defaultOpen={!isMobile}>
+          <div className={`${
             isMenuOpen ? 'translate-x-0' : '-translate-x-full'
-          } md:translate-x-0 fixed md:static top-0 left-0 h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-40 transition-transform duration-300 ease-in-out w-64 pt-16 md:pt-0`}
-        >
-          <AppSidebar />
-        </div>
+          } md:translate-x-0 fixed md:static top-0 left-0 h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-40 transition-transform duration-300 ease-in-out w-64 pt-16 md:pt-0`}>
+            <AppSidebar />
+          </div>
 
-        <div className="flex-grow w-full md:w-auto">
-          <main className="p-0">
-            <Outlet />
-          </main>
-        </div>
+          <div className="flex-grow w-full md:w-auto">
+            <main className="p-0">
+              <Outlet />
+            </main>
+          </div>
+        </SidebarProvider>
       </div>
     </div>
   );
