@@ -48,16 +48,31 @@ const fetchTenant = async (id: string): Promise<Tenant> => {
     throw new Error('Tenant not found');
   }
   
-  // Extract settings from csi_code_preferences or provide defaults
-  const settings = data.csi_code_preferences?.settings || {
+  // Default settings if none exist
+  const defaultSettings = {
     theme: 'light',
     features: ['equipment', 'projects', 'gps'],
   };
   
+  // Safely extract settings from csi_code_preferences
+  let tenantSettings = defaultSettings;
+  
+  if (data.csi_code_preferences) {
+    // Parse if it's a string or use directly if it's already an object
+    const preferences = typeof data.csi_code_preferences === 'string' 
+      ? JSON.parse(data.csi_code_preferences) 
+      : data.csi_code_preferences;
+      
+    // Check if settings property exists in the preferences object
+    if (preferences && typeof preferences === 'object' && 'settings' in preferences) {
+      tenantSettings = preferences.settings;
+    }
+  }
+  
   return {
     id: data.id,
     name: data.name,
-    settings: settings
+    settings: tenantSettings
   };
 };
 
@@ -110,13 +125,26 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
     mutationFn: async (settings: Partial<Tenant['settings']>) => {
       if (!tenantId) throw new Error('No tenant selected');
       
-      // Store settings inside csi_code_preferences as a nested object
+      // Get current tenant data first to preserve any existing csi_code_preferences data
+      const { data: currentData, error: fetchError } = await supabase
+        .from('tenants')
+        .select('csi_code_preferences')
+        .eq('id', tenantId)
+        .single();
+        
+      if (fetchError) throw fetchError;
+      
+      // Create a new preferences object, preserving existing data if any
+      const existingPreferences = currentData?.csi_code_preferences || {};
+      const newPreferences = typeof existingPreferences === 'string' 
+        ? { settings } // If string, just use new settings
+        : { ...existingPreferences, settings }; // Otherwise merge with existing object
+      
+      // Update the tenant record
       const { error } = await supabase
         .from('tenants')
         .update({ 
-          csi_code_preferences: { 
-            settings: settings 
-          } 
+          csi_code_preferences: newPreferences
         })
         .eq('id', tenantId);
         
