@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, File, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
 
 interface FileUploadProps {
   equipmentId: string;
@@ -29,6 +30,10 @@ export function FileUpload({ equipmentId, onFileUploaded }: FileUploadProps) {
 
       if (tenantError) {
         throw new Error('Could not retrieve tenant information');
+      }
+
+      if (!tenantData || !tenantData.tenant_id) {
+        throw new Error('Invalid tenant information');
       }
 
       // Format the file path: /{tenant_id}/{equipment_id}/{filename}

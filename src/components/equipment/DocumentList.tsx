@@ -4,15 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { FileText, Download, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
+import { FileObject as SupabaseFileObject } from '@supabase/storage-js';
 
 interface DocumentListProps {
   equipmentId: string;
   tenantId: string;
 }
 
-interface FileObject {
-  name: string;
-  id: string;
+// Extend the Supabase FileObject type with our required properties
+interface FileObject extends SupabaseFileObject {
   size: number;
   updated_at: string;
 }
@@ -35,8 +35,15 @@ export function DocumentList({ equipmentId, tenantId }: DocumentListProps) {
         throw error;
       }
 
-      // Filter out folders, only show files
-      const fileObjects = data?.filter(item => !item.id.endsWith('/')) || [];
+      // Filter out folders, only show files and map to our FileObject type
+      const fileObjects = data
+        ?.filter(item => !item.id.endsWith('/'))
+        .map(item => ({
+          ...item,
+          size: item.metadata?.size || 0,
+          updated_at: item.updated_at || new Date().toISOString()
+        })) || [];
+        
       setFiles(fileObjects);
     } catch (error) {
       console.error('Error loading files:', error);
