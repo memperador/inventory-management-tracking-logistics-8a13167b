@@ -30,13 +30,18 @@ const App = () => (
             <Route path="projects" element={<Projects />} />
             <Route path="users" element={<Users />} />
             <Route path="gps-integration" element={<GPSIntegration />} />
-            <Route path="analytics" element={<Dashboard />} /> {/* Placeholder for now */}
-            <Route path="settings" element={<Dashboard />} /> {/* Placeholder for now */}
-            <Route path="scheduling" element={<Dashboard />} /> {/* Placeholder for now */}
-            <Route path="maintenance" element={<Dashboard />} /> {/* Placeholder for now */}
-            <Route path="fleet" element={<Dashboard />} /> {/* Placeholder for now */}
-            <Route path="notifications" element={<Dashboard />} /> {/* Placeholder for now */}
-            <Route path="support" element={<Dashboard />} /> {/* Placeholder for now */}
+            <Route path="analytics" element={<Dashboard />} /> 
+            <Route path="reports" element={<Dashboard />} />
+            <Route path="scheduling" element={<Dashboard />} />
+            <Route path="maintenance" element={<Dashboard />} />
+            <Route path="fleet" element={<Dashboard />} />
+            <Route path="inventory" element={<Dashboard />} />
+            <Route path="settings" element={<Dashboard />} />
+            <Route path="notifications" element={<Dashboard />} />
+            <Route path="documentation" element={<Dashboard />} />
+            <Route path="support" element={<Dashboard />} />
+            <Route path="billing" element={<Dashboard />} />
+            <Route path="chat" element={<Dashboard />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

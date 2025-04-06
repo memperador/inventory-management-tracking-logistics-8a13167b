@@ -14,7 +14,12 @@ import {
   HardDrive,
   Truck,
   LifeBuoy,
-  Wrench
+  Wrench,
+  FileText,
+  DollarSign,
+  ShoppingCart,
+  Book,
+  MessageSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -41,6 +46,7 @@ export function AppSidebar() {
     { name: 'Projects', href: '/projects', icon: Map },
     { name: 'Users', href: '/users', icon: Users },
     { name: 'Analytics', href: '/analytics', icon: BarChart2 },
+    { name: 'Reports', href: '/reports', icon: FileText },
   ];
 
   const integrationNavigation = [
@@ -48,12 +54,16 @@ export function AppSidebar() {
     { name: 'Scheduling', href: '/scheduling', icon: Calendar },
     { name: 'Maintenance', href: '/maintenance', icon: Wrench },
     { name: 'Fleet', href: '/fleet', icon: Truck },
+    { name: 'Inventory', href: '/inventory', icon: ShoppingCart },
   ];
   
   const settingsNavigation = [
     { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'Notifications', href: '/notifications', icon: Bell },
-    { name: 'Help & Support', href: '/support', icon: LifeBuoy },
+    { name: 'Documentation', href: '/documentation', icon: Book },
+    { name: 'Support', href: '/support', icon: LifeBuoy },
+    { name: 'Billing', href: '/billing', icon: DollarSign },
+    { name: 'Chat', href: '/chat', icon: MessageSquare },
   ];
   
   return (
@@ -66,7 +76,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       
-      <SidebarContent>
+      <SidebarContent className="pb-12 md:pb-0">
         <SidebarGroup>
           <SidebarGroupLabel>Main</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -147,7 +157,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       
-      <SidebarFooter>
+      <SidebarFooter className="mt-auto hidden md:block">
         <SidebarGroup>
           <SidebarGroupContent>
             <Button 
