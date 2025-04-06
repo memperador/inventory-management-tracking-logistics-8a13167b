@@ -1,9 +1,12 @@
 
 import React, { useState } from 'react';
 import { OrganizationDetailsForm } from '@/components/tenant/OrganizationDetailsForm';
+import { CSICodeCustomization } from '@/components/tenant/CSICodeCustomization';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
+import { Progress } from '@/components/ui/progress';
+import { CheckCircle } from 'lucide-react';
 
 const Onboarding: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -66,6 +69,10 @@ const Onboarding: React.FC = () => {
       component: OrganizationDetailsForm,
       title: 'Organization Details'
     },
+    {
+      component: CSICodeCustomization,
+      title: 'CSI Code Customization'
+    }
     // Future steps will be added here
   ];
 
@@ -75,14 +82,56 @@ const Onboarding: React.FC = () => {
     }
   };
 
+  const progress = ((currentStep + 1) / steps.length) * 100;
   const CurrentStepComponent = steps[currentStep].component;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
       <div className="w-full max-w-2xl bg-white shadow-md rounded-lg p-8">
-        <h1 className="text-2xl font-bold mb-6 text-center">
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-2">
+            <h1 className="text-2xl font-bold">Onboarding Wizard</h1>
+            <span className="text-sm text-gray-500">Step {currentStep + 1} of {steps.length}</span>
+          </div>
+          <Progress value={progress} className="h-2" />
+          
+          <div className="flex justify-between mt-4">
+            {steps.map((step, index) => (
+              <div 
+                key={index} 
+                className={`flex flex-col items-center ${
+                  index === currentStep 
+                    ? 'text-primary' 
+                    : index < currentStep 
+                      ? 'text-green-600' 
+                      : 'text-gray-400'
+                }`}
+              >
+                <div 
+                  className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 border ${
+                    index === currentStep 
+                      ? 'border-primary' 
+                      : index < currentStep 
+                        ? 'border-green-600 bg-green-100' 
+                        : 'border-gray-300'
+                  }`}
+                >
+                  {index < currentStep ? (
+                    <CheckCircle className="w-5 h-5" />
+                  ) : (
+                    <span>{index + 1}</span>
+                  )}
+                </div>
+                <span className="text-xs text-center">{step.title}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <h2 className="text-xl font-semibold mb-6">
           {steps[currentStep].title}
-        </h1>
+        </h2>
+        
         {tenantId && (
           <CurrentStepComponent 
             tenantId={tenantId} 

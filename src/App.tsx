@@ -11,6 +11,7 @@ import Equipment from "./pages/Equipment";
 import Projects from "./pages/Projects";
 import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
+import Onboarding from "./pages/Onboarding";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/" element={<AppLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="equipment" element={<Equipment />} />
