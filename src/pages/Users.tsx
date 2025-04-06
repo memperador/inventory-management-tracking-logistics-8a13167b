@@ -53,29 +53,49 @@ const Users = () => {
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      // Join users table with profiles to get names
-      const { data, error } = await supabase
+      // Fetch users and profiles separately since the join isn't working
+      const { data: usersData, error: usersError } = await supabase
         .from('users')
-        .select(`
-          id,
-          role,
-          created_at,
-          profiles:profiles(first_name, last_name)
-        `)
-        .order('created_at', { ascending: false });
+        .select('id, role, created_at');
       
-      if (error) throw error;
+      if (usersError) throw usersError;
       
-      // Transform the data
-      return data.map(user => ({
+      // Transform the data with placeholder names
+      return usersData.map(user => ({
         id: user.id,
-        name: `${user.profiles?.first_name || ''} ${user.profiles?.last_name || ''}`.trim() || 'Unknown User',
-        email: 'user@example.com', // Placeholder - you could fetch this from auth if needed
+        name: 'User', // Default name
+        email: 'user@example.com', // Placeholder
         role: user.role,
-        status: 'active', // Placeholder - could be determined based on last login
-        lastActive: user.created_at // Placeholder - using creation date as last active
+        status: 'active', // Placeholder
+        lastActive: user.created_at // Using creation date as last active
       }));
     }
+  });
+  
+  // Separately fetch profiles to get names
+  useQuery({
+    queryKey: ['profiles'],
+    queryFn: async () => {
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name');
+      
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        return;
+      }
+      
+      if (profilesData && profilesData.length > 0) {
+        // Update user names if profile exists
+        users.forEach(user => {
+          const userProfile = profilesData.find(profile => profile.id === user.id);
+          if (userProfile) {
+            user.name = `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'Unknown User';
+          }
+        });
+      }
+    },
+    enabled: users.length > 0
   });
   
   // Filter users based on search query
