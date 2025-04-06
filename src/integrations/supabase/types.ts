@@ -147,6 +147,7 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string
+          csi_code_preferences: Json | null
           id: string
           name: string
           onboarding_completed: boolean | null
@@ -162,6 +163,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          csi_code_preferences?: Json | null
           id?: string
           name: string
           onboarding_completed?: boolean | null
@@ -177,6 +179,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          csi_code_preferences?: Json | null
           id?: string
           name?: string
           onboarding_completed?: boolean | null

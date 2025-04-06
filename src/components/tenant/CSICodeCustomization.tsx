@@ -11,6 +11,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Check, MoveVertical } from 'lucide-react';
+import { Tables } from '@/integrations/supabase/types';
 
 // Zod schema for CSI code customization
 const csiCodeSchema = z.object({
@@ -74,7 +75,8 @@ export function CSICodeCustomization({ tenantId, onNextStep }: CSICodeCustomizat
             customCodes: codes
           }
         })
-        .eq('id', tenantId);
+        .eq('id', tenantId)
+        .single();
 
       if (error) throw error;
 
@@ -192,3 +194,4 @@ export function CSICodeCustomization({ tenantId, onNextStep }: CSICodeCustomizat
     </Form>
   );
 }
+
