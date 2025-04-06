@@ -134,11 +134,28 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
         
       if (fetchError) throw fetchError;
       
-      // Create a new preferences object, preserving existing data if any
-      const existingPreferences = currentData?.csi_code_preferences || {};
-      const newPreferences = typeof existingPreferences === 'string' 
-        ? { settings } // If string, just use new settings
-        : { ...existingPreferences, settings }; // Otherwise merge with existing object
+      // Create a new preferences object, ensuring existingPreferences is a valid object
+      let existingPreferences = {};
+      
+      // Safely handle the existing preferences
+      if (currentData?.csi_code_preferences) {
+        if (typeof currentData.csi_code_preferences === 'string') {
+          try {
+            existingPreferences = JSON.parse(currentData.csi_code_preferences);
+          } catch (e) {
+            console.error('Failed to parse csi_code_preferences string:', e);
+            existingPreferences = {};
+          }
+        } else if (typeof currentData.csi_code_preferences === 'object' && currentData.csi_code_preferences !== null) {
+          existingPreferences = currentData.csi_code_preferences;
+        }
+      }
+      
+      // Create the new preferences object with settings
+      const newPreferences = {
+        ...existingPreferences,
+        settings
+      };
       
       // Update the tenant record
       const { error } = await supabase
