@@ -2,6 +2,8 @@
 export interface Tenant {
   id: string;
   name: string;
+  subscription_tier?: string;
+  subscription_status?: string;
   settings: {
     theme: string;
     features: string[];

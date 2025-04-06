@@ -49,6 +49,8 @@ export const fetchTenant = async (id: string): Promise<Tenant> => {
   return {
     id: data.id,
     name: data.name,
+    subscription_tier: data.subscription_tier,
+    subscription_status: data.subscription_status,
     settings: tenantSettings
   };
 };
