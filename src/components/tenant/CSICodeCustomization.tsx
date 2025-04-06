@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Check, MoveVertical } from 'lucide-react';
+import { MoveVertical } from 'lucide-react';
 import { Tables } from '@/integrations/supabase/types';
 
 // Zod schema for CSI code customization
@@ -66,15 +66,17 @@ export function CSICodeCustomization({ tenantId, onNextStep }: CSICodeCustomizat
 
   const onSubmit = async (data: CSICodeFormData) => {
     try {
-      // Save CSI code preferences to tenant
+      // Save CSI code preferences to tenant using type-safe update
+      const updateData: Partial<Tables['tenants']['Update']> = {
+        csi_code_preferences: {
+          companyPrefix: data.companyPrefix,
+          customCodes: codes
+        }
+      };
+
       const { error } = await supabase
         .from('tenants')
-        .update({
-          csi_code_preferences: {
-            companyPrefix: data.companyPrefix,
-            customCodes: codes
-          }
-        })
+        .update(updateData)
         .eq('id', tenantId)
         .single();
 
@@ -194,4 +196,3 @@ export function CSICodeCustomization({ tenantId, onNextStep }: CSICodeCustomizat
     </Form>
   );
 }
-
