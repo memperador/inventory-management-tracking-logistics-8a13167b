@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,34 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Custom colors for our inventory application
+				inventory: {
+					blue: {
+						light: '#E6F0FF',
+						DEFAULT: '#0066CC',
+						dark: '#004999'
+					},
+					green: {
+						light: '#E6F8F0',
+						DEFAULT: '#00B377',
+						dark: '#007F54'
+					},
+					yellow: {
+						light: '#FFF8E6',
+						DEFAULT: '#FFAE00',
+						dark: '#CC8A00'
+					},
+					red: {
+						light: '#FFE6E6',
+						DEFAULT: '#FF3333',
+						dark: '#CC0000'
+					},
+					gray: {
+						light: '#F5F5F5',
+						DEFAULT: '#9CA3AF',
+						dark: '#4B5563'
+					}
 				}
 			},
 			borderRadius: {
