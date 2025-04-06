@@ -35,17 +35,17 @@ const AppLayout = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { currentTenant } = useTenant();
-  const { currentRole } = useRole();
-  const { theme, setTheme } = useTheme();
+  const { userRole } = useRole();
+  const { currentTheme, setTheme } = useTheme();
   const { toast } = useToast();
-  const { isMobile } = useIsMobile();
+  const isMobile = useIsMobile();
 
   const handleToggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
   const handleToggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    setTheme(currentTheme === 'dark' ? 'light' : 'dark');
   };
 
   const handleSignOut = async () => {
@@ -96,7 +96,7 @@ const AppLayout = () => {
               className="ml-2"
               aria-label="Toggle theme"
             >
-              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+              {currentTheme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
             </Button>
             
             <div className="flex items-center gap-2 ml-2">
@@ -105,7 +105,7 @@ const AppLayout = () => {
                   {user?.email}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {currentRole}
+                  {userRole}
                 </div>
               </div>
               <Button
