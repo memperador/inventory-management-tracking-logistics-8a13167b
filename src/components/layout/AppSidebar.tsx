@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -38,9 +37,11 @@ import {
   SidebarSeparator
 } from "@/components/ui/sidebar";
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function AppSidebar() {
   const location = useLocation();
+  const { signOut } = useAuth();
   
   const mainNavigation = [
     { name: 'Dashboard', href: '/', icon: Layers },
@@ -167,6 +168,7 @@ export function AppSidebar() {
             <Button 
               variant="ghost" 
               className="w-full justify-start text-gray-600 hover:bg-gray-100"
+              onClick={() => signOut()}
             >
               <LogOut className="mr-3 h-5 w-5" />
               Sign out
