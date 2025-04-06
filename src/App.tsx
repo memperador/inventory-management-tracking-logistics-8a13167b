@@ -16,6 +16,7 @@ import GPSIntegration from "./pages/GPSIntegration";
 import PaymentPage from "./pages/PaymentPage";
 import WorkflowPage from "./pages/WorkflowPage";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Unauthorized from "./pages/Unauthorized";
 import { TenantProvider } from "./contexts/TenantContext";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -47,6 +48,7 @@ const App = () => (
                   <Sonner />
                   <Routes>
                     <Route path="/auth" element={<Auth />} />
+                    <Route path="/auth/reset-password" element={<ResetPassword />} />
                     <Route path="/onboarding" element={<Onboarding />} />
                     <Route path="/unauthorized" element={<Unauthorized />} />
                     

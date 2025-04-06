@@ -11,6 +11,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Loader2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -24,14 +26,20 @@ const signupSchema = z.object({
   lastName: z.string().min(1, { message: "Last name is required" }),
 });
 
+const resetPasswordSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address" }),
+});
+
 type LoginFormValues = z.infer<typeof loginSchema>;
 type SignupFormValues = z.infer<typeof signupSchema>;
+type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 const Auth = () => {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, resetPassword } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -48,6 +56,13 @@ const Auth = () => {
       password: "",
       firstName: "",
       lastName: "",
+    },
+  });
+  
+  const resetPasswordForm = useForm<ResetPasswordFormValues>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: {
+      email: "",
     },
   });
 
@@ -70,6 +85,27 @@ const Auth = () => {
       setActiveTab("login");
     } catch (error) {
       console.error("Signup failed", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const onResetPassword = async (data: ResetPasswordFormValues) => {
+    setIsLoading(true);
+    try {
+      await resetPassword(data.email);
+      setResetPasswordDialogOpen(false);
+      toast({
+        title: "Password reset email sent",
+        description: "Check your inbox for a password reset link",
+      });
+      resetPasswordForm.reset();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send password reset email",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -121,6 +157,15 @@ const Auth = () => {
                       </FormItem>
                     )}
                   />
+                  
+                  <Button 
+                    type="button" 
+                    variant="link" 
+                    className="p-0 h-auto text-sm"
+                    onClick={() => setResetPasswordDialogOpen(true)}
+                  >
+                    Forgot password?
+                  </Button>
                   
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? (
@@ -218,6 +263,44 @@ const Auth = () => {
           </p>
         </CardFooter>
       </Card>
+      
+      <Dialog open={resetPasswordDialogOpen} onOpenChange={setResetPasswordDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset your password</DialogTitle>
+            <DialogDescription>
+              Enter your email address and we'll send you a link to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...resetPasswordForm}>
+            <form onSubmit={resetPasswordForm.handleSubmit(onResetPassword)} className="space-y-4">
+              <FormField
+                control={resetPasswordForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="name@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Please wait
+                  </>
+                ) : (
+                  "Send reset link"
+                )}
+              </Button>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
