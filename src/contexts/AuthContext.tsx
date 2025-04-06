@@ -48,6 +48,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           navigate('/auth');
         } else if (event === 'PASSWORD_RECOVERY') {
           navigate('/auth/reset-password');
+        } else if (event === 'USER_UPDATED') {
+          toast({
+            title: 'Account updated',
+            description: 'Your account information has been updated.',
+          });
         }
       }
     );
