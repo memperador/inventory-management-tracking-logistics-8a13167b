@@ -45,7 +45,7 @@ export const withAuditLogging = <T extends (...args: any[]) => Promise<any>>(
     getUserId: () => string;
     getEntityId: (...args: Parameters<T>) => string;
     getOldValue?: () => any;
-    getNewValue?: (...args: Parameters<T>, result: Awaited<ReturnType<T>>) => any;
+    getNewValue?: (result: Awaited<ReturnType<T>>, ...args: Parameters<T>) => any;
   }
 ): T => {
   return (async (...args: Parameters<T>): Promise<ReturnType<T>> => {
@@ -55,7 +55,7 @@ export const withAuditLogging = <T extends (...args: any[]) => Promise<any>>(
 
     try {
       const result = await mutationFn(...args);
-      const newValue = options.getNewValue ? options.getNewValue(...args, result) : undefined;
+      const newValue = options.getNewValue ? options.getNewValue(result, ...args) : undefined;
 
       await logAuditEvent({
         userId,
