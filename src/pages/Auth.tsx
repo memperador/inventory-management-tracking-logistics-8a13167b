@@ -6,10 +6,10 @@ import LoginForm from '@/components/auth/LoginForm';
 import SignupForm from '@/components/auth/SignupForm';
 import ResetPasswordDialog from '@/components/auth/ResetPasswordDialog';
 import EmailVerificationStatus from '@/components/auth/EmailVerificationStatus';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail } from 'lucide-react';
+import { AlertCircle, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 
@@ -20,6 +20,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const [verificationSent, setVerificationSent] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
   
   // Handle email confirmation or password recovery flows
   useEffect(() => {
@@ -27,6 +28,7 @@ const Auth = () => {
       // Check for error messages from email verification
       const errorMessage = searchParams.get('error_description') || searchParams.get('error');
       if (errorMessage) {
+        setAuthError(decodeURIComponent(errorMessage));
         toast({
           title: "Verification Error",
           description: decodeURIComponent(errorMessage),
@@ -95,6 +97,19 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {authError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Authentication Error</AlertTitle>
+              <AlertDescription>
+                {authError}
+                <p className="mt-2 text-sm">
+                  Please check your Supabase URL configuration in the dashboard.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+          
           {verificationSent && (
             <Alert className="mb-4 bg-yellow-50 border-yellow-200">
               <Mail className="h-4 w-4 text-yellow-600" />
