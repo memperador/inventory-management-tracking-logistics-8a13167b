@@ -18,7 +18,11 @@ const signupSchema = z.object({
 
 type SignupFormValues = z.infer<typeof signupSchema>;
 
-const SignupForm: React.FC = () => {
+interface SignupFormProps {
+  onSignupComplete?: (email: string) => void;
+}
+
+const SignupForm: React.FC<SignupFormProps> = ({ onSignupComplete }) => {
   const { signUp } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   
@@ -36,6 +40,9 @@ const SignupForm: React.FC = () => {
     setIsLoading(true);
     try {
       await signUp(data.email, data.password, data.firstName, data.lastName);
+      if (onSignupComplete) {
+        onSignupComplete(data.email);
+      }
     } catch (error) {
       console.error("Signup failed", error);
     } finally {
