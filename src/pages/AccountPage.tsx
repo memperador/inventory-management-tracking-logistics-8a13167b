@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { PageHeader } from '@/components/common/PageHeader';
+import PageHeader from '@/components/common/PageHeader';
 import AccountForm from '@/components/account/AccountForm';
 import { Card, CardContent } from '@/components/ui/card';
 
