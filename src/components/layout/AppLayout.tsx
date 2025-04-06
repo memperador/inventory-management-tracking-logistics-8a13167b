@@ -21,7 +21,10 @@ const AppLayout = () => {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-100">
-        <div className="animate-pulse">Loading...</div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-inventory-blue border-t-transparent"></div>
+          <p className="text-sm text-gray-500">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -47,8 +50,8 @@ const AppLayout = () => {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="md:hidden"
                 onClick={() => signOut()}
+                aria-label="Sign out"
               >
                 <LogOut className="h-5 w-5" />
               </Button>

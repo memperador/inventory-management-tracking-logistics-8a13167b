@@ -1,6 +1,8 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './AuthContext';
 
 // Define tenant types
 export interface Tenant {
@@ -23,16 +25,35 @@ interface TenantContextType {
 // Create context with default values
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
-// Create mock tenant fetch function
+// Fetch tenant function using Supabase
 const fetchTenant = async (id: string): Promise<Tenant> => {
-  // In a real app, this would be an API call
+  if (!id) {
+    throw new Error('No tenant ID provided');
+  }
+  
   console.log(`Fetching tenant with ID: ${id}`);
+  
+  const { data, error } = await supabase
+    .from('tenants')
+    .select('*')
+    .eq('id', id)
+    .single();
+    
+  if (error) {
+    console.error('Error fetching tenant:', error);
+    throw error;
+  }
+  
+  if (!data) {
+    throw new Error('Tenant not found');
+  }
+  
   return {
-    id,
-    name: "Default Tenant",
+    id: data.id,
+    name: data.name,
     settings: {
-      theme: "light",
-      features: ["equipment", "projects", "gps"],
+      theme: 'light',
+      features: ['equipment', 'projects', 'gps'],
     }
   };
 };
@@ -47,22 +68,51 @@ export const useTenant = () => {
 };
 
 // Provider component
-export const TenantProvider = ({ children, defaultTenantId = "default" }: { children: ReactNode, defaultTenantId?: string }) => {
-  const [tenantId, setTenantId] = useState<string>(defaultTenantId);
+export const TenantProvider = ({ children }: { children: ReactNode }) => {
+  const { user } = useAuth();
+  const [tenantId, setTenantId] = useState<string>('');
   const queryClient = useQueryClient();
+  
+  // Get the tenant ID from the user profile
+  useQuery({
+    queryKey: ['userProfile', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) throw error;
+      if (data?.tenant_id) {
+        setTenantId(data.tenant_id);
+      }
+      return data;
+    },
+    enabled: !!user,
+  });
   
   // Query for tenant data with caching
   const { data: currentTenant, isLoading, error } = useQuery({
     queryKey: ['tenant', tenantId],
     queryFn: () => fetchTenant(tenantId),
+    enabled: !!tenantId,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
   
   // Mutation for updating tenant settings
   const updateSettingsMutation = useMutation({
     mutationFn: async (settings: Partial<Tenant['settings']>) => {
-      // In a real app, this would be an API call
-      console.log('Updating tenant settings:', settings);
+      if (!tenantId) throw new Error('No tenant selected');
+      
+      const { error } = await supabase
+        .from('tenants')
+        .update({ settings })
+        .eq('id', tenantId);
+        
+      if (error) throw error;
       return settings;
     },
     onSuccess: (newSettings) => {

@@ -23,21 +23,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state changed:', event);
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (event === 'SIGNED_IN' && window.location.pathname === '/auth') {
-          navigate('/');
+        if (event === 'SIGNED_IN') {
+          toast({
+            title: 'Welcome back!',
+            description: 'You have been successfully signed in.',
+          });
+          
+          if (window.location.pathname === '/auth') {
+            navigate('/');
+          }
         } else if (event === 'SIGNED_OUT') {
+          toast({
+            title: 'Signed out',
+            description: 'You have been signed out successfully.',
+          });
           navigate('/auth');
         }
       }
     );
 
-    // THEN check for existing session
+    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
