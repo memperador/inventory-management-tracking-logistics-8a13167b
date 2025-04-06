@@ -1,6 +1,7 @@
 
 import React, { ReactNode } from 'react';
-import { UserRole, useRole } from '@/contexts/RoleContext';
+import { UserRole } from '@/types/roles';
+import { useRole } from '@/hooks/useRoleContext';
 
 interface PermissionProps {
   allowedRoles: UserRole[];

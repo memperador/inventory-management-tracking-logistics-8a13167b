@@ -9,7 +9,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { UserRole, useRole } from '@/contexts/RoleContext';
+import { UserRole } from '@/types/roles';
+import { useRole } from '@/hooks/useRoleContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';

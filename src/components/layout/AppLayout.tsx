@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -8,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRole } from '@/contexts/RoleContext';
+import { useRole } from '@/hooks/useRoleContext';
 
 const AppLayout = () => {
   const { user, loading, signOut } = useAuth();

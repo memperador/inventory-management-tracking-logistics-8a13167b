@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRole } from '@/contexts/RoleContext';
+import { useRole } from '@/hooks/useRoleContext';
 import Permission from '@/components/auth/Permission';
 
 export function AppSidebar() {

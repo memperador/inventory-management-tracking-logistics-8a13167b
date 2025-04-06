@@ -1,29 +1,12 @@
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, ReactNode, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { useQuery } from '@tanstack/react-query';
+import { UserRole, RoleContextType, roleHierarchy } from '@/types/roles';
 
-export type UserRole = 'admin' | 'manager' | 'operator' | 'viewer';
-
-interface RoleContextType {
-  userRole: UserRole | null;
-  isRoleLoading: boolean;
-  hasPermission: (requiredRoles: UserRole[]) => boolean;
-  isAdmin: () => boolean;
-  isManager: () => boolean;
-  refreshRole: () => void;
-}
-
-const RoleContext = createContext<RoleContextType | undefined>(undefined);
-
-// Role hierarchy for permission checks
-const roleHierarchy: Record<UserRole, number> = {
-  'admin': 4,
-  'manager': 3,
-  'operator': 2,
-  'viewer': 1
-};
+// Create the context with undefined as default value
+export const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
 export const RoleProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
@@ -96,10 +79,5 @@ export const RoleProvider = ({ children }: { children: ReactNode }) => {
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;
 };
 
-export const useRole = () => {
-  const context = useContext(RoleContext);
-  if (context === undefined) {
-    throw new Error('useRole must be used within a RoleProvider');
-  }
-  return context;
-};
+// Export the hook from this file for backward compatibility
+export { useRole } from '@/hooks/useRoleContext';

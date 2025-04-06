@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { UserRole } from '@/contexts/RoleContext';
+import { UserRole } from '@/types/roles';
 import RoleDisplay from '@/components/users/RoleDisplay';
 import Permission from '@/components/auth/Permission';
 
