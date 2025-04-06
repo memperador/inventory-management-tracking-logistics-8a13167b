@@ -9,3 +9,6 @@ export const useTheme = () => {
   }
   return context;
 };
+
+// For backward compatibility
+export const useThemeContext = useTheme;

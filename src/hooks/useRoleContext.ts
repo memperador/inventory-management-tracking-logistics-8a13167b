@@ -9,3 +9,6 @@ export const useRole = () => {
   }
   return context;
 };
+
+// For backward compatibility
+export const useRoleContext = useRole;

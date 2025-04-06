@@ -9,3 +9,6 @@ export const useTenant = () => {
   }
   return context;
 };
+
+// For backward compatibility
+export const useTenantContext = useTenant;

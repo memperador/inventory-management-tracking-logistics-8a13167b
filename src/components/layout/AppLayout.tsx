@@ -1,14 +1,15 @@
+
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTenantContext } from '@/hooks/useTenantContext';
-import { useRoleContext } from '@/hooks/useRoleContext'; 
-import { useThemeContext } from '@/hooks/useThemeContext';
+import { useTenant } from '@/hooks/useTenantContext';
+import { useRole } from '@/hooks/useRoleContext'; 
+import { useTheme } from '@/hooks/useThemeContext';
 import { Menu, X, Sun, Moon, User, MailCheck, Mail } from 'lucide-react';
-import AppSidebar from './AppSidebar';
+import { AppSidebar } from './AppSidebar';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const EmailVerificationIndicator = () => {
   const { user } = useAuth();
@@ -33,11 +34,11 @@ const EmailVerificationIndicator = () => {
 const AppLayout = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
-  const { currentTenant } = useTenantContext();
-  const { currentRole } = useRoleContext();
-  const { theme, setTheme } = useThemeContext();
+  const { currentTenant } = useTenant();
+  const { currentRole } = useRole();
+  const { theme, setTheme } = useTheme();
   const { toast } = useToast();
-  const { isMobile } = useMobile();
+  const { isMobile } = useIsMobile();
 
   const handleToggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
