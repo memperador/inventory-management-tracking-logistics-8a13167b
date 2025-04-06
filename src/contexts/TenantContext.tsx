@@ -48,13 +48,16 @@ const fetchTenant = async (id: string): Promise<Tenant> => {
     throw new Error('Tenant not found');
   }
   
+  // Extract settings from csi_code_preferences or provide defaults
+  const settings = data.csi_code_preferences?.settings || {
+    theme: 'light',
+    features: ['equipment', 'projects', 'gps'],
+  };
+  
   return {
     id: data.id,
     name: data.name,
-    settings: {
-      theme: 'light',
-      features: ['equipment', 'projects', 'gps'],
-    }
+    settings: settings
   };
 };
 
@@ -107,9 +110,14 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
     mutationFn: async (settings: Partial<Tenant['settings']>) => {
       if (!tenantId) throw new Error('No tenant selected');
       
+      // Store settings inside csi_code_preferences as a nested object
       const { error } = await supabase
         .from('tenants')
-        .update({ settings })
+        .update({ 
+          csi_code_preferences: { 
+            settings: settings 
+          } 
+        })
         .eq('id', tenantId);
         
       if (error) throw error;
