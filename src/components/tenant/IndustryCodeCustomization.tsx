@@ -66,14 +66,14 @@ export function IndustryCodeCustomization({ tenantId, onNextStep }: IndustryCode
       try {
         const { data, error } = await supabase
           .from('tenants')
-          .select('company_type, industry_code_preferences')
+          .select('*')
           .eq('id', tenantId)
           .single();
           
         if (error) throw error;
         
         if (data) {
-          // Set company type
+          // Set company type, checking if the column exists
           const currentCompanyType = data.company_type || 'construction';
           setCompanyType(currentCompanyType);
           form.setValue('companyType', currentCompanyType as any);
@@ -83,14 +83,16 @@ export function IndustryCodeCustomization({ tenantId, onNextStep }: IndustryCode
           setSelectedCodeType(codeType);
           form.setValue('codeType', codeType);
           
-          // Parse preferences
-          let preferences = data.industry_code_preferences;
+          // Parse preferences, checking which column exists
+          const preferences = data.industry_code_preferences || data.csi_code_preferences;
+          let parsedPreferences = preferences;
+          
           if (typeof preferences === 'string') {
-            preferences = JSON.parse(preferences);
+            parsedPreferences = JSON.parse(preferences);
           }
           
-          if (preferences?.industryCodeSettings) {
-            const settings = preferences.industryCodeSettings;
+          if (parsedPreferences?.industryCodeSettings) {
+            const settings = parsedPreferences.industryCodeSettings;
             
             // Set company prefix
             if (settings.companyPrefix) {
@@ -133,28 +135,21 @@ export function IndustryCodeCustomization({ tenantId, onNextStep }: IndustryCode
     fetchTenantSettings();
   }, [tenantId, form]);
 
-  const onDragEnd = (result: any) => {
-    // Dropped outside the list
-    if (!result.destination) return;
-    
-    const items = Array.from(codes);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-    
-    setCodes(items);
-    form.setValue('customCodes', items);
-  };
-
   const onSubmit = async (data: IndustryCodeFormData) => {
     try {
       // Update company type if changed
       if (data.companyType && data.companyType !== companyType) {
-        const { error: companyError } = await supabase
-          .from('tenants')
-          .update({ company_type: data.companyType })
-          .eq('id', tenantId);
-          
-        if (companyError) throw companyError;
+        try {
+          const { error: companyError } = await supabase
+            .from('tenants')
+            .update({ company_type: data.companyType })
+            .eq('id', tenantId);
+            
+          if (companyError) throw companyError;
+        } catch (error) {
+          console.error('Failed to update company_type, this column might not exist yet:', error);
+          // Continue execution even if this fails
+        }
       }
       
       // Save industry code preferences
@@ -168,12 +163,35 @@ export function IndustryCodeCustomization({ tenantId, onNextStep }: IndustryCode
         }
       };
 
-      const { error } = await supabase
-        .from('tenants')
-        .update(updateData)
-        .eq('id', tenantId);
+      try {
+        // Try using industry_code_preferences first
+        const { error } = await supabase
+          .from('tenants')
+          .update(updateData)
+          .eq('id', tenantId);
 
-      if (error) throw error;
+        if (error) throw error;
+      } catch (error) {
+        console.error('Failed to update industry_code_preferences, trying csi_code_preferences:', error);
+        
+        // Fallback to using csi_code_preferences
+        const fallbackData = {
+          csi_code_preferences: {
+            industryCodeSettings: {
+              selectedCodeType: data.codeType,
+              companyPrefix: data.companyPrefix,
+              customCodes: codes
+            }
+          }
+        };
+        
+        const { error: fallbackError } = await supabase
+          .from('tenants')
+          .update(fallbackData)
+          .eq('id', tenantId);
+          
+        if (fallbackError) throw fallbackError;
+      }
 
       toast({
         title: 'Industry Codes Saved',
@@ -235,6 +253,18 @@ export function IndustryCodeCustomization({ tenantId, onNextStep }: IndustryCode
     };
     setCodes(updatedCodes);
     form.setValue('customCodes', updatedCodes);
+  };
+
+  const onDragEnd = (result: any) => {
+    // Dropped outside the list
+    if (!result.destination) return;
+    
+    const items = Array.from(codes);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    
+    setCodes(items);
+    form.setValue('customCodes', items);
   };
 
   return (

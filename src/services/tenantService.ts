@@ -31,30 +31,34 @@ export const fetchTenant = async (id: string): Promise<Tenant> => {
     features: ['equipment', 'projects', 'gps'],
   };
   
-  // Safely extract settings from industry_code_preferences
+  // Safely extract settings from industry_code_preferences or csi_code_preferences
   let tenantSettings = defaultSettings;
   let industryCodeSettings = undefined;
   
-  if (data.industry_code_preferences) {
+  // Check if industry_code_preferences exists, if not fallback to csi_code_preferences (for backward compatibility)
+  const preferences = 'industry_code_preferences' in data ? data.industry_code_preferences : data.csi_code_preferences;
+  
+  if (preferences) {
     // Parse if it's a string or use directly if it's already an object
-    const preferences = typeof data.industry_code_preferences === 'string' 
-      ? JSON.parse(data.industry_code_preferences) 
-      : data.industry_code_preferences;
+    const parsedPreferences = typeof preferences === 'string' 
+      ? JSON.parse(preferences) 
+      : preferences;
       
     // Check if settings property exists in the preferences object
-    if (preferences && typeof preferences === 'object') {
-      if ('settings' in preferences) {
-        tenantSettings = preferences.settings;
+    if (parsedPreferences && typeof parsedPreferences === 'object') {
+      if ('settings' in parsedPreferences) {
+        tenantSettings = parsedPreferences.settings;
       }
-      if ('industryCodeSettings' in preferences) {
-        industryCodeSettings = preferences.industryCodeSettings;
+      if ('industryCodeSettings' in parsedPreferences) {
+        industryCodeSettings = parsedPreferences.industryCodeSettings;
       }
     }
   }
   
   // If company type exists but no code type is selected, set default code type
-  if (data.company_type && (!industryCodeSettings || !industryCodeSettings.selectedCodeType)) {
-    const defaultCodeType = COMPANY_TYPE_TO_CODE_MAP[data.company_type as keyof typeof COMPANY_TYPE_TO_CODE_MAP];
+  const companyType = 'company_type' in data ? data.company_type : null;
+  if (companyType && (!industryCodeSettings || !industryCodeSettings.selectedCodeType)) {
+    const defaultCodeType = COMPANY_TYPE_TO_CODE_MAP[companyType as keyof typeof COMPANY_TYPE_TO_CODE_MAP];
     if (defaultCodeType) {
       industryCodeSettings = {
         ...industryCodeSettings,
@@ -69,7 +73,7 @@ export const fetchTenant = async (id: string): Promise<Tenant> => {
     name: data.name,
     subscription_tier: data.subscription_tier,
     subscription_status: data.subscription_status,
-    company_type: data.company_type,
+    company_type: companyType,
     settings: {
       ...tenantSettings,
       industryCodeSettings
@@ -84,7 +88,7 @@ export const updateTenantSettings = async (tenantId: string, settings: Partial<T
   // Get current tenant data first to preserve any existing industry_code_preferences data
   const { data: currentData, error: fetchError } = await supabase
     .from('tenants')
-    .select('industry_code_preferences')
+    .select('industry_code_preferences, csi_code_preferences')
     .eq('id', tenantId)
     .single();
     
@@ -93,17 +97,19 @@ export const updateTenantSettings = async (tenantId: string, settings: Partial<T
   // Create a new preferences object, ensuring existingPreferences is a valid object
   let existingPreferences = {};
   
-  // Safely handle the existing preferences
-  if (currentData?.industry_code_preferences) {
-    if (typeof currentData.industry_code_preferences === 'string') {
+  // Safely handle the existing preferences, checking for both column names
+  const preferences = currentData?.industry_code_preferences || currentData?.csi_code_preferences;
+  
+  if (preferences) {
+    if (typeof preferences === 'string') {
       try {
-        existingPreferences = JSON.parse(currentData.industry_code_preferences);
+        existingPreferences = JSON.parse(preferences);
       } catch (e) {
-        console.error('Failed to parse industry_code_preferences string:', e);
+        console.error('Failed to parse preferences string:', e);
         existingPreferences = {};
       }
-    } else if (typeof currentData.industry_code_preferences === 'object' && currentData.industry_code_preferences !== null) {
-      existingPreferences = currentData.industry_code_preferences;
+    } else if (typeof preferences === 'object' && preferences !== null) {
+      existingPreferences = preferences;
     }
   }
   
@@ -113,15 +119,31 @@ export const updateTenantSettings = async (tenantId: string, settings: Partial<T
     settings
   };
   
-  // Update the tenant record
-  const { error } = await supabase
-    .from('tenants')
-    .update({ 
-      industry_code_preferences: newPreferences
-    })
-    .eq('id', tenantId);
+  // Try to update using industry_code_preferences first, falling back to csi_code_preferences if needed
+  try {
+    // Update the tenant record using industry_code_preferences
+    const { error } = await supabase
+      .from('tenants')
+      .update({ 
+        industry_code_preferences: newPreferences
+      })
+      .eq('id', tenantId);
+      
+    if (error) throw error;
+  } catch (error) {
+    console.error('Failed to update industry_code_preferences, trying csi_code_preferences:', error);
     
-  if (error) throw error;
+    // Fallback to using csi_code_preferences
+    const { error: fallbackError } = await supabase
+      .from('tenants')
+      .update({ 
+        csi_code_preferences: newPreferences
+      })
+      .eq('id', tenantId);
+      
+    if (fallbackError) throw fallbackError;
+  }
+  
   return settings;
 };
 
@@ -129,15 +151,18 @@ export const updateTenantSettings = async (tenantId: string, settings: Partial<T
 export const updateTenantCompanyType = async (tenantId: string, companyType: Tenant['company_type']) => {
   if (!tenantId) throw new Error('No tenant selected');
   
-  // Update the tenant record with the new company type
-  const { error } = await supabase
-    .from('tenants')
-    .update({ 
-      company_type: companyType 
-    })
-    .eq('id', tenantId);
-    
-  if (error) throw error;
+  try {
+    // Try to update using company_type column
+    const { error } = await supabase
+      .from('tenants')
+      .update({ company_type: companyType })
+      .eq('id', tenantId);
+      
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error updating company_type:', error);
+    throw error;
+  }
   
   // After updating the company type, also update industry code preferences
   // with defaults for the selected company type
