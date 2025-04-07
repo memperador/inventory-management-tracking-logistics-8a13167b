@@ -15,6 +15,9 @@ export { default as ActionsCard } from './detail/ActionsCard';
 export { default as DetailTabs } from './detail/DetailTabs';
 export { default as RFIAssistant } from './detail/RFIAssistant';
 
+// Form components
+export { default as RequestFormFields } from './form/RequestFormFields';
+
 // Hooks
 export { useRFIDetail } from './hooks/useRFIDetail';
 export { useRFIResponse } from './hooks/useRFIResponse';
@@ -22,7 +25,9 @@ export { useComments } from './hooks/useComments';
 export { type Comment } from './hooks/useComments';
 export { useFileUpload } from './hooks/useFileUpload';
 export { useRFIAssistant } from './hooks/useRFIAssistant';
+export { useRFIForm } from './hooks/useRFIForm';
 
 // Utils
 export { formatDate } from './utils/dateUtils';
 export { validateRFIDocument, formatFileSize } from './utils/fileUtils';
+export { rfiFormSchema, type RFIFormValues } from './utils/formSchemas';
