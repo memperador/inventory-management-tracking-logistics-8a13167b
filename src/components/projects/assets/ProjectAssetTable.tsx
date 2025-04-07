@@ -1,9 +1,9 @@
 
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ProjectAsset } from '../types/projectTypes';
+import AssetActions from './AssetActions';
 
 interface ProjectAssetTableProps {
   assets: ProjectAsset[];
@@ -61,15 +61,11 @@ export const ProjectAssetTable: React.FC<ProjectAssetTableProps> = ({
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {!asset.removed_date && (
-                    <Button
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => onRemoveAsset(asset.id)}
-                    >
-                      Remove
-                    </Button>
-                  )}
+                  <AssetActions 
+                    assetId={asset.id}
+                    isRemoved={!!asset.removed_date}
+                    onRemove={onRemoveAsset}
+                  />
                 </TableCell>
               </TableRow>
             ))

@@ -1,10 +1,9 @@
 
 import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { ProjectAssetTable } from './assets/ProjectAssetTable';
 import { AddAssetDialog } from './AddAssetDialog';
 import { useProjectAssets } from './hooks/useProjectAssets';
+import ProjectAssetsHeader from './assets/ProjectAssetsHeader';
 
 interface ProjectAssetsProps {
   projectId: string;
@@ -14,15 +13,13 @@ export const ProjectAssets: React.FC<ProjectAssetsProps> = ({ projectId }) => {
   const [showAddAssetDialog, setShowAddAssetDialog] = useState(false);
   const { assets, isLoading, fetchAssets, removeAsset } = useProjectAssets(projectId);
 
+  const handleAddAssetClick = () => {
+    setShowAddAssetDialog(true);
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Project Assets</h3>
-        <Button onClick={() => setShowAddAssetDialog(true)} size="sm">
-          <Plus className="h-4 w-4 mr-1" />
-          Add Asset
-        </Button>
-      </div>
+      <ProjectAssetsHeader onAddAsset={handleAddAssetClick} />
       
       <ProjectAssetTable 
         assets={assets}
