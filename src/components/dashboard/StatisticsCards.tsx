@@ -25,7 +25,11 @@ const StatCard = ({ title, value, description, icon }: StatCardProps) => (
   </Card>
 );
 
-const StatisticsCards = () => {
+interface StatisticsCardsProps {
+  dateRange?: string;
+}
+
+const StatisticsCards = ({ dateRange = '30days' }: StatisticsCardsProps) => {
   const { 
     maintenanceDue, 
     totalEquipment, 
@@ -35,6 +39,13 @@ const StatisticsCards = () => {
     totalDepreciatedValue,
     depreciationPercentage
   } = useEquipmentStats();
+  
+  const periodText = {
+    '7days': 'Last 7 days',
+    '30days': 'Last 30 days',
+    'quarter': 'Last quarter',
+    'year': 'Last year'
+  }[dateRange] || 'Last 30 days';
   
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
@@ -47,7 +58,7 @@ const StatisticsCards = () => {
       <StatCard 
         title="Utilization Rate" 
         value={`${utilizationRate}%`} 
-        description="Last 30 days" 
+        description={periodText}
         icon={<Calendar className="h-4 w-4" />} 
       />
       <StatCard 
