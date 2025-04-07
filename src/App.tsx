@@ -28,6 +28,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { StripeProvider } from "./components/payment/StripeProvider";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import UnderConstruction from "./components/common/UnderConstruction";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,6 +62,7 @@ const App = () => (
                         <Route index element={<Dashboard />} />
                         <Route path="equipment" element={<Equipment />} />
                         <Route path="projects" element={<Projects />} />
+                        <Route path="analytics" element={<Analytics />} />
                         <Route path="account" element={<AccountPage />} />
                         
                         {/* Admin-only routes */}
@@ -70,27 +72,26 @@ const App = () => (
                         
                         {/* Manager and above routes */}
                         <Route element={<ProtectedRoute requiredRoles={['manager', 'admin']} redirectTo="/unauthorized" />}>
-                          <Route path="analytics" element={<Analytics />} /> 
-                          <Route path="reports" element={<Dashboard />} />
-                          <Route path="billing" element={<Dashboard />} />
+                          <Route path="reports" element={<UnderConstruction pageName="Reports" />} />
+                          <Route path="billing" element={<UnderConstruction pageName="Billing" />} />
                         </Route>
 
                         {/* Operator and above routes */}
                         <Route element={<ProtectedRoute requiredRoles={['operator', 'manager', 'admin']} redirectTo="/unauthorized" />}>
                           <Route path="gps-integration" element={<GPSIntegration />} />
-                          <Route path="scheduling" element={<Dashboard />} />
-                          <Route path="maintenance" element={<Dashboard />} />
-                          <Route path="fleet" element={<Dashboard />} />
-                          <Route path="inventory" element={<Dashboard />} />
+                          <Route path="scheduling" element={<UnderConstruction pageName="Scheduling" />} />
+                          <Route path="maintenance" element={<UnderConstruction pageName="Maintenance" />} />
+                          <Route path="fleet" element={<UnderConstruction pageName="Fleet Management" />} />
+                          <Route path="inventory" element={<UnderConstruction pageName="Inventory" />} />
                           <Route path="workflow" element={<WorkflowPage />} />
                         </Route>
                         
                         {/* All authenticated users routes */}
                         <Route path="settings" element={<Settings />} />
-                        <Route path="notifications" element={<Dashboard />} />
-                        <Route path="documentation" element={<Dashboard />} />
-                        <Route path="support" element={<Dashboard />} />
-                        <Route path="chat" element={<Dashboard />} />
+                        <Route path="notifications" element={<UnderConstruction pageName="Notifications" />} />
+                        <Route path="documentation" element={<UnderConstruction pageName="Documentation" />} />
+                        <Route path="support" element={<UnderConstruction pageName="Support" />} />
+                        <Route path="chat" element={<UnderConstruction pageName="Chat" />} />
                         <Route path="payments" element={
                           <StripeProvider>
                             <PaymentPage />
