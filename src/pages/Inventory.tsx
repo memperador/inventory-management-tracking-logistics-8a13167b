@@ -14,7 +14,7 @@ type ViewMode = 'grid' | 'list';
 
 const Inventory = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<ViewMode>('list'); // Changed default to list view
+  const [viewMode, setViewMode] = useState<ViewMode>('list'); // List view as default
   const [activeCategory, setActiveCategory] = useState<InventoryCategory | 'All'>('All');
   const [activeStatus, setActiveStatus] = useState<string>('All');
   
@@ -42,7 +42,7 @@ const Inventory = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Inventory Management</h1>
-          <p className="text-gray-500 mt-1">Manage your complete inventory assets</p>
+          <p className="text-gray-500 mt-1">Manage your complete inventory assets across all equipment types</p>
         </div>
         <Button>
           <Plus className="mr-2 h-4 w-4" />

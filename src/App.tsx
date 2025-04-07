@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import AppLayout from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
-import Equipment from "./pages/Equipment";
 import Inventory from "./pages/Inventory";
 import Projects from "./pages/Projects";
 import Analytics from "./pages/Analytics";
@@ -63,7 +62,8 @@ const App = () => (
                         {/* Dashboard as the main page */}
                         <Route index element={<Dashboard />} />
                         <Route path="dashboard" element={<Dashboard />} />
-                        <Route path="equipment" element={<Equipment />} />
+                        {/* Redirect /equipment to /inventory */}
+                        <Route path="equipment" element={<Navigate to="/inventory" replace />} />
                         <Route path="inventory" element={<Inventory />} />
                         <Route path="projects" element={<Projects />} />
                         <Route path="analytics" element={<Analytics />} />
