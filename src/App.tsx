@@ -9,6 +9,7 @@ import AppLayout from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Equipment from "./pages/Equipment";
 import Projects from "./pages/Projects";
+import Analytics from "./pages/Analytics";
 import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
@@ -69,7 +70,7 @@ const App = () => (
                         
                         {/* Manager and above routes */}
                         <Route element={<ProtectedRoute requiredRoles={['manager', 'admin']} redirectTo="/unauthorized" />}>
-                          <Route path="analytics" element={<Dashboard />} /> 
+                          <Route path="analytics" element={<Analytics />} /> 
                           <Route path="reports" element={<Dashboard />} />
                           <Route path="billing" element={<Dashboard />} />
                         </Route>
