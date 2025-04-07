@@ -52,7 +52,7 @@ export const AppHeader = ({ toggleMenu, isMenuOpen }: AppHeaderProps) => {
   };
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+    <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
       <div className="px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button
@@ -60,15 +60,16 @@ export const AppHeader = ({ toggleMenu, isMenuOpen }: AppHeaderProps) => {
             size="icon"
             onClick={toggleMenu}
             className="md:hidden"
+            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
           >
             {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </Button>
           <div className="flex flex-col">
-            <span className="font-bold text-lg text-gray-900 dark:text-white">
+            <span className="font-bold text-lg text-gray-900 dark:text-white truncate max-w-[150px] sm:max-w-full">
               {currentTenant?.name || 'FleetTrack'}
             </span>
             {currentTenant && (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-gray-500 hidden xs:block">
                 {userRole} Access
               </span>
             )}
@@ -99,10 +100,10 @@ export const AppHeader = ({ toggleMenu, isMenuOpen }: AppHeaderProps) => {
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-56 z-50">
               <DropdownMenuLabel>
                 <div className="flex flex-col">
-                  <span>{user?.email}</span>
+                  <span className="truncate">{user?.email}</span>
                   <span className="text-xs text-gray-500">{userRole}</span>
                 </div>
               </DropdownMenuLabel>

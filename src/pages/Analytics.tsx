@@ -24,7 +24,7 @@ const Analytics = () => {
   };
 
   return (
-    <div className="container mx-auto p-2 md:p-4 space-y-4 md:space-y-6">
+    <div className="container mx-auto p-2 md:p-4 space-y-4 md:space-y-6 mobile-pb">
       <PageHeader 
         title="Analytics" 
         description="View comprehensive data analytics for your equipment and projects"
@@ -35,13 +35,15 @@ const Analytics = () => {
               size="sm"
               onClick={handleRefresh}
               disabled={isRefreshing}
+              className="h-9 px-2 md:h-10 md:px-4"
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 md:mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
               <span className="hidden md:inline">Refresh</span>
             </Button>
             <Button 
               variant="outline" 
               size="sm"
+              className="h-9 px-2 md:h-10 md:px-4"
             >
               <CalendarDays className="h-4 w-4 md:mr-2" />
               <span className="hidden md:inline">Date Range</span>
@@ -49,6 +51,7 @@ const Analytics = () => {
             <Button 
               variant="outline" 
               size="sm"
+              className="h-9 px-2 md:h-10 md:px-4"
             >
               <Download className="h-4 w-4 md:mr-2" />
               <span className="hidden md:inline">Export</span>
@@ -73,9 +76,9 @@ const Analytics = () => {
         <CardHeader>
           <CardTitle className="text-xl md:text-2xl">Analytics Overview</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2 sm:p-6">
           <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="grid grid-cols-3">
+            <TabsList className="grid grid-cols-3 w-full">
               <TabsTrigger value="status">Status</TabsTrigger>
               <TabsTrigger value="utilization">Utilization</TabsTrigger>
               <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
@@ -98,7 +101,7 @@ const Analytics = () => {
           <CardHeader className="pb-2 md:pb-4">
             <CardTitle className="text-lg md:text-xl">Equipment Depreciation Overview</CardTitle>
           </CardHeader>
-          <CardContent className="text-xs md:text-sm text-muted-foreground">
+          <CardContent className="text-xs md:text-sm text-muted-foreground p-4">
             <p>The equipment depreciation is calculated using industry-specific rates:</p>
             <ul className="list-disc pl-4 md:pl-6 mt-2 space-y-0.5 md:space-y-1">
               <li>Construction equipment: 12-20% per year</li>
@@ -114,7 +117,7 @@ const Analytics = () => {
           <CardHeader className="pb-2 md:pb-4">
             <CardTitle className="text-lg md:text-xl">Depreciation by Equipment Type</CardTitle>
           </CardHeader>
-          <CardContent className="h-[200px] md:h-[250px]">
+          <CardContent className="h-[200px] md:h-[250px] p-2 sm:p-4">
             <DepreciationChart />
           </CardContent>
         </Card>
@@ -125,7 +128,7 @@ const Analytics = () => {
           <CardTitle className="text-lg md:text-xl">Recent Activity</CardTitle>
           <Button variant="ghost" size="sm">View all</Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6">
           <div className="space-y-3 md:space-y-4">
             {/* Sample activity items */}
             <div className="flex items-start gap-3 md:gap-4 border-b pb-3 md:pb-4">
