@@ -16,7 +16,13 @@ export const equipmentData: Equipment[] = [
     tenant_id: '550e8400-e29b-41d4-a716-446655440000',
     cost: 150000,
     purchaseDate: '2022-06-15',
-    lifespan: 10
+    lifespan: 10,
+    certificationRequired: true,
+    certificationExpiry: '2024-06-30',
+    certificationStatus: 'Valid',
+    lastInspection: '2024-02-15',
+    nextInspection: '2024-05-15',
+    complianceStatus: 'Compliant'
   },
   {
     id: 'EQ-5678',
@@ -25,13 +31,19 @@ export const equipmentData: Equipment[] = [
     status: 'Maintenance',
     location: 'Highway Extension',
     lastMaintenance: '2024-02-20',
-    nextMaintenance: '2024-04-20',
+    nextMaintenance: '2024-04-01', // Past due
     gpsTag: 'GT-9245',
     nec_code: 'NFPA 70 110.26',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000',
     cost: 85000,
     purchaseDate: '2021-08-10',
-    lifespan: 8
+    lifespan: 8,
+    certificationRequired: true,
+    certificationExpiry: '2024-03-15', // Expired
+    certificationStatus: 'Expired',
+    lastInspection: '2023-09-10',
+    nextInspection: '2024-03-10', // Past due
+    complianceStatus: 'Non-Compliant'
   },
   {
     id: 'EQ-9012',
@@ -46,7 +58,13 @@ export const equipmentData: Equipment[] = [
     tenant_id: '550e8400-e29b-41d4-a716-446655440000',
     cost: 450000,
     purchaseDate: '2023-01-05',
-    lifespan: 12
+    lifespan: 12,
+    certificationRequired: true,
+    certificationExpiry: '2024-05-10', // Soon
+    certificationStatus: 'Valid',
+    lastInspection: '2024-02-01',
+    nextInspection: '2024-05-01',
+    complianceStatus: 'Compliant'
   },
   {
     id: 'EQ-3456',
@@ -61,7 +79,9 @@ export const equipmentData: Equipment[] = [
     tenant_id: '550e8400-e29b-41d4-a716-446655440000',
     cost: 45000,
     purchaseDate: '2020-03-22',
-    lifespan: 7
+    lifespan: 7,
+    certificationRequired: false,
+    complianceStatus: 'Review Required'
   },
   {
     id: 'EQ-7890',
@@ -76,7 +96,13 @@ export const equipmentData: Equipment[] = [
     tenant_id: '550e8400-e29b-41d4-a716-446655440000',
     cost: 35000,
     purchaseDate: '2021-11-30',
-    lifespan: 6
+    lifespan: 6,
+    certificationRequired: true,
+    certificationExpiry: '2024-09-15',
+    certificationStatus: 'Valid',
+    lastInspection: '2024-02-25',
+    nextInspection: '2024-05-25',
+    complianceStatus: 'Compliant'
   },
   {
     id: 'EQ-1122',
@@ -85,12 +111,18 @@ export const equipmentData: Equipment[] = [
     status: 'Maintenance',
     location: 'Highway Extension',
     lastMaintenance: '2024-01-05',
-    nextMaintenance: '2024-04-05',
+    nextMaintenance: '2024-04-05', // Almost due
     gpsTag: 'GT-5390',
     nec_code: 'NFPA 70 440.12',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000',
     cost: 195000,
     purchaseDate: '2022-10-18',
-    lifespan: 10
+    lifespan: 10,
+    certificationRequired: true,
+    certificationExpiry: '2024-07-22',
+    certificationStatus: 'Valid',
+    lastInspection: '2024-01-05',
+    nextInspection: '2024-04-05', // Almost due
+    complianceStatus: 'Compliant'
   }
 ];

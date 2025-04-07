@@ -1,4 +1,3 @@
-
 export interface Equipment {
   id: string;
   name: string;
@@ -26,6 +25,13 @@ export interface Equipment {
   serialNumber?: string;
   warrantyExpiration?: string;
   condition?: string;
+  certificationRequired?: boolean;
+  certificationExpiry?: string;
+  certificationStatus?: 'Valid' | 'Expired' | 'Expiring Soon' | 'Not Required';
+  complianceNotes?: string;
+  lastInspection?: string;
+  nextInspection?: string;
+  complianceStatus?: 'Compliant' | 'Non-Compliant' | 'Review Required';
 }
 
 export interface Document {
@@ -56,7 +62,6 @@ export interface ProjectType {
   permit_number?: string;
 }
 
-// New enum for inventory categories
 export type InventoryCategory = 
   | 'Heavy Equipment' 
   | 'Power Tools' 
@@ -87,4 +92,23 @@ export interface InventoryFilters {
   category?: InventoryCategory | 'All';
   status?: Equipment['status'] | 'All';
   location?: string | 'All';
+}
+
+export interface ComplianceAlert {
+  id: string;
+  equipmentId: string;
+  equipmentName: string;
+  alertType: 'Maintenance' | 'Certification' | 'Inspection';
+  dueDate: string;
+  priority: 'Low' | 'Medium' | 'High' | 'Critical';
+  status: 'Open' | 'Acknowledged' | 'Resolved';
+  description?: string;
+}
+
+export interface ComplianceReport {
+  id: string;
+  title: string;
+  generatedDate: string;
+  reportType: 'Maintenance' | 'Certification' | 'Inspection' | 'Compliance Summary';
+  items: Equipment[];
 }
