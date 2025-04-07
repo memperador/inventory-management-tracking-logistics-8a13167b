@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Truck, Wrench, Calendar, AlertTriangle } from "lucide-react";
+import { useEquipmentStats } from '@/hooks/useEquipmentStats';
 
 interface StatCardProps {
   title: string;
@@ -24,29 +25,31 @@ const StatCard = ({ title, value, description, icon }: StatCardProps) => (
 );
 
 const StatisticsCards = () => {
+  const { maintenanceDue, totalEquipment, utilizationRate, criticalAlerts } = useEquipmentStats();
+  
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <StatCard 
         title="Total Equipment" 
-        value="184" 
+        value={totalEquipment.toString()} 
         description="Active in your fleet" 
         icon={<Truck className="h-4 w-4" />} 
       />
       <StatCard 
         title="Utilization Rate" 
-        value="76%" 
+        value={`${utilizationRate}%`} 
         description="Last 30 days" 
         icon={<Calendar className="h-4 w-4" />} 
       />
       <StatCard 
         title="Maintenance Due" 
-        value="43" 
+        value={maintenanceDue.toString()} 
         description="Next 30 days" 
         icon={<Wrench className="h-4 w-4" />} 
       />
       <StatCard 
         title="Critical Alerts" 
-        value="7" 
+        value={criticalAlerts.toString()} 
         description="Require attention" 
         icon={<AlertTriangle className="h-4 w-4" />} 
       />

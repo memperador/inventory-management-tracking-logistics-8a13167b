@@ -17,6 +17,7 @@ export interface Equipment {
   csi_code?: string;
   nec_code?: string;
   tenant_id: string;
+  cost?: number;
 }
 
 export interface Document {
@@ -36,6 +37,7 @@ export interface ProjectType {
   end_date: string | null;
   status: 'active' | 'completed' | 'planned' | string;
   equipment_count?: number;
+  equipment_cost?: number;
   team_size?: number;
   created_at?: string;
   updated_at?: string;

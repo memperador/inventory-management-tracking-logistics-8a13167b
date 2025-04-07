@@ -3,6 +3,7 @@ import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { equipmentData } from '@/components/equipment/EquipmentData';
 
 const projectData = [
   {
@@ -10,28 +11,28 @@ const projectData = [
     name: 'Highway Expansion',
     progress: 72,
     status: 'active',
-    equipment: 18
+    equipment: ['EQ-1234', 'EQ-5678', 'EQ-1122']
   },
   {
     id: '2',
     name: 'Commercial Complex',
     progress: 45,
     status: 'active',
-    equipment: 12
+    equipment: ['EQ-9012', 'EQ-3456']
   },
   {
     id: '3',
     name: 'Bridge Maintenance',
     progress: 90,
     status: 'completing',
-    equipment: 7
+    equipment: ['EQ-7890']
   },
   {
     id: '4',
     name: 'Residential Towers',
     progress: 30,
     status: 'active',
-    equipment: 14
+    equipment: ['EQ-3456', 'EQ-1122']
   }
 ];
 
@@ -42,7 +43,32 @@ const statusColors = {
   delayed: "bg-red-100 text-red-800"
 };
 
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
 const ProjectProgressTable = () => {
+  // Calculate equipment count and cost for each project
+  const projectsWithEquipmentData = projectData.map(project => {
+    const projectEquipment = equipmentData.filter(eq => 
+      project.equipment.includes(eq.id)
+    );
+    
+    const equipmentCount = projectEquipment.length;
+    const totalCost = projectEquipment.reduce((sum, eq) => sum + (eq.cost || 0), 0);
+    
+    return {
+      ...project,
+      equipmentCount,
+      equipmentCost: totalCost
+    };
+  });
+
   return (
     <Card>
       <CardHeader>
@@ -55,11 +81,12 @@ const ProjectProgressTable = () => {
               <TableHead>Project</TableHead>
               <TableHead>Progress</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Equipment Count</TableHead>
+              <TableHead>Equipment</TableHead>
+              <TableHead className="text-right">Equipment Value</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {projectData.map((project) => (
+            {projectsWithEquipmentData.map((project) => (
               <TableRow key={project.id}>
                 <TableCell className="font-medium">{project.name}</TableCell>
                 <TableCell>
@@ -76,7 +103,10 @@ const ProjectProgressTable = () => {
                     {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right">{project.equipment}</TableCell>
+                <TableCell>{project.equipmentCount} units</TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(project.equipmentCost)}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
