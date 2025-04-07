@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +22,7 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Unauthorized from "./pages/Unauthorized";
 import ApplicationDocumentation from "./docs/ApplicationDocumentation";
+import AIAssistant from "./pages/AIAssistant";
 import { TenantProvider } from "./contexts/TenantContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { RoleProvider } from "./contexts/RoleContext";
@@ -66,6 +68,7 @@ const App = () => (
                         <Route path="analytics" element={<Analytics />} />
                         <Route path="account" element={<AccountPage />} />
                         <Route path="documentation" element={<ApplicationDocumentation />} />
+                        <Route path="ai-assistant" element={<AIAssistant />} />
                         
                         <Route element={<ProtectedRoute requiredRoles={['admin']} redirectTo="/unauthorized" />}>
                           <Route path="users" element={<Users />} />

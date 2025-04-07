@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Link } from 'react-router-dom';
+import AIAssistantDocumentation from '@/components/docs/AIAssistantDocumentation';
 
 const ApplicationDocumentation = () => {
   return (
@@ -16,11 +17,12 @@ const ApplicationDocumentation = () => {
       </div>
 
       <Tabs defaultValue="inventory">
-        <TabsList className="grid grid-cols-5 w-full mb-4">
+        <TabsList className="grid grid-cols-6 w-full mb-4">
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
           <TabsTrigger value="compliance">Compliance</TabsTrigger>
           <TabsTrigger value="gps-integration">GPS Integration</TabsTrigger>
           <TabsTrigger value="asset-tracking">Asset Tracking</TabsTrigger>
+          <TabsTrigger value="ai-assistant">AI Assistant</TabsTrigger>
           <TabsTrigger value="general">General</TabsTrigger>
         </TabsList>
 
@@ -452,6 +454,12 @@ const ApplicationDocumentation = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="ai-assistant" className="space-y-4">
+          <ScrollArea className="h-[750px] pr-4">
+            <AIAssistantDocumentation />
+          </ScrollArea>
         </TabsContent>
 
         <TabsContent value="general" className="space-y-4">
