@@ -40,14 +40,18 @@ export const useEquipmentSelection = (projectId: string, tenantId: string | unde
         
         // Transform the data to match the Equipment type
         const transformedData: Equipment[] = data?.map(item => ({
-          ...item,
-          // Set default values for required Equipment properties
+          id: item.id,
+          name: item.name,
+          type: item.type || '',
           status: item.status as Equipment['status'] || 'Operational',
           category: item.category as Equipment['category'] || undefined,
-          type: item.type || '',
-          name: item.name,
-          id: item.id,
-          tenant_id: item.tenant_id
+          location: item.location || '',
+          tenant_id: item.tenant_id,
+          gpsTag: item.gps_tag || '',
+          lastMaintenance: item.last_maintenance || new Date().toISOString(),
+          nextMaintenance: item.next_maintenance || new Date().toISOString(),
+          csi_code: item.csi_code || null,
+          nec_code: item.nec_code || null
         })) || [];
         
         setEquipment(transformedData);
@@ -64,7 +68,7 @@ export const useEquipmentSelection = (projectId: string, tenantId: string | unde
     };
     
     fetchEquipment();
-  }, [projectId, tenantId]);
+  }, [projectId, tenantId, toast]);
 
   const filteredEquipment = equipment.filter(item => {
     const matchesSearch = searchQuery ? 

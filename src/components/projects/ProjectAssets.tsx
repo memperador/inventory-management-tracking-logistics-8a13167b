@@ -47,10 +47,22 @@ export const ProjectAssets: React.FC<ProjectAssetsProps> = ({ projectId }) => {
       
       if (error) throw error;
       
-      // Transform the data to ensure is_temporary is a boolean value
-      const transformedData = data?.map(item => ({
-        ...item,
-        is_temporary: item.is_temporary === null ? false : !!item.is_temporary
+      // Transform the data to match the ProjectAsset type
+      const transformedData: ProjectAsset[] = data?.map(item => ({
+        id: item.id,
+        assigned_date: item.assigned_date,
+        removed_date: item.removed_date,
+        is_temporary: item.is_temporary === null ? false : !!item.is_temporary,
+        equipment: {
+          ...item.equipment,
+          // Ensure equipment properties match Equipment type
+          status: item.equipment.status as Equipment['status'] || 'Operational',
+          category: item.equipment.category as Equipment['category'] || undefined,
+          type: item.equipment.type || '',
+          name: item.equipment.name,
+          id: item.equipment.id,
+          tenant_id: item.equipment.tenant_id
+        }
       })) || [];
       
       setAssets(transformedData);
