@@ -1,17 +1,16 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { MoveVertical } from 'lucide-react';
-import { DEFAULT_CODES_BY_TYPE } from '@/types/tenant';
+import { IndustryCodeList } from './IndustryCodeList';
+import { DEFAULT_CODES_BY_TYPE, IndustryCode } from '@/types/tenant';
+import { parseIndustryCodeSettings } from '@/utils/industryCodeUtils';
 
 // Zod schema for CSI code customization
 const csiCodeSchema = z.object({
@@ -36,7 +35,8 @@ interface CSICodeCustomizationProps {
 }
 
 export function CSICodeCustomization({ tenantId, onNextStep }: CSICodeCustomizationProps) {
-  const [codes, setCodes] = React.useState(defaultCSICodes);
+  const [codes, setCodes] = useState(defaultCSICodes);
+  const [selectedCodeType] = useState<string>('CSI');
   
   const form = useForm<CSICodeFormData>({
     resolver: zodResolver(csiCodeSchema),
@@ -45,6 +45,47 @@ export function CSICodeCustomization({ tenantId, onNextStep }: CSICodeCustomizat
       customCodes: defaultCSICodes
     }
   });
+
+  React.useEffect(() => {
+    const fetchTenantSettings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('tenants')
+          .select('industry_code_preferences')
+          .eq('id', tenantId)
+          .single();
+          
+        if (error) throw error;
+        
+        if (data) {
+          // Parse preferences from industry_code_preferences
+          const settings = parseIndustryCodeSettings(data.industry_code_preferences);
+          
+          if (settings) {
+            // Set company prefix
+            if (settings.companyPrefix) {
+              form.setValue('companyPrefix', settings.companyPrefix);
+            }
+            
+            // Set custom codes
+            if (settings.customCodes && Array.isArray(settings.customCodes)) {
+              setCodes(settings.customCodes);
+              form.setValue('customCodes', settings.customCodes);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching tenant settings:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load tenant settings.',
+          variant: 'destructive'
+        });
+      }
+    };
+    
+    fetchTenantSettings();
+  }, [tenantId, form]);
 
   const onDragEnd = (result: any) => {
     // Dropped outside the list
@@ -133,58 +174,13 @@ export function CSICodeCustomization({ tenantId, onNextStep }: CSICodeCustomizat
           )}
         />
 
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium">CSI Codes</h3>
-            <Button type="button" variant="outline" onClick={addNewCode}>Add Custom Code</Button>
-          </div>
-          
-          <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="csi-codes">
-              {(provided) => (
-                <div
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  className="space-y-2"
-                >
-                  {codes.map((code, index) => (
-                    <Draggable key={code.id} draggableId={code.id} index={index}>
-                      {(provided) => (
-                        <Card
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          className="mb-2"
-                        >
-                          <CardContent className="p-4 flex items-center">
-                            <div
-                              {...provided.dragHandleProps}
-                              className="mr-3 cursor-grab"
-                            >
-                              <MoveVertical size={18} className="text-gray-400" />
-                            </div>
-                            <div className="grid grid-cols-2 gap-3 flex-grow">
-                              <Input 
-                                placeholder="Code" 
-                                value={code.code}
-                                onChange={(e) => updateCode(index, 'code', e.target.value)}
-                              />
-                              <Input 
-                                placeholder="Description" 
-                                value={code.description}
-                                onChange={(e) => updateCode(index, 'description', e.target.value)}
-                              />
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
-        </div>
+        <IndustryCodeList
+          codes={codes}
+          selectedCodeType={selectedCodeType}
+          updateCode={updateCode}
+          onDragEnd={onDragEnd}
+          addNewCode={addNewCode}
+        />
 
         <Button type="submit" className="w-full">
           Save and Continue
