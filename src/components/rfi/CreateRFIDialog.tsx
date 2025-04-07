@@ -28,28 +28,41 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { RFI, RFI_CATEGORIES } from './types';
+import { 
+  RFI, 
+  RFI_CATEGORIES, 
+  RFQ_CATEGORIES, 
+  RFP_CATEGORIES,
+  RequestType
+} from './types';
 
-const formSchema = z.object({
-  title: z.string().min(5, 'Title must be at least 5 characters'),
-  description: z.string().min(10, 'Description must be at least 10 characters'),
-  category: z.string().min(1, 'Please select a category'),
-  dueDate: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+interface FormValues {
+  title: string;
+  description: string;
+  category: string;
+  dueDate: string;
+}
 
 interface CreateRFIDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateRFI: (rfi: RFI) => void;
+  onCreateRequest: (request: RFI) => void;
+  requestType: RequestType;
 }
 
 const CreateRFIDialog: React.FC<CreateRFIDialogProps> = ({
   open,
   onOpenChange,
-  onCreateRFI
+  onCreateRequest,
+  requestType
 }) => {
+  const formSchema = z.object({
+    title: z.string().min(5, 'Title must be at least 5 characters'),
+    description: z.string().min(10, 'Description must be at least 10 characters'),
+    category: z.string().min(1, 'Please select a category'),
+    dueDate: z.string().optional(),
+  });
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -59,26 +72,54 @@ const CreateRFIDialog: React.FC<CreateRFIDialogProps> = ({
       dueDate: '',
     }
   });
+  
+  const getDialogTitle = () => {
+    switch (requestType) {
+      case 'rfi': return 'Create New RFI';
+      case 'rfq': return 'Create New RFQ';
+      case 'rfp': return 'Create New RFP';
+      default: return 'Create New Request';
+    }
+  };
+
+  const getCategories = () => {
+    switch (requestType) {
+      case 'rfi': return RFI_CATEGORIES;
+      case 'rfq': return RFQ_CATEGORIES;
+      case 'rfp': return RFP_CATEGORIES;
+      default: return [];
+    }
+  };
+
+  const getDefaultStatus = () => {
+    switch (requestType) {
+      case 'rfi': return 'draft';
+      case 'rfq': return 'draft';
+      case 'rfp': return 'draft';
+      default: return 'draft';
+    }
+  };
 
   const onSubmit = (values: FormValues) => {
-    // In a real application, you would make an API call to create the RFI
-    const newRFI: RFI = {
+    // In a real application, you would make an API call to create the request
+    const newRequest: RFI = {
       id: Math.random().toString(36).substring(2, 11), // Generate a random ID for the mock data
       title: values.title,
       description: values.description,
-      projectId: '85e6bf2f-a7e0-4943-941a-07a254f1a4ed', // Using the project ID from the URL
+      projectId: '85e6bf2f-a7e0-4943-941a-07a254f1a4ed', // Using a mock project ID
       createdBy: 'Current User', // In a real app, this would come from auth context
       assignedTo: null,
-      status: 'draft',
+      status: getDefaultStatus() as any,
       dueDate: values.dueDate || null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       responseText: null,
       responseDate: null,
-      category: values.category
+      category: values.category,
+      type: requestType
     };
 
-    onCreateRFI(newRFI);
+    onCreateRequest(newRequest);
     form.reset();
   };
 
@@ -86,7 +127,7 @@ const CreateRFIDialog: React.FC<CreateRFIDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
-          <DialogTitle>Create New RFI</DialogTitle>
+          <DialogTitle>{getDialogTitle()}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -98,7 +139,7 @@ const CreateRFIDialog: React.FC<CreateRFIDialogProps> = ({
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter RFI title..." {...field} />
+                    <Input placeholder={`Enter ${requestType.toUpperCase()} title...`} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -140,7 +181,7 @@ const CreateRFIDialog: React.FC<CreateRFIDialogProps> = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {RFI_CATEGORIES.map(category => (
+                        {getCategories().map(category => (
                           <SelectItem key={category} value={category}>{category}</SelectItem>
                         ))}
                       </SelectContent>
@@ -173,7 +214,7 @@ const CreateRFIDialog: React.FC<CreateRFIDialogProps> = ({
               >
                 Cancel
               </Button>
-              <Button type="submit">Create RFI</Button>
+              <Button type="submit">Create {requestType.toUpperCase()}</Button>
             </DialogFooter>
           </form>
         </Form>

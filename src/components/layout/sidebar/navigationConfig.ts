@@ -20,7 +20,8 @@ import {
   GitBranch,
   FileCode2,
   Bot,
-  ClipboardCheck
+  ClipboardCheck,
+  ClipboardList
 } from 'lucide-react';
 
 export const dashboardNavigation = [
@@ -40,9 +41,9 @@ export const dashboardNavigation = [
     icon: FolderKanban
   },
   {
-    name: 'RFIs',
-    href: '/rfi',
-    icon: FileText
+    name: 'Requests',
+    href: '/requests',
+    icon: ClipboardList
   },
   {
     name: 'Analytics',
@@ -110,9 +111,9 @@ export const operationsNavigation = [
     requiredRoles: ['operator' as UserRole, 'manager' as UserRole, 'admin' as UserRole]
   },
   {
-    name: 'RFI Management',
-    href: '/rfi',
-    icon: ClipboardCheck,
+    name: 'Request Management',
+    href: '/requests',
+    icon: ClipboardList,
     requiredRoles: ['operator' as UserRole, 'manager' as UserRole, 'admin' as UserRole]
   }
 ];

@@ -4,23 +4,47 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Eye } from 'lucide-react';
-import { RFI } from './types';
+import { RFI, RequestType } from './types';
 
 interface RFITableProps {
   rfis: RFI[];
   onViewRFI: (id: string) => void;
+  requestType: RequestType;
 }
 
-const getRFIStatusColor = (status: string): string => {
-  switch (status) {
-    case 'draft':
-      return 'bg-slate-500';
-    case 'submitted':
-      return 'bg-blue-500';
-    case 'answered':
-      return 'bg-green-500';
-    case 'closed':
-      return 'bg-gray-500';
+const getStatusColor = (status: string, type: RequestType): string => {
+  const commonMap: Record<string, string> = {
+    'draft': 'bg-slate-500',
+    'closed': 'bg-gray-500',
+  };
+  
+  if (commonMap[status]) {
+    return commonMap[status];
+  }
+
+  switch (type) {
+    case 'rfi':
+      switch (status) {
+        case 'submitted': return 'bg-blue-500';
+        case 'answered': return 'bg-green-500';
+        default: return 'bg-slate-500';
+      }
+    case 'rfq':
+      switch (status) {
+        case 'sent': return 'bg-blue-500';
+        case 'received': return 'bg-purple-500';
+        case 'evaluated': return 'bg-orange-500';
+        case 'awarded': return 'bg-green-500';
+        default: return 'bg-slate-500';
+      }
+    case 'rfp':
+      switch (status) {
+        case 'published': return 'bg-blue-500';
+        case 'reviewing': return 'bg-purple-500';
+        case 'shortlisted': return 'bg-orange-500';
+        case 'awarded': return 'bg-green-500';
+        default: return 'bg-slate-500';
+      }
     default:
       return 'bg-slate-500';
   }
@@ -31,12 +55,12 @@ const formatDate = (dateString: string | null) => {
   return new Date(dateString).toLocaleDateString();
 };
 
-const RFITable: React.FC<RFITableProps> = ({ rfis, onViewRFI }) => {
+const RFITable: React.FC<RFITableProps> = ({ rfis, onViewRFI, requestType }) => {
   if (rfis.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-8 border rounded-lg">
-        <p className="text-muted-foreground mb-4">No RFIs found</p>
-        <p className="text-sm text-muted-foreground">Create a new RFI to get started</p>
+        <p className="text-muted-foreground mb-4">No {requestType.toUpperCase()}s found</p>
+        <p className="text-sm text-muted-foreground">Create a new {requestType.toUpperCase()} to get started</p>
       </div>
     );
   }
@@ -60,7 +84,7 @@ const RFITable: React.FC<RFITableProps> = ({ rfis, onViewRFI }) => {
               <TableCell className="font-medium">{rfi.title}</TableCell>
               <TableCell>{rfi.category}</TableCell>
               <TableCell>
-                <Badge className={getRFIStatusColor(rfi.status)}>
+                <Badge className={getStatusColor(rfi.status, requestType)}>
                   {rfi.status.charAt(0).toUpperCase() + rfi.status.slice(1)}
                 </Badge>
               </TableCell>
