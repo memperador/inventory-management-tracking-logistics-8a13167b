@@ -192,10 +192,11 @@ export type Database = {
         Row: {
           address: string | null
           city: string | null
+          company_type: string | null
           country: string | null
           created_at: string
-          csi_code_preferences: Json | null
           id: string
+          industry_code_preferences: Json | null
           name: string
           onboarding_completed: boolean | null
           state: string | null
@@ -208,10 +209,11 @@ export type Database = {
         Insert: {
           address?: string | null
           city?: string | null
+          company_type?: string | null
           country?: string | null
           created_at?: string
-          csi_code_preferences?: Json | null
           id?: string
+          industry_code_preferences?: Json | null
           name: string
           onboarding_completed?: boolean | null
           state?: string | null
@@ -224,10 +226,11 @@ export type Database = {
         Update: {
           address?: string | null
           city?: string | null
+          company_type?: string | null
           country?: string | null
           created_at?: string
-          csi_code_preferences?: Json | null
           id?: string
+          industry_code_preferences?: Json | null
           name?: string
           onboarding_completed?: boolean | null
           state?: string | null

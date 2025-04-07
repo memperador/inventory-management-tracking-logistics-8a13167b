@@ -31,7 +31,7 @@ export const fetchTenant = async (id: string): Promise<Tenant> => {
     features: ['equipment', 'projects', 'gps'],
   };
   
-  // Safely extract settings from csi_code_preferences
+  // Safely extract settings from industry_code_preferences
   let tenantSettings = defaultSettings;
   let industryCodeSettings = undefined;
   
