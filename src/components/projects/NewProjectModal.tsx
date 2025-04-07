@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Calendar } from 'lucide-react';
@@ -10,7 +11,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { 
   Form,
   FormControl,
@@ -42,7 +42,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   onSuccess
 }) => {
   const { toast } = useToast();
-  const { tenant } = useTenantContext();
+  const { currentTenant } = useTenantContext();
   
   const form = useForm<ProjectFormData>({
     defaultValues: {
@@ -63,7 +63,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           start_date: new Date(data.startDate).toISOString(),
           end_date: new Date(data.endDate).toISOString(),
           status: 'planned',
-          tenant_id: tenant?.id || ''
+          tenant_id: currentTenant?.id || ''
         });
       
       if (error) throw error;
