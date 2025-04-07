@@ -21,6 +21,7 @@ import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Unauthorized from "./pages/Unauthorized";
+import ApplicationDocumentation from "./docs/ApplicationDocumentation";
 import { TenantProvider } from "./contexts/TenantContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { RoleProvider } from "./contexts/RoleContext";
@@ -68,6 +69,7 @@ const App = () => (
                         <Route path="projects" element={<Projects />} />
                         <Route path="analytics" element={<Analytics />} />
                         <Route path="account" element={<AccountPage />} />
+                        <Route path="documentation" element={<ApplicationDocumentation />} />
                         
                         {/* Admin-only routes */}
                         <Route element={<ProtectedRoute requiredRoles={['admin']} redirectTo="/unauthorized" />}>
@@ -93,7 +95,6 @@ const App = () => (
                         {/* All authenticated users routes */}
                         <Route path="settings" element={<Settings />} />
                         <Route path="notifications" element={<UnderConstruction pageName="Notifications" />} />
-                        <Route path="documentation" element={<UnderConstruction pageName="Documentation" />} />
                         <Route path="support" element={<UnderConstruction pageName="Support" />} />
                         <Route path="chat" element={<UnderConstruction pageName="Chat" />} />
                         <Route path="payments" element={

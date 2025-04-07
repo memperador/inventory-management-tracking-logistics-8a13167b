@@ -1,51 +1,100 @@
-import { 
-  Layers, 
-  Package, 
-  Users, 
-  Map, 
-  BarChart2, 
-  Settings, 
-  Bell,
-  Calendar,
-  HardDrive,
-  Truck,
-  LifeBuoy,
+import {
+  BarChart,
+  Package,
+  FolderClosed,
+  LineChart,
+  MapPin,
   Wrench,
-  FileText,
-  DollarSign,
-  ShoppingCart,
-  Book,
-  MessageSquare,
-  CreditCard,
+  Truck,
+  Boxes,
   GitBranch,
-  Boxes
+  Users,
+  FileText,
+  CreditCard,
+  DollarSign,
+  LifeBuoy,
+  MessageSquare,
+  Bell,
+  Settings,
+  User,
 } from 'lucide-react';
-import { NavItem } from './SidebarNavGroup';
 
-export const mainNavigation: NavItem[] = [
-  { name: 'Dashboard', href: '/', icon: Layers, roles: ['viewer', 'operator', 'manager', 'admin'] },
-  { name: 'Inventory', href: '/inventory', icon: Boxes, roles: ['viewer', 'operator', 'manager', 'admin'] },
-  { name: 'Projects', href: '/projects', icon: Map, roles: ['viewer', 'operator', 'manager', 'admin'] },
-  { name: 'Users', href: '/users', icon: Users, roles: ['admin'] },
-  { name: 'Analytics', href: '/analytics', icon: BarChart2, roles: ['manager', 'admin'] },
-  { name: 'Reports', href: '/reports', icon: FileText, roles: ['manager', 'admin'] },
-];
+interface NavItem {
+  title: string;
+  icon: keyof typeof icons;
+  href: string;
+  requiredRoles: string[];
+}
 
-export const integrationNavigation: NavItem[] = [
-  { name: 'GPS Integration', href: '/gps-integration', icon: HardDrive, roles: ['operator', 'manager', 'admin'] },
-  { name: 'Scheduling', href: '/scheduling', icon: Calendar, roles: ['operator', 'manager', 'admin'] },
-  { name: 'Maintenance', href: '/maintenance', icon: Wrench, roles: ['operator', 'manager', 'admin'] },
-  { name: 'Fleet', href: '/fleet', icon: Truck, roles: ['operator', 'manager', 'admin'] },
-  { name: 'Materials', href: '/materials', icon: ShoppingCart, roles: ['operator', 'manager', 'admin'] },
-  { name: 'Payment', href: '/payments', icon: CreditCard, roles: ['viewer', 'operator', 'manager', 'admin'] },
-  { name: 'Workflow', href: '/workflow', icon: GitBranch, roles: ['operator', 'manager', 'admin'] },
-];
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
 
-export const settingsNavigation: NavItem[] = [
-  { name: 'Settings', href: '/settings', icon: Settings, roles: ['viewer', 'operator', 'manager', 'admin'] },
-  { name: 'Notifications', href: '/notifications', icon: Bell, roles: ['viewer', 'operator', 'manager', 'admin'] },
-  { name: 'Documentation', href: '/documentation', icon: Book, roles: ['viewer', 'operator', 'manager', 'admin'] },
-  { name: 'Support', href: '/support', icon: LifeBuoy, roles: ['viewer', 'operator', 'manager', 'admin'] },
-  { name: 'Billing', href: '/billing', icon: DollarSign, roles: ['manager', 'admin'] },
-  { name: 'Chat', href: '/chat', icon: MessageSquare, roles: ['viewer', 'operator', 'manager', 'admin'] },
+const icons = {
+  BarChart,
+  Package,
+  FolderClosed,
+  LineChart,
+  MapPin,
+  Wrench,
+  Truck,
+  Boxes,
+  GitBranch,
+  Users,
+  FileText,
+  CreditCard,
+  DollarSign,
+  LifeBuoy,
+  MessageSquare,
+  Bell,
+  Settings,
+  User,
+};
+
+export const navigationConfig: NavSection[] = [
+  {
+    title: 'Main',
+    items: [
+      { title: 'Dashboard', icon: 'BarChart', href: '/dashboard', requiredRoles: ['viewer', 'operator', 'manager', 'admin'] },
+      { title: 'Inventory', icon: 'Package', href: '/inventory', requiredRoles: ['viewer', 'operator', 'manager', 'admin'] },
+      { title: 'Projects', icon: 'FolderClosed', href: '/projects', requiredRoles: ['viewer', 'operator', 'manager', 'admin'] },
+      { title: 'Analytics', icon: 'LineChart', href: '/analytics', requiredRoles: ['viewer', 'operator', 'manager', 'admin'] }
+    ],
+  },
+  {
+    title: 'Equipment Management',
+    items: [
+      { title: 'GPS Integration', icon: 'MapPin', href: '/gps-integration', requiredRoles: ['operator', 'manager', 'admin'] },
+      { title: 'Maintenance', icon: 'Wrench', href: '/maintenance', requiredRoles: ['operator', 'manager', 'admin'] },
+      { title: 'Fleet', icon: 'Truck', href: '/fleet', requiredRoles: ['operator', 'manager', 'admin'] },
+      { title: 'Materials', icon: 'Boxes', href: '/materials', requiredRoles: ['operator', 'manager', 'admin'] },
+      { title: 'Workflow', icon: 'GitBranch', href: '/workflow', requiredRoles: ['operator', 'manager', 'admin'] }
+    ],
+  },
+  {
+    title: 'Administration',
+    items: [
+      { title: 'Users', icon: 'Users', href: '/users', requiredRoles: ['admin'] },
+      { title: 'Reports', icon: 'FileText', href: '/reports', requiredRoles: ['manager', 'admin'] },
+      { title: 'Billing', icon: 'CreditCard', href: '/billing', requiredRoles: ['manager', 'admin'] },
+      { title: 'Payments', icon: 'DollarSign', href: '/payments', requiredRoles: ['viewer', 'operator', 'manager', 'admin'] }
+    ],
+  },
+  {
+    title: 'Support',
+    items: [
+      { title: 'Documentation', icon: 'FileText', href: '/documentation', requiredRoles: ['viewer', 'operator', 'manager', 'admin'] },
+      { title: 'Support', icon: 'LifeBuoy', href: '/support', requiredRoles: ['viewer', 'operator', 'manager', 'admin'] },
+      { title: 'Chat', icon: 'MessageSquare', href: '/chat', requiredRoles: ['viewer', 'operator', 'manager', 'admin'] },
+      { title: 'Notifications', icon: 'Bell', href: '/notifications', requiredRoles: ['viewer', 'operator', 'manager', 'admin'] }
+    ],
+  },
+  {
+    title: 'Account',
+    items: [
+      { title: 'Settings', icon: 'Settings', href: '/settings', requiredRoles: ['viewer', 'operator', 'manager', 'admin'] },
+      { title: 'Account', icon: 'User', href: '/account', requiredRoles: ['viewer', 'operator', 'manager', 'admin'] }
+    ],
+  },
 ];
