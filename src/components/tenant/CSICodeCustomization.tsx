@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,7 +11,6 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { MoveVertical } from 'lucide-react';
-import { Database } from '@/integrations/supabase/types';
 
 // Zod schema for CSI code customization
 const csiCodeSchema = z.object({
@@ -65,12 +65,12 @@ export function CSICodeCustomization({ tenantId, onNextStep }: CSICodeCustomizat
 
   const onSubmit = async (data: CSICodeFormData) => {
     try {
-      // Save CSI code preferences to tenant using type-safe update
-      const updateData: Partial<Database['public']['Tables']['tenants']['Update']> = {
-        csi_code_preferences: {
+      // Save CSI code preferences to tenant using stringified JSON
+      const updateData = {
+        industry_code_preferences: JSON.stringify({
           companyPrefix: data.companyPrefix,
           customCodes: codes
-        }
+        })
       };
 
       const { error } = await supabase

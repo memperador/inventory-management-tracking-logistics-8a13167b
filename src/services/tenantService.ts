@@ -31,18 +31,16 @@ export const fetchTenant = async (id: string): Promise<Tenant> => {
     features: ['equipment', 'projects', 'gps'],
   };
   
-  // Safely extract settings from industry_code_preferences or csi_code_preferences
+  // Safely extract settings from industry_code_preferences
   let tenantSettings = defaultSettings;
   let industryCodeSettings = undefined;
   
-  // Check if industry_code_preferences exists, if not fallback to csi_code_preferences (for backward compatibility)
-  const preferences = 'industry_code_preferences' in data ? data.industry_code_preferences : data.csi_code_preferences;
-  
-  if (preferences) {
+  // Check if industry_code_preferences exists
+  if (data.industry_code_preferences) {
     // Parse if it's a string or use directly if it's already an object
-    const parsedPreferences = typeof preferences === 'string' 
-      ? JSON.parse(preferences) 
-      : preferences;
+    const parsedPreferences = typeof data.industry_code_preferences === 'string' 
+      ? JSON.parse(data.industry_code_preferences) 
+      : data.industry_code_preferences;
       
     // Check if settings property exists in the preferences object
     if (parsedPreferences && typeof parsedPreferences === 'object') {
@@ -56,7 +54,7 @@ export const fetchTenant = async (id: string): Promise<Tenant> => {
   }
   
   // If company type exists but no code type is selected, set default code type
-  const companyType = 'company_type' in data ? data.company_type : null;
+  const companyType = data.company_type || null;
   if (companyType && (!industryCodeSettings || !industryCodeSettings.selectedCodeType)) {
     const defaultCodeType = COMPANY_TYPE_TO_CODE_MAP[companyType as keyof typeof COMPANY_TYPE_TO_CODE_MAP];
     if (defaultCodeType) {
@@ -73,7 +71,7 @@ export const fetchTenant = async (id: string): Promise<Tenant> => {
     name: data.name,
     subscription_tier: data.subscription_tier,
     subscription_status: data.subscription_status,
-    company_type: companyType,
+    company_type: companyType as Tenant['company_type'],
     settings: {
       ...tenantSettings,
       industryCodeSettings
@@ -88,17 +86,17 @@ export const updateTenantSettings = async (tenantId: string, settings: Partial<T
   // Get current tenant data first to preserve any existing industry_code_preferences data
   const { data: currentData, error: fetchError } = await supabase
     .from('tenants')
-    .select('industry_code_preferences, csi_code_preferences')
+    .select('industry_code_preferences')
     .eq('id', tenantId)
     .single();
     
-  if (fetchError) throw fetchError;
+  if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
   
   // Create a new preferences object, ensuring existingPreferences is a valid object
   let existingPreferences = {};
   
-  // Safely handle the existing preferences, checking for both column names
-  const preferences = currentData?.industry_code_preferences || currentData?.csi_code_preferences;
+  // Safely handle the existing preferences
+  const preferences = currentData?.industry_code_preferences;
   
   if (preferences) {
     if (typeof preferences === 'string') {
@@ -119,9 +117,8 @@ export const updateTenantSettings = async (tenantId: string, settings: Partial<T
     settings
   };
   
-  // Try to update using industry_code_preferences first, falling back to csi_code_preferences if needed
+  // Update using industry_code_preferences 
   try {
-    // Update the tenant record using industry_code_preferences
     const { error } = await supabase
       .from('tenants')
       .update({ 
@@ -131,17 +128,8 @@ export const updateTenantSettings = async (tenantId: string, settings: Partial<T
       
     if (error) throw error;
   } catch (error) {
-    console.error('Failed to update industry_code_preferences, trying csi_code_preferences:', error);
-    
-    // Fallback to using csi_code_preferences
-    const { error: fallbackError } = await supabase
-      .from('tenants')
-      .update({ 
-        csi_code_preferences: newPreferences
-      })
-      .eq('id', tenantId);
-      
-    if (fallbackError) throw fallbackError;
+    console.error('Failed to update preferences:', error);
+    throw error;
   }
   
   return settings;

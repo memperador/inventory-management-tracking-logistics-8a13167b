@@ -83,8 +83,8 @@ export function IndustryCodeCustomization({ tenantId, onNextStep }: IndustryCode
           setSelectedCodeType(codeType);
           form.setValue('codeType', codeType);
           
-          // Parse preferences, checking which column exists
-          const preferences = data.industry_code_preferences || data.csi_code_preferences;
+          // Parse preferences from industry_code_preferences
+          const preferences = data.industry_code_preferences;
           let parsedPreferences = preferences;
           
           if (typeof preferences === 'string') {
@@ -147,24 +147,24 @@ export function IndustryCodeCustomization({ tenantId, onNextStep }: IndustryCode
             
           if (companyError) throw companyError;
         } catch (error) {
-          console.error('Failed to update company_type, this column might not exist yet:', error);
+          console.error('Failed to update company_type:', error);
           // Continue execution even if this fails
         }
       }
       
-      // Save industry code preferences
+      // Save industry code preferences as stringified JSON
       const updateData = {
-        industry_code_preferences: {
+        industry_code_preferences: JSON.stringify({
           industryCodeSettings: {
             selectedCodeType: data.codeType,
             companyPrefix: data.companyPrefix,
             customCodes: codes
           }
-        }
+        })
       };
 
       try {
-        // Try using industry_code_preferences first
+        // Update with industry_code_preferences
         const { error } = await supabase
           .from('tenants')
           .update(updateData)
@@ -172,25 +172,8 @@ export function IndustryCodeCustomization({ tenantId, onNextStep }: IndustryCode
 
         if (error) throw error;
       } catch (error) {
-        console.error('Failed to update industry_code_preferences, trying csi_code_preferences:', error);
-        
-        // Fallback to using csi_code_preferences
-        const fallbackData = {
-          csi_code_preferences: {
-            industryCodeSettings: {
-              selectedCodeType: data.codeType,
-              companyPrefix: data.companyPrefix,
-              customCodes: codes
-            }
-          }
-        };
-        
-        const { error: fallbackError } = await supabase
-          .from('tenants')
-          .update(fallbackData)
-          .eq('id', tenantId);
-          
-        if (fallbackError) throw fallbackError;
+        console.error('Failed to update preferences:', error);
+        throw error;
       }
 
       toast({
