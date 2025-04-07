@@ -1,15 +1,17 @@
 
 import { useState, useEffect } from 'react';
-import { Equipment } from '@/components/equipment/types';
+import { Equipment, ComplianceAlert } from '@/components/equipment/types';
+
+interface MaintenanceUpdate {
+  equipmentId: string;
+  equipmentName: string;
+  maintenanceType: 'scheduled' | 'completed';
+  date: string;
+  recordedAt: string;
+}
 
 export const useMaintenanceTracker = (equipmentData: Equipment[]) => {
-  const [maintenanceUpdates, setMaintenanceUpdates] = useState<Array<{
-    equipmentId: string;
-    equipmentName: string;
-    maintenanceType: 'scheduled' | 'completed';
-    date: string;
-    recordedAt: string;
-  }>>([]);
+  const [maintenanceUpdates, setMaintenanceUpdates] = useState<MaintenanceUpdate[]>([]);
 
   // Load maintenance updates from localStorage
   useEffect(() => {
@@ -29,7 +31,7 @@ export const useMaintenanceTracker = (equipmentData: Equipment[]) => {
       // Check for maintenance updates
       const newUpdates = equipmentData.flatMap(currentItem => {
         const previousItem = previousEquipment.find(item => item.id === currentItem.id);
-        const updates = [];
+        const updates: MaintenanceUpdate[] = [];
         
         if (previousItem) {
           // Check if last maintenance was updated
@@ -84,7 +86,7 @@ export const useMaintenanceTracker = (equipmentData: Equipment[]) => {
     
     if (!storedAlerts) return;
     
-    const alerts = JSON.parse(storedAlerts);
+    const alerts = JSON.parse(storedAlerts) as ComplianceAlert[];
     let alertsUpdated = false;
     
     const updatedAlerts = alerts.map(alert => {
@@ -96,7 +98,7 @@ export const useMaintenanceTracker = (equipmentData: Equipment[]) => {
         alertsUpdated = true;
         return {
           ...alert,
-          status: 'Resolved',
+          status: 'Resolved' as const,
           resolvedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           resolutionNote: 'Automatically resolved due to maintenance completion'

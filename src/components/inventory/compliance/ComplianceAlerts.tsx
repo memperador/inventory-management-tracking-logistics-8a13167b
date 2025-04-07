@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -171,9 +172,17 @@ export const ComplianceAlerts: React.FC<ComplianceAlertsProps> = ({ equipmentDat
   }, [equipmentData]);
   
   const acknowledgeAlert = (alertId: string) => {
-    const updatedAlerts = alerts.map(alert => 
-      alert.id === alertId ? {...alert, status: 'Acknowledged', updatedAt: new Date().toISOString()} : alert
-    );
+    const updatedAlerts = alerts.map(alert => {
+      if (alert.id === alertId) {
+        return {
+          ...alert,
+          status: 'Acknowledged' as const,
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return alert;
+    });
+    
     setAlerts(updatedAlerts);
     localStorage.setItem('complianceAlerts', JSON.stringify(updatedAlerts));
     
@@ -189,14 +198,18 @@ export const ComplianceAlerts: React.FC<ComplianceAlertsProps> = ({ equipmentDat
     
     if (!alertToResolve) return;
     
-    const updatedAlerts = alerts.map(alert => 
-      alert.id === alertId ? {
-        ...alert, 
-        status: 'Resolved', 
-        resolvedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      } : alert
-    );
+    const updatedAlerts = alerts.map(alert => {
+      if (alert.id === alertId) {
+        return {
+          ...alert,
+          status: 'Resolved' as const,
+          resolvedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return alert;
+    });
+    
     setAlerts(updatedAlerts);
     localStorage.setItem('complianceAlerts', JSON.stringify(updatedAlerts));
     
