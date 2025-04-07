@@ -60,8 +60,8 @@ const App = () => (
                     <Route element={<ProtectedRoute />}>
                       <Route element={<AppLayout />}>
                         {/* Dashboard as the main page */}
-                        <Route path="/" element={<Dashboard />} />
-                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route index element={<Dashboard />} />
+                        <Route path="dashboard" element={<Dashboard />} />
                         <Route path="equipment" element={<Equipment />} />
                         <Route path="projects" element={<Projects />} />
                         <Route path="analytics" element={<Analytics />} />

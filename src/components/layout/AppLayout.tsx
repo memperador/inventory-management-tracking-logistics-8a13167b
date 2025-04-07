@@ -3,8 +3,6 @@ import { useEffect, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRole } from '@/hooks/useRoleContext';
-import { useTenant } from '@/hooks/useTenantContext';
-import { useTheme } from '@/hooks/useThemeContext';
 import { AppSidebar } from './AppSidebar';
 import { AppHeader } from './AppHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -32,13 +30,6 @@ const AppLayout = () => {
       setIsMenuOpen(false);
     }
   }, [isMobile]);
-
-  useEffect(() => {
-    // Redirect from unauthorized page if user has sufficient permissions
-    if (user && userRole && ['admin', 'manager'].includes(userRole)) {
-      navigate('/');
-    }
-  }, [user, userRole, navigate]);
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">

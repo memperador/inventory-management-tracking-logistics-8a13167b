@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
@@ -11,7 +12,15 @@ interface SidebarNavItemProps {
 
 export const SidebarNavItem = ({ name, href, icon: Icon, closeSidebar }: SidebarNavItemProps) => {
   const location = useLocation();
-  const isActive = location.pathname === href || location.pathname.startsWith(`${href}/`);
+  const isActive = location.pathname === href || 
+                   (href === '/' && location.pathname === '/') || 
+                   (href !== '/' && location.pathname.startsWith(`${href}`));
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (closeSidebar) {
+      closeSidebar();
+    }
+  };
 
   return (
     <SidebarMenuItem>
@@ -22,7 +31,7 @@ export const SidebarNavItem = ({ name, href, icon: Icon, closeSidebar }: Sidebar
       >
         <Link
           to={href}
-          onClick={() => closeSidebar && closeSidebar()}
+          onClick={handleClick}
         >
           <Icon />
           <span>{name}</span>
