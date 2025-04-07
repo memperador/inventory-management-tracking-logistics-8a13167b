@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,6 +11,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { MoveVertical } from 'lucide-react';
+import { DEFAULT_CODES_BY_TYPE } from '@/types/tenant';
 
 // Zod schema for CSI code customization
 const csiCodeSchema = z.object({
@@ -26,14 +27,8 @@ const csiCodeSchema = z.object({
 
 type CSICodeFormData = z.infer<typeof csiCodeSchema>;
 
-// Sample CSI codes
-const defaultCSICodes = [
-  { id: '1', code: '01-10', description: 'Operation and Maintenance' },
-  { id: '2', code: '01-20', description: 'Allowances' },
-  { id: '3', code: '01-30', description: 'Administrative Requirements' },
-  { id: '4', code: '01-40', description: 'Quality Requirements' },
-  { id: '5', code: '01-50', description: 'Temporary Facilities and Controls' },
-];
+// Sample CSI codes from DEFAULT_CODES_BY_TYPE
+const defaultCSICodes = DEFAULT_CODES_BY_TYPE['CSI'];
 
 interface CSICodeCustomizationProps {
   tenantId: string;
@@ -41,7 +36,7 @@ interface CSICodeCustomizationProps {
 }
 
 export function CSICodeCustomization({ tenantId, onNextStep }: CSICodeCustomizationProps) {
-  const [codes, setCodes] = useState(defaultCSICodes);
+  const [codes, setCodes] = React.useState(defaultCSICodes);
   
   const form = useForm<CSICodeFormData>({
     resolver: zodResolver(csiCodeSchema),
