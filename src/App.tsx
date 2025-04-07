@@ -34,12 +34,12 @@ import { StripeProvider } from '@/components/payment/StripeProvider';
 function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <TenantProvider>
-          <ThemeProvider>
-            <RoleProvider>
-              <StripeProvider>
-                <Router>
+      <Router>
+        <AuthProvider>
+          <TenantProvider>
+            <ThemeProvider>
+              <RoleProvider>
+                <StripeProvider>
                   <Routes>
                     <Route path="/login" element={<Auth />} />
                     <Route path="/signup" element={<Auth />} />
@@ -71,13 +71,13 @@ function App() {
                       <Route path="*" element={<NotFound />} />
                     </Route>
                   </Routes>
-                </Router>
-                <Toaster position="top-right" />
-              </StripeProvider>
-            </RoleProvider>
-          </ThemeProvider>
-        </TenantProvider>
-      </AuthProvider>
+                  <Toaster position="top-right" />
+                </StripeProvider>
+              </RoleProvider>
+            </ThemeProvider>
+          </TenantProvider>
+        </AuthProvider>
+      </Router>
     </ErrorBoundary>
   );
 }

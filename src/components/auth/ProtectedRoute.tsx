@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/types/roles';
@@ -8,11 +8,13 @@ import { useRole } from '@/hooks/useRoleContext';
 interface ProtectedRouteProps {
   requiredRoles?: UserRole[];
   redirectTo?: string;
+  children?: ReactNode;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredRoles = [],
-  redirectTo = '/auth',
+  redirectTo = '/login',
+  children
 }) => {
   const { user, loading } = useAuth();
   const { hasPermission, isRoleLoading } = useRole();
@@ -35,7 +37,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   
   // If no specific roles are required, just being authenticated is enough
   if (requiredRoles.length === 0) {
-    return <Outlet />;
+    return children ? <>{children}</> : <Outlet />;
   }
   
   // If user doesn't have the required role, show unauthorized message or redirect
@@ -44,7 +46,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
   
   // User has the required role, render the child routes
-  return <Outlet />;
+  return children ? <>{children}</> : <Outlet />;
 };
 
 export default ProtectedRoute;
