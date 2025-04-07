@@ -146,10 +146,12 @@ export type Database = {
       projects: {
         Row: {
           created_at: string
+          electrical_category: string | null
           end_date: string | null
           geofence_coordinates: Json | null
           id: string
           name: string
+          permit_number: string | null
           site_address: string | null
           start_date: string | null
           status: string | null
@@ -158,10 +160,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          electrical_category?: string | null
           end_date?: string | null
           geofence_coordinates?: Json | null
           id?: string
           name: string
+          permit_number?: string | null
           site_address?: string | null
           start_date?: string | null
           status?: string | null
@@ -170,10 +174,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          electrical_category?: string | null
           end_date?: string | null
           geofence_coordinates?: Json | null
           id?: string
           name?: string
+          permit_number?: string | null
           site_address?: string | null
           start_date?: string | null
           status?: string | null
