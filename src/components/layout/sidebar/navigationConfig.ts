@@ -19,7 +19,8 @@ import {
   PackageOpen,
   GitBranch,
   FileCode2,
-  Bot
+  Bot,
+  ClipboardCheck
 } from 'lucide-react';
 
 export const dashboardNavigation = [
@@ -37,6 +38,11 @@ export const dashboardNavigation = [
     name: 'Projects',
     href: '/projects',
     icon: FolderKanban
+  },
+  {
+    name: 'RFIs',
+    href: '/rfi',
+    icon: FileText
   },
   {
     name: 'Analytics',
@@ -101,6 +107,12 @@ export const operationsNavigation = [
     name: 'Workflow',
     href: '/workflow',
     icon: GitBranch,
+    requiredRoles: ['operator' as UserRole, 'manager' as UserRole, 'admin' as UserRole]
+  },
+  {
+    name: 'RFI Management',
+    href: '/rfi',
+    icon: ClipboardCheck,
     requiredRoles: ['operator' as UserRole, 'manager' as UserRole, 'admin' as UserRole]
   }
 ];
