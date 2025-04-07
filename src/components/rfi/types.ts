@@ -1,5 +1,4 @@
-
-export type RFIStatus = 'draft' | 'submitted' | 'answered' | 'closed';
+export type RFIStatus = 'draft' | 'submitted' | 'answered' | 'closed' | 'sent' | 'received' | 'evaluated' | 'awarded' | 'published' | 'reviewing' | 'shortlisted';
 export type RequestType = 'rfi' | 'rfq' | 'rfp';
 
 export interface RFI {

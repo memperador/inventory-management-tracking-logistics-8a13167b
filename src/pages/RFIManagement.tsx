@@ -25,7 +25,8 @@ const MOCK_RFIS: RFI[] = [
     updatedAt: '2025-04-07T14:30:00Z',
     responseText: null,
     responseDate: null,
-    category: 'Structural'
+    category: 'Structural',
+    type: 'rfi'
   },
   {
     id: '2',
@@ -40,7 +41,8 @@ const MOCK_RFIS: RFI[] = [
     updatedAt: '2025-04-06T10:15:00Z',
     responseText: null,
     responseDate: null,
-    category: 'Electrical'
+    category: 'Electrical',
+    type: 'rfi'
   }
 ];
 
@@ -105,6 +107,7 @@ const RFIManagement = () => {
             setStatusFilter={setStatusFilter}
             categoryFilter={categoryFilter}
             setCategoryFilter={setCategoryFilter}
+            requestType="rfi"
           />
         </Card>
       )}
@@ -112,12 +115,14 @@ const RFIManagement = () => {
       <RFITable 
         rfis={filteredRFIs}
         onViewRFI={handleViewRFI}
+        requestType="rfi"
       />
 
       <CreateRFIDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
-        onCreateRFI={handleCreateRFI}
+        onCreateRequest={handleCreateRFI}
+        requestType="rfi"
       />
     </div>
   );

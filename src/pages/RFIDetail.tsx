@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -34,7 +33,8 @@ const MOCK_RFI: RFI = {
   updatedAt: '2025-04-07T14:30:00Z',
   responseText: null,
   responseDate: null,
-  category: 'Structural'
+  category: 'Structural',
+  type: 'rfi'
 };
 
 const RFIDetail: React.FC = () => {
