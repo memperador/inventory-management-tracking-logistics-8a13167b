@@ -16,6 +16,7 @@ import GPSIntegration from "./pages/GPSIntegration";
 import PaymentPage from "./pages/PaymentPage";
 import WorkflowPage from "./pages/WorkflowPage";
 import AccountPage from "./pages/AccountPage";
+import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Unauthorized from "./pages/Unauthorized";
@@ -84,7 +85,7 @@ const App = () => (
                         </Route>
                         
                         {/* All authenticated users routes */}
-                        <Route path="settings" element={<Dashboard />} />
+                        <Route path="settings" element={<Settings />} />
                         <Route path="notifications" element={<Dashboard />} />
                         <Route path="documentation" element={<Dashboard />} />
                         <Route path="support" element={<Dashboard />} />
