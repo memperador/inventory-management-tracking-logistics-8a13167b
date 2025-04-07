@@ -3,6 +3,7 @@ import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 import { equipmentData } from '@/components/equipment/EquipmentData';
 import { calculateDepreciation, formatCurrency } from '@/utils/depreciationUtils';
 
@@ -87,7 +88,14 @@ const ProjectProgressTable = () => {
           <TableBody>
             {projectsWithEquipmentData.map((project) => (
               <TableRow key={project.id}>
-                <TableCell className="font-medium">{project.name}</TableCell>
+                <TableCell className="font-medium">
+                  <Link 
+                    to={`/projects?id=${project.id}`} 
+                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    {project.name}
+                  </Link>
+                </TableCell>
                 <TableCell>
                   <div className="w-full bg-gray-200 rounded-full h-2.5">
                     <div
