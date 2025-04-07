@@ -19,14 +19,14 @@ import {
   User,
 } from 'lucide-react';
 
-interface NavItem {
+export interface NavItem {
   title: string;
   icon: keyof typeof icons;
   href: string;
   requiredRoles: string[];
 }
 
-interface NavSection {
+export interface NavSection {
   title: string;
   items: NavItem[];
 }
@@ -51,6 +51,34 @@ const icons = {
   Settings,
   User,
 };
+
+export const mainNavigation = [
+  { name: 'Dashboard', href: '/dashboard', icon: 'BarChart', roles: ['viewer', 'operator', 'manager', 'admin'] },
+  { name: 'Inventory', href: '/inventory', icon: 'Package', roles: ['viewer', 'operator', 'manager', 'admin'] },
+  { name: 'Projects', href: '/projects', icon: 'FolderClosed', roles: ['viewer', 'operator', 'manager', 'admin'] },
+  { name: 'Analytics', href: '/analytics', icon: 'LineChart', roles: ['viewer', 'operator', 'manager', 'admin'] }
+];
+
+export const integrationNavigation = [
+  { name: 'GPS Integration', href: '/gps-integration', icon: 'MapPin', roles: ['operator', 'manager', 'admin'] },
+  { name: 'Maintenance', href: '/maintenance', icon: 'Wrench', roles: ['operator', 'manager', 'admin'] },
+  { name: 'Fleet', href: '/fleet', icon: 'Truck', roles: ['operator', 'manager', 'admin'] },
+  { name: 'Materials', href: '/materials', icon: 'Boxes', roles: ['operator', 'manager', 'admin'] },
+  { name: 'Workflow', href: '/workflow', icon: 'GitBranch', roles: ['operator', 'manager', 'admin'] }
+];
+
+export const settingsNavigation = [
+  { name: 'Users', href: '/users', icon: 'Users', roles: ['admin'] },
+  { name: 'Reports', href: '/reports', icon: 'FileText', roles: ['manager', 'admin'] },
+  { name: 'Billing', href: '/billing', icon: 'CreditCard', roles: ['manager', 'admin'] },
+  { name: 'Payments', href: '/payments', icon: 'DollarSign', roles: ['viewer', 'operator', 'manager', 'admin'] },
+  { name: 'Documentation', href: '/documentation', icon: 'FileText', roles: ['viewer', 'operator', 'manager', 'admin'] },
+  { name: 'Support', href: '/support', icon: 'LifeBuoy', roles: ['viewer', 'operator', 'manager', 'admin'] },
+  { name: 'Chat', href: '/chat', icon: 'MessageSquare', roles: ['viewer', 'operator', 'manager', 'admin'] },
+  { name: 'Notifications', href: '/notifications', icon: 'Bell', roles: ['viewer', 'operator', 'manager', 'admin'] },
+  { name: 'Settings', href: '/settings', icon: 'Settings', roles: ['viewer', 'operator', 'manager', 'admin'] },
+  { name: 'Account', href: '/account', icon: 'User', roles: ['viewer', 'operator', 'manager', 'admin'] }
+];
 
 export const navigationConfig: NavSection[] = [
   {

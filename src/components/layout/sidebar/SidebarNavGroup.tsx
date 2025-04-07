@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { UserRole } from '@/types/roles';
 import { useRole } from '@/hooks/useRoleContext';
@@ -12,10 +11,12 @@ import {
 import { SidebarNavItem } from './SidebarNavItem';
 
 export interface NavItem {
-  name: string;
+  name?: string;
+  title?: string;
   href: string;
-  icon: React.ElementType;
-  roles: UserRole[];
+  icon: string | React.ElementType;
+  roles?: UserRole[];
+  requiredRoles?: string[];
 }
 
 interface SidebarNavGroupProps {
@@ -28,8 +29,19 @@ interface SidebarNavGroupProps {
 export const SidebarNavGroup = ({ label, items, showSeparator = false, closeSidebar }: SidebarNavGroupProps) => {
   const { hasPermission } = useRole();
   
-  // Filter menu items based on user role
-  const filteredItems = items.filter(item => hasPermission(item.roles));
+  // Filter menu items based on user role, supporting both roles and requiredRoles properties
+  const filteredItems = items.filter(item => {
+    // If roles is defined, use it
+    if (item.roles) {
+      return hasPermission(item.roles);
+    }
+    // Otherwise, if requiredRoles is defined, use it
+    else if (item.requiredRoles) {
+      return hasPermission(item.requiredRoles as UserRole[]);
+    }
+    // If neither is defined, always show the item
+    return true;
+  });
   
   // Don't render the group if there are no items to show
   if (filteredItems.length === 0) {
@@ -45,8 +57,9 @@ export const SidebarNavGroup = ({ label, items, showSeparator = false, closeSide
           <SidebarMenu>
             {filteredItems.map((item) => (
               <SidebarNavItem
-                key={item.name}
+                key={item.name || item.title}
                 name={item.name}
+                title={item.title}
                 href={item.href}
                 icon={item.icon}
                 closeSidebar={closeSidebar}
