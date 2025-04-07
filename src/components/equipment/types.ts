@@ -1,3 +1,4 @@
+
 export interface Equipment {
   id: string;
   name: string;
@@ -32,6 +33,8 @@ export interface Equipment {
   lastInspection?: string;
   nextInspection?: string;
   complianceStatus?: 'Compliant' | 'Non-Compliant' | 'Review Required';
+  maintenanceHistory?: MaintenanceRecord[];
+  complianceHistory?: ComplianceRecord[];
 }
 
 export interface Document {
@@ -41,6 +44,26 @@ export interface Document {
   size: string;
   uploadDate: string;
   uploadedBy: string;
+}
+
+export interface MaintenanceRecord {
+  id: string;
+  date: string;
+  type: 'Scheduled' | 'Emergency' | 'Preventive';
+  technician?: string;
+  notes?: string;
+  partsReplaced?: string[];
+  cost?: number;
+}
+
+export interface ComplianceRecord {
+  id: string;
+  date: string;
+  type: 'Certification' | 'Inspection' | 'Maintenance' | 'Training';
+  status: 'Passed' | 'Failed' | 'Pending';
+  inspector?: string;
+  notes?: string;
+  documentIds?: string[];
 }
 
 export interface ProjectType {
@@ -103,6 +126,11 @@ export interface ComplianceAlert {
   priority: 'Low' | 'Medium' | 'High' | 'Critical';
   status: 'Open' | 'Acknowledged' | 'Resolved';
   description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  resolvedAt?: string;
+  acknowledgedAt?: string;
+  resolutionNote?: string;
 }
 
 export interface ComplianceReport {
