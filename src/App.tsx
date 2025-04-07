@@ -1,6 +1,6 @@
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AppLayout } from '@/components/layout/AppLayout';
+import AppLayout from '@/components/layout/AppLayout';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { TenantProvider } from '@/contexts/TenantContext';
@@ -27,7 +27,7 @@ import WorkflowPage from '@/pages/WorkflowPage';
 import PaymentPage from '@/pages/PaymentPage';
 
 // Components
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { StripeProvider } from '@/components/payment/StripeProvider';
 
@@ -42,7 +42,7 @@ function App() {
                 <Router>
                   <Routes>
                     <Route path="/login" element={<Auth />} />
-                    <Route path="/signup" element={<Auth mode="signup" />} />
+                    <Route path="/signup" element={<Auth type="signup" />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
                     
                     <Route 

@@ -104,6 +104,7 @@ export type Database = {
           created_at: string
           equipment_id: string
           id: string
+          is_temporary: boolean | null
           project_id: string
           removed_date: string | null
           updated_at: string
@@ -113,6 +114,7 @@ export type Database = {
           created_at?: string
           equipment_id: string
           id?: string
+          is_temporary?: boolean | null
           project_id: string
           removed_date?: string | null
           updated_at?: string
@@ -122,6 +124,7 @@ export type Database = {
           created_at?: string
           equipment_id?: string
           id?: string
+          is_temporary?: boolean | null
           project_id?: string
           removed_date?: string | null
           updated_at?: string

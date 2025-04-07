@@ -3,7 +3,7 @@ import React from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { ProjectType } from '@/components/equipment/types';
 import { Badge } from '@/components/ui/badge';
-import { Buildings, Calendar, Zap } from 'lucide-react';
+import { Building, Calendar, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface ProjectCardProps {
@@ -26,7 +26,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, getStatusColo
       <TableCell>
         <div className="flex items-start gap-3">
           <div className="rounded-md bg-slate-100 p-2 dark:bg-slate-800">
-            <Buildings className="h-5 w-5 text-slate-500 dark:text-slate-400" />
+            <Building className="h-5 w-5 text-slate-500 dark:text-slate-400" />
           </div>
           <div>
             <div className="font-medium">{project.name}</div>

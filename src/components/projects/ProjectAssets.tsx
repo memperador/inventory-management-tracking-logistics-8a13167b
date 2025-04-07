@@ -47,7 +47,13 @@ export const ProjectAssets: React.FC<ProjectAssetsProps> = ({ projectId }) => {
       
       if (error) throw error;
       
-      setAssets(data || []);
+      // Transform the data to ensure is_temporary is a boolean value
+      const transformedData = data?.map(item => ({
+        ...item,
+        is_temporary: item.is_temporary === null ? false : !!item.is_temporary
+      })) || [];
+      
+      setAssets(transformedData);
     } catch (error) {
       console.error('Error fetching project assets:', error);
       toast({
@@ -135,7 +141,7 @@ export const ProjectAssets: React.FC<ProjectAssetsProps> = ({ projectId }) => {
                          'bg-red-100 text-red-800'}
                       `}
                     >
-                      {asset.equipment.status}
+                      {asset.equipment.status || 'Unknown'}
                     </Badge>
                   </TableCell>
                   <TableCell>{new Date(asset.assigned_date).toLocaleDateString()}</TableCell>

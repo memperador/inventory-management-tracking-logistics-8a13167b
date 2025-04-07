@@ -93,7 +93,19 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({
         
         if (error) throw error;
         
-        setEquipment(data || []);
+        // Transform the data to match the Equipment type
+        const transformedData: Equipment[] = data?.map(item => ({
+          ...item,
+          // Set default values for required Equipment properties
+          status: item.status as Equipment['status'] || 'Operational',
+          category: item.category as Equipment['category'] || undefined,
+          type: item.type || '',
+          name: item.name,
+          id: item.id,
+          tenant_id: item.tenant_id
+        })) || [];
+        
+        setEquipment(transformedData);
       } catch (error) {
         console.error('Error fetching equipment:', error);
         toast({
