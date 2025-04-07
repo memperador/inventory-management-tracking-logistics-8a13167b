@@ -11,7 +11,12 @@ export const inventoryItemFormSchema = z.object({
   serialNumber: z.string().optional(),
   cost: z.string().optional().transform(val => (val ? parseFloat(val) : undefined)),
   purchaseDate: z.string().optional(),
-  status: z.string().default('Operational')
+  status: z.string().default('Operational'),
+  csi_code: z.string().optional(),
+  nec_code: z.string().optional(),
+  assetTag: z.string().optional(),
+  rfidType: z.enum(['none', 'active', 'passive']).default('none'),
+  rfidTag: z.string().optional()
 });
 
 export type InventoryItemFormValues = z.infer<typeof inventoryItemFormSchema>;

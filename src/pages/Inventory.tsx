@@ -24,7 +24,7 @@ const Inventory = () => {
   const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
   const [showVendorIntegration, setShowVendorIntegration] = useState(false);
   
-  const { handleImport, handleFileUpload, handleExport } = useInventoryImportExport();
+  const { handleImport, handleFileUpload, handleExport, handleExportCSV } = useInventoryImportExport();
   
   // Filter equipment based on search query and active filters
   const filteredEquipment = equipmentData.filter(equipment => {
@@ -55,12 +55,17 @@ const Inventory = () => {
   const handleExportData = () => {
     handleExport(filteredEquipment);
   };
+  
+  const handleExportDataCSV = () => {
+    handleExportCSV(filteredEquipment);
+  };
 
   return (
     <div className="space-y-6">
       <InventoryHeader 
         onImport={handleImport}
         onExport={handleExportData}
+        onExportCSV={handleExportDataCSV}
         onAddItem={() => setIsNewItemDialogOpen(true)}
         onToggleVendorIntegration={() => setShowVendorIntegration(!showVendorIntegration)}
         showVendorIntegration={showVendorIntegration}
@@ -117,7 +122,7 @@ const Inventory = () => {
       <input 
         type="file" 
         id="file-upload" 
-        accept=".json" 
+        accept=".json,.csv" 
         onChange={handleFileUpload} 
         className="hidden"
       />

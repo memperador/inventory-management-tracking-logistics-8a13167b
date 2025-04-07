@@ -18,6 +18,11 @@ export const useInventoryItemForm = (onSuccess: () => void) => {
       manufacturer: '',
       serialNumber: '',
       status: 'Operational',
+      csi_code: '',
+      nec_code: '',
+      assetTag: '',
+      rfidType: 'none',
+      rfidTag: ''
     }
   });
 
