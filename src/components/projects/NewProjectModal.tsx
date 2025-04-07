@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { Calendar } from 'lucide-react';
@@ -22,6 +21,7 @@ import {
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useTenantContext } from '@/hooks/useTenantContext';
 
 interface NewProjectModalProps {
   open: boolean;
@@ -42,6 +42,8 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   onSuccess
 }) => {
   const { toast } = useToast();
+  const { tenant } = useTenantContext();
+  
   const form = useForm<ProjectFormData>({
     defaultValues: {
       name: '',
@@ -60,7 +62,8 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           site_address: data.location,
           start_date: new Date(data.startDate).toISOString(),
           end_date: new Date(data.endDate).toISOString(),
-          status: 'planned'
+          status: 'planned',
+          tenant_id: tenant?.id || ''
         });
       
       if (error) throw error;

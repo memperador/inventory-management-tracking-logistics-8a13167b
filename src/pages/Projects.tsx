@@ -8,16 +8,21 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import NewProjectModal from '@/components/projects/NewProjectModal';
+import { Json } from '@/integrations/supabase/types';
 
 type Project = {
   id: string;
   name: string;
-  site_address: string;
-  start_date: string;
-  end_date: string;
-  status: 'active' | 'completed' | 'planned';
+  site_address: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  status: 'active' | 'completed' | 'planned' | string | null;
   equipment_count?: number;
   team_size?: number;
+  created_at?: string;
+  updated_at?: string;
+  tenant_id?: string;
+  geofence_coordinates?: Json | null;
 };
 
 const getStatusColor = (status: Project['status']) => {
@@ -51,7 +56,7 @@ const Projects = () => {
       if (error) throw error;
 
       // Transform data to match the Project type
-      const transformedData = data.map(project => ({
+      const transformedData: Project[] = data.map(project => ({
         ...project,
         equipment_count: 0, // These would be calculated or fetched in a real app
         team_size: 0

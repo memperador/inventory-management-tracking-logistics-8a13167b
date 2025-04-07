@@ -11,12 +11,12 @@ interface EquipmentListViewProps {
 }
 
 const getStatusBadge = (status: string) => {
-  switch (status.toLowerCase()) {
-    case 'operational':
+  switch (status) {
+    case 'Operational':
       return <Badge className="bg-inventory-green-light text-inventory-green border-inventory-green">Operational</Badge>;
-    case 'maintenance':
+    case 'Maintenance':
       return <Badge className="bg-inventory-yellow-light text-inventory-yellow border-inventory-yellow">Maintenance</Badge>;
-    case 'out of service':
+    case 'Out of Service':
       return <Badge className="bg-inventory-red-light text-inventory-red border-inventory-red">Out of Service</Badge>;
     default:
       return <Badge variant="outline">{status}</Badge>;

@@ -12,11 +12,11 @@ interface EquipmentCardProps {
 
 const getStatusColor = (status: Equipment['status']) => {
   switch (status) {
-    case 'operational':
+    case 'Operational':
       return 'bg-inventory-green-light text-inventory-green border-inventory-green';
-    case 'maintenance':
+    case 'Maintenance':
       return 'bg-inventory-yellow-light text-inventory-yellow border-inventory-yellow';
-    case 'out-of-service':
+    case 'Out of Service':
       return 'bg-inventory-red-light text-inventory-red border-inventory-red';
     default:
       return '';
@@ -30,11 +30,11 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment }) => {
         <div className="h-2 w-full bg-gray-100">
           <div 
             className={`h-full ${
-              equipment.status === 'operational' ? 'bg-inventory-green' : 
-              equipment.status === 'maintenance' ? 'bg-inventory-yellow' : 
+              equipment.status === 'Operational' ? 'bg-inventory-green' : 
+              equipment.status === 'Maintenance' ? 'bg-inventory-yellow' : 
               'bg-inventory-red'
             }`}
-            style={{ width: equipment.status === 'operational' ? '100%' : '60%' }}
+            style={{ width: equipment.status === 'Operational' ? '100%' : '60%' }}
           />
         </div>
       </CardHeader>
@@ -47,15 +47,15 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment }) => {
           <div className="flex gap-2">
             <Badge 
               variant="outline" 
-              className={`${getStatusColor(equipment.status)} capitalize`}
+              className={`${getStatusColor(equipment.status)}`}
             >
-              {equipment.status.replace('-', ' ')}
+              {equipment.status}
             </Badge>
             
             <DocumentDialog 
               equipmentId={equipment.id} 
               equipmentName={equipment.name}
-              tenantId={equipment.tenantId} 
+              tenantId={equipment.tenant_id} 
             />
           </div>
         </div>
