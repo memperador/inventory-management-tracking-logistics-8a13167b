@@ -24,12 +24,12 @@ const Analytics = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
+    <div className="container mx-auto p-2 md:p-4 space-y-4 md:space-y-6">
       <PageHeader 
         title="Analytics" 
         description="View comprehensive data analytics for your equipment and projects"
         actions={
-          <>
+          <div className="flex flex-wrap gap-2">
             <Button 
               variant="outline" 
               size="sm"
@@ -37,33 +37,33 @@ const Analytics = () => {
               disabled={isRefreshing}
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-              Refresh
+              <span className="hidden md:inline">Refresh</span>
             </Button>
             <Button 
               variant="outline" 
               size="sm"
             >
-              <CalendarDays className="h-4 w-4 mr-2" />
-              Date Range
+              <CalendarDays className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Date Range</span>
             </Button>
             <Button 
               variant="outline" 
               size="sm"
             >
-              <Download className="h-4 w-4 mr-2" />
-              Export
+              <Download className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Export</span>
             </Button>
-          </>
+          </div>
         }
       />
       
-      <div className="flex items-center justify-end space-x-2 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end space-y-2 sm:space-y-0 space-x-0 sm:space-x-2 mb-4">
         <div className="text-sm text-muted-foreground mr-2">Time period:</div>
-        <Tabs defaultValue={dateRange} className="w-[400px]" onValueChange={setDateRange}>
+        <Tabs defaultValue={dateRange} className="w-full sm:w-[400px]" onValueChange={setDateRange}>
           <TabsList className="grid grid-cols-4">
-            <TabsTrigger value="7days">7 days</TabsTrigger>
-            <TabsTrigger value="30days">30 days</TabsTrigger>
-            <TabsTrigger value="quarter">Quarter</TabsTrigger>
+            <TabsTrigger value="7days">7d</TabsTrigger>
+            <TabsTrigger value="30days">30d</TabsTrigger>
+            <TabsTrigger value="quarter">Qtr</TabsTrigger>
             <TabsTrigger value="year">Year</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -71,36 +71,36 @@ const Analytics = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Analytics Overview</CardTitle>
+          <CardTitle className="text-xl md:text-2xl">Analytics Overview</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList className="grid grid-cols-3">
-              <TabsTrigger value="status">Equipment Status</TabsTrigger>
-              <TabsTrigger value="utilization">Equipment Utilization</TabsTrigger>
-              <TabsTrigger value="maintenance">Maintenance Forecast</TabsTrigger>
+              <TabsTrigger value="status">Status</TabsTrigger>
+              <TabsTrigger value="utilization">Utilization</TabsTrigger>
+              <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
             </TabsList>
-            <TabsContent value="status" className="h-[300px]">
+            <TabsContent value="status" className="h-[250px] md:h-[300px]">
               <EquipmentStatusChart />
             </TabsContent>
-            <TabsContent value="utilization" className="h-[300px]">
+            <TabsContent value="utilization" className="h-[250px] md:h-[300px]">
               <EquipmentUtilizationChart />
             </TabsContent>
-            <TabsContent value="maintenance" className="h-[300px]">
+            <TabsContent value="maintenance" className="h-[250px] md:h-[300px]">
               <MaintenanceForecastChart />
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Equipment Depreciation Overview</CardTitle>
+          <CardHeader className="pb-2 md:pb-4">
+            <CardTitle className="text-lg md:text-xl">Equipment Depreciation Overview</CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
+          <CardContent className="text-xs md:text-sm text-muted-foreground">
             <p>The equipment depreciation is calculated using industry-specific rates:</p>
-            <ul className="list-disc pl-6 mt-2 space-y-1">
+            <ul className="list-disc pl-4 md:pl-6 mt-2 space-y-0.5 md:space-y-1">
               <li>Construction equipment: 12-20% per year</li>
               <li>Electrical equipment: 15-25% per year</li>
               <li>Plumbing equipment: 15-18% per year</li>
@@ -111,47 +111,47 @@ const Analytics = () => {
         </Card>
         
         <Card>
-          <CardHeader>
-            <CardTitle>Depreciation by Equipment Type</CardTitle>
+          <CardHeader className="pb-2 md:pb-4">
+            <CardTitle className="text-lg md:text-xl">Depreciation by Equipment Type</CardTitle>
           </CardHeader>
-          <CardContent className="h-[250px]">
+          <CardContent className="h-[200px] md:h-[250px]">
             <DepreciationChart />
           </CardContent>
         </Card>
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Recent Activity</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between pb-2 md:pb-4">
+          <CardTitle className="text-lg md:text-xl">Recent Activity</CardTitle>
           <Button variant="ghost" size="sm">View all</Button>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3 md:space-y-4">
             {/* Sample activity items */}
-            <div className="flex items-start gap-4 border-b pb-4">
-              <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center text-white">
+            <div className="flex items-start gap-3 md:gap-4 border-b pb-3 md:pb-4">
+              <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center text-white flex-shrink-0">
                 <span className="text-xs">✓</span>
               </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Excavator #EX-7823 scheduled for maintenance</p>
+              <div className="space-y-0.5 md:space-y-1 min-w-0">
+                <p className="text-sm font-medium line-clamp-2">Excavator #EX-7823 scheduled for maintenance</p>
                 <p className="text-xs text-muted-foreground">2 hours ago · Downtown High-rise</p>
               </div>
             </div>
-            <div className="flex items-start gap-4 border-b pb-4">
-              <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
+            <div className="flex items-start gap-3 md:gap-4 border-b pb-3 md:pb-4">
+              <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white flex-shrink-0">
                 <span className="text-xs">↗</span>
               </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Bulldozer #BD-1234 transferred to new site</p>
+              <div className="space-y-0.5 md:space-y-1 min-w-0">
+                <p className="text-sm font-medium line-clamp-2">Bulldozer #BD-1234 transferred to new site</p>
                 <p className="text-xs text-muted-foreground">5 hours ago · Highway Extension</p>
               </div>
             </div>
-            <div className="flex items-start gap-4">
-              <div className="h-8 w-8 rounded-full bg-amber-500 flex items-center justify-center text-white">
+            <div className="flex items-start gap-3 md:gap-4">
+              <div className="h-8 w-8 rounded-full bg-amber-500 flex items-center justify-center text-white flex-shrink-0">
                 <span className="text-xs">!</span>
               </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Crane #CR-5678 maintenance overdue</p>
+              <div className="space-y-0.5 md:space-y-1 min-w-0">
+                <p className="text-sm font-medium line-clamp-2">Crane #CR-5678 maintenance overdue</p>
                 <p className="text-xs text-muted-foreground">1 day ago · Harbor Project</p>
               </div>
             </div>

@@ -120,3 +120,58 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Mobile responsive improvements */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  h1 {
+    font-size: 1.5rem !important;
+  }
+  
+  h2 {
+    font-size: 1.25rem !important;
+  }
+  
+  /* Improved touch targets for mobile */
+  button, .button, a {
+    min-height: 44px;
+  }
+  
+  /* Mobile optimized tables */
+  table {
+    display: block;
+    overflow-x: auto;
+  }
+  
+  /* Bottom nav padding protection for mobile */
+  .pb-safe {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0));
+  }
+}
+
+/* Fix for mobile viewport height issues */
+body, html {
+  height: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Improve form inputs on mobile */
+input, select, textarea {
+  font-size: 16px !important; /* Prevent iOS zoom on focus */
+}
+
+/* Add support for notches and safe areas */
+.safe-padding {
+  padding-left: env(safe-area-inset-left, 1rem);
+  padding-right: env(safe-area-inset-right, 1rem);
+}
+
+/* Utility for full-height content that doesn't overflow */
+.mobile-full-height {
+  height: calc(100vh - 4rem);
+  overflow-y: auto;
+}

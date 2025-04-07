@@ -15,7 +15,11 @@ import {
   settingsNavigation 
 } from './sidebar/navigationConfig';
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  closeSidebar?: () => void;
+}
+
+export function AppSidebar({ closeSidebar }: AppSidebarProps) {
   return (
     <Sidebar>
       <SidebarHeader>
@@ -29,19 +33,22 @@ export function AppSidebar() {
       <SidebarContent className="pb-12 md:pb-0">
         <SidebarNavGroup 
           label="Main" 
-          items={mainNavigation} 
+          items={mainNavigation}
+          closeSidebar={closeSidebar}
         />
         
         <SidebarNavGroup 
           label="Integrations" 
           items={integrationNavigation} 
           showSeparator={true}
+          closeSidebar={closeSidebar}
         />
         
         <SidebarNavGroup 
           label="Administration" 
           items={settingsNavigation} 
           showSeparator={true}
+          closeSidebar={closeSidebar}
         />
       </SidebarContent>
       
