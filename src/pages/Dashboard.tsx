@@ -2,9 +2,11 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import PageHeader from '@/components/common/PageHeader';
-import EquipmentStatusChart from '@/components/dashboard/EquipmentStatusChart';
 import RecentActivityList from '@/components/dashboard/RecentActivityList';
 import EmailVerificationStatus from '@/components/auth/EmailVerificationStatus';
+import StatisticsCards from '@/components/dashboard/StatisticsCards';
+import AnalyticsSummary from '@/components/dashboard/AnalyticsSummary';
+import ProjectProgressTable from '@/components/dashboard/ProjectProgressTable';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -19,16 +21,22 @@ const Dashboard = () => {
       {/* Email verification status */}
       <EmailVerificationStatus />
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">Equipment Status</h2>
-          <EquipmentStatusChart />
-        </div>
+      {/* Statistics Cards */}
+      <StatisticsCards />
+      
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <AnalyticsSummary />
         
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
-          <RecentActivityList />
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
+            <RecentActivityList />
+          </div>
         </div>
+      </div>
+      
+      <div className="mt-6">
+        <ProjectProgressTable />
       </div>
     </div>
   );
