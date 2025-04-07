@@ -18,7 +18,7 @@ const UnderConstruction = ({ pageName }: UnderConstructionProps) => {
         <Construction className="h-12 w-12 mr-2" />
         <HardHat className="h-12 w-12" />
       </div>
-      <h1 className="text-3xl font-bold text-center mb-2">{displayName}</h1>
+      <h1 className="text-3xl font-bold text-center mb-2">{displayName} Page</h1>
       <p className="text-lg text-gray-500 text-center mb-6">
         This page is currently under construction
       </p>
