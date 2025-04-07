@@ -14,7 +14,9 @@ export const equipmentData: Equipment[] = [
     csi_code: '33 05 23',
     nec_code: 'NFPA 70E 130.7',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000',
-    cost: 150000
+    cost: 150000,
+    purchaseDate: '2022-06-15',
+    lifespan: 10
   },
   {
     id: 'EQ-5678',
@@ -27,7 +29,9 @@ export const equipmentData: Equipment[] = [
     gpsTag: 'GT-9245',
     nec_code: 'NFPA 70 110.26',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000',
-    cost: 85000
+    cost: 85000,
+    purchaseDate: '2021-08-10',
+    lifespan: 8
   },
   {
     id: 'EQ-9012',
@@ -40,7 +44,9 @@ export const equipmentData: Equipment[] = [
     gpsTag: 'GT-3487',
     nec_code: 'NFPA 70 110.13',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000',
-    cost: 450000
+    cost: 450000,
+    purchaseDate: '2023-01-05',
+    lifespan: 12
   },
   {
     id: 'EQ-3456',
@@ -53,7 +59,9 @@ export const equipmentData: Equipment[] = [
     gpsTag: 'GT-6120',
     nec_code: 'NFPA 70 400.7',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000',
-    cost: 45000
+    cost: 45000,
+    purchaseDate: '2020-03-22',
+    lifespan: 7
   },
   {
     id: 'EQ-7890',
@@ -66,7 +74,9 @@ export const equipmentData: Equipment[] = [
     gpsTag: 'GT-1742',
     nec_code: 'NFPA 70 620.51',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000',
-    cost: 35000
+    cost: 35000,
+    purchaseDate: '2021-11-30',
+    lifespan: 6
   },
   {
     id: 'EQ-1122',
@@ -79,6 +89,8 @@ export const equipmentData: Equipment[] = [
     gpsTag: 'GT-5390',
     nec_code: 'NFPA 70 440.12',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000',
-    cost: 195000
+    cost: 195000,
+    purchaseDate: '2022-10-18',
+    lifespan: 10
   }
 ];

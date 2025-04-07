@@ -2,6 +2,7 @@
 import { useMemo } from 'react';
 import { format, isAfter, isBefore, addDays, parseISO } from 'date-fns';
 import { equipmentData } from '@/components/equipment/EquipmentData';
+import { calculateDepreciation } from '@/utils/depreciationUtils';
 
 export const useEquipmentStats = () => {
   const stats = useMemo(() => {
@@ -31,11 +32,25 @@ export const useEquipmentStats = () => {
       (eq.nextMaintenance && isBefore(parseISO(eq.nextMaintenance), today))
     ).length;
     
+    // Calculate total original cost
+    const totalOriginalCost = equipmentData.reduce((sum, eq) => sum + (eq.cost || 0), 0);
+    
+    // Calculate total depreciated value
+    const totalDepreciatedValue = equipmentData.reduce((sum, eq) => sum + calculateDepreciation(eq), 0);
+    
+    // Calculate depreciation percentage
+    const depreciationPercentage = totalOriginalCost > 0 
+      ? Math.round(((totalOriginalCost - totalDepreciatedValue) / totalOriginalCost) * 100) 
+      : 0;
+    
     return {
       maintenanceDue,
       totalEquipment,
       utilizationRate,
-      criticalAlerts
+      criticalAlerts,
+      totalOriginalCost,
+      totalDepreciatedValue,
+      depreciationPercentage
     };
   }, []);
   

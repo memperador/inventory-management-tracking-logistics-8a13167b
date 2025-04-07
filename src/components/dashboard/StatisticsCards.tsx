@@ -1,8 +1,9 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Truck, Wrench, Calendar, AlertTriangle } from "lucide-react";
+import { Truck, Wrench, Calendar, AlertTriangle, DollarSign } from "lucide-react";
 import { useEquipmentStats } from '@/hooks/useEquipmentStats';
+import { formatCurrency } from '@/utils/depreciationUtils';
 
 interface StatCardProps {
   title: string;
@@ -25,10 +26,18 @@ const StatCard = ({ title, value, description, icon }: StatCardProps) => (
 );
 
 const StatisticsCards = () => {
-  const { maintenanceDue, totalEquipment, utilizationRate, criticalAlerts } = useEquipmentStats();
+  const { 
+    maintenanceDue, 
+    totalEquipment, 
+    utilizationRate, 
+    criticalAlerts,
+    totalOriginalCost,
+    totalDepreciatedValue,
+    depreciationPercentage
+  } = useEquipmentStats();
   
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
       <StatCard 
         title="Total Equipment" 
         value={totalEquipment.toString()} 
@@ -52,6 +61,12 @@ const StatisticsCards = () => {
         value={criticalAlerts.toString()} 
         description="Require attention" 
         icon={<AlertTriangle className="h-4 w-4" />} 
+      />
+      <StatCard 
+        title="Fleet Value" 
+        value={formatCurrency(totalDepreciatedValue)} 
+        description={`${depreciationPercentage}% depreciated`}
+        icon={<DollarSign className="h-4 w-4" />} 
       />
     </div>
   );

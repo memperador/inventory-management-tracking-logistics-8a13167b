@@ -18,6 +18,8 @@ export interface Equipment {
   nec_code?: string;
   tenant_id: string;
   cost?: number;
+  purchaseDate?: string; // Date when equipment was purchased
+  lifespan?: number; // Expected lifespan in years
 }
 
 export interface Document {
@@ -38,6 +40,7 @@ export interface ProjectType {
   status: 'active' | 'completed' | 'planned' | string;
   equipment_count?: number;
   equipment_cost?: number;
+  depreciated_cost?: number;
   team_size?: number;
   created_at?: string;
   updated_at?: string;

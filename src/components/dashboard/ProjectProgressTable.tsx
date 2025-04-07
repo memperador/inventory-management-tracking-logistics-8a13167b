@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { equipmentData } from '@/components/equipment/EquipmentData';
+import { calculateDepreciation, formatCurrency } from '@/utils/depreciationUtils';
 
 const projectData = [
   {
@@ -43,15 +44,6 @@ const statusColors = {
   delayed: "bg-red-100 text-red-800"
 };
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
-
 const ProjectProgressTable = () => {
   // Calculate equipment count and cost for each project
   const projectsWithEquipmentData = projectData.map(project => {
@@ -60,12 +52,17 @@ const ProjectProgressTable = () => {
     );
     
     const equipmentCount = projectEquipment.length;
-    const totalCost = projectEquipment.reduce((sum, eq) => sum + (eq.cost || 0), 0);
+    const totalOriginalCost = projectEquipment.reduce((sum, eq) => sum + (eq.cost || 0), 0);
+    const totalDepreciatedCost = projectEquipment.reduce((sum, eq) => sum + calculateDepreciation(eq), 0);
     
     return {
       ...project,
       equipmentCount,
-      equipmentCost: totalCost
+      equipmentCost: totalOriginalCost,
+      depreciatedCost: totalDepreciatedCost,
+      depreciationPercentage: totalOriginalCost > 0 
+        ? Math.round(((totalOriginalCost - totalDepreciatedCost) / totalOriginalCost) * 100)
+        : 0
     };
   });
 
@@ -82,7 +79,9 @@ const ProjectProgressTable = () => {
               <TableHead>Progress</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Equipment</TableHead>
-              <TableHead className="text-right">Equipment Value</TableHead>
+              <TableHead className="text-right">Original Value</TableHead>
+              <TableHead className="text-right">Current Value</TableHead>
+              <TableHead className="text-right">Depreciation</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -106,6 +105,14 @@ const ProjectProgressTable = () => {
                 <TableCell>{project.equipmentCount} units</TableCell>
                 <TableCell className="text-right">
                   {formatCurrency(project.equipmentCost)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(project.depreciatedCost)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Badge variant="outline" className="bg-amber-100 text-amber-800">
+                    {project.depreciationPercentage}%
+                  </Badge>
                 </TableCell>
               </TableRow>
             ))}
