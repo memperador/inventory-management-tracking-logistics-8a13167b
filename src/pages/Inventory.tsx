@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { InventoryHeader } from '@/components/inventory/InventoryHeader';
 import { InventoryFilters } from '@/components/inventory/InventoryFilters';
@@ -8,6 +9,7 @@ import { ComplianceSection } from '@/components/inventory/ComplianceSection';
 import { useInventoryImportExport } from '@/components/inventory/inventoryUtils';
 import { EquipmentList } from '@/components/equipment/EquipmentList';
 import { EquipmentListView } from '@/components/equipment/EquipmentListView';
+import { EquipmentCompactView } from '@/components/equipment/EquipmentCompactView';
 import { equipmentData } from '@/components/equipment/EquipmentData';
 import { InventoryCategory } from '@/components/equipment/types';
 import { VendorIntegration } from '@/components/inventory/VendorIntegration';
@@ -16,7 +18,7 @@ import { NewInventoryItemDialog } from '@/components/inventory/NewInventoryItemD
 const Inventory = () => {
   // State management
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [activeCategory, setActiveCategory] = useState<InventoryCategory | 'All'>('All');
   const [activeStatus, setActiveStatus] = useState<string>('All');
   const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
@@ -90,6 +92,8 @@ const Inventory = () => {
       {filteredEquipment.length > 0 ? (
         viewMode === 'grid' ? (
           <EquipmentList equipmentData={filteredEquipment} />
+        ) : viewMode === 'compact' ? (
+          <EquipmentCompactView equipmentData={filteredEquipment} />
         ) : (
           <EquipmentListView equipmentData={filteredEquipment} />
         )
