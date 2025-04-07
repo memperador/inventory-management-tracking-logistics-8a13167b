@@ -36,14 +36,14 @@ export const EquipmentFilter: React.FC<EquipmentFilterProps> = ({
         />
       </div>
       <Select
-        value={categoryFilter || ""}
-        onValueChange={(value) => onCategoryChange(value || null)}
+        value={categoryFilter || "all"}
+        onValueChange={(value) => onCategoryChange(value === "all" ? null : value)}
       >
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="All Categories" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">All Categories</SelectItem>
+          <SelectItem value="all">All Categories</SelectItem>
           {INVENTORY_CATEGORIES.map(category => (
             <SelectItem key={category} value={category}>{category}</SelectItem>
           ))}
