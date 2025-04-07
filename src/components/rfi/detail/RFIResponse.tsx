@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import { useRFIResponse } from '../hooks/useRFIResponse';
 
 interface RFIResponseProps {
   responseText: string | null;
@@ -15,17 +15,13 @@ const RFIResponse: React.FC<RFIResponseProps> = ({
   responseDate, 
   formatDate 
 }) => {
-  const [newResponseText, setNewResponseText] = useState('');
-  const { toast } = useToast();
+  const {
+    responseText: newResponseText,
+    setResponseText,
+    isSubmitting,
+    handleSubmitResponse
+  } = useRFIResponse();
   
-  const handleSubmitResponse = () => {
-    // In a real app, you would update the RFI via an API call
-    toast({
-      title: "Response submitted",
-      description: "The RFI response has been submitted successfully.",
-    });
-  };
-
   return (
     <div className="pt-4 border-t">
       <h3 className="font-medium mb-4">Response</h3>
@@ -41,9 +37,15 @@ const RFIResponse: React.FC<RFIResponseProps> = ({
             placeholder="Enter your response..." 
             className="min-h-[150px]"
             value={newResponseText}
-            onChange={(e) => setNewResponseText(e.target.value)}
+            onChange={(e) => setResponseText(e.target.value)}
+            disabled={isSubmitting}
           />
-          <Button onClick={handleSubmitResponse}>Submit Response</Button>
+          <Button 
+            onClick={handleSubmitResponse}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Submitting..." : "Submit Response"}
+          </Button>
         </div>
       )}
     </div>

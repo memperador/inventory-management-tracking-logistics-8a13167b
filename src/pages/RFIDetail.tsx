@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,39 +10,35 @@ import {
   ActionsCard, 
   DetailTabs
 } from '@/components/rfi';
-import { RFI } from '@/components/rfi/types';
-
-// Mock data - in a real application this would come from an API or database
-const MOCK_RFI: RFI = {
-  id: '1',
-  title: 'Clarification on foundation reinforcement',
-  description: 'Need clarification on the rebar spacing for the main building foundation. The plans show 12" O.C. but the structural notes mention 8" O.C. in high-stress areas. Please confirm which spacing should be used for the southwest corner of the building.',
-  projectId: '85e6bf2f-a7e0-4943-941a-07a254f1a4ed',
-  createdBy: 'John Doe',
-  assignedTo: 'Jane Smith',
-  status: 'submitted',
-  dueDate: '2025-04-20',
-  createdAt: '2025-04-07T14:30:00Z',
-  updatedAt: '2025-04-07T14:30:00Z',
-  responseText: null,
-  responseDate: null,
-  category: 'Structural',
-  type: 'rfi'
-};
+import { useRFIDetail } from '@/components/rfi/hooks/useRFIDetail';
+import { formatDate } from '@/components/rfi/utils/dateUtils';
+import LoadingIndicator from '@/components/common/LoadingIndicator';
 
 const RFIDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [rfi] = useState<RFI>(MOCK_RFI); // In a real app, fetch by ID
+  const { rfi, isLoading, error } = useRFIDetail(id);
 
   const handleBackClick = () => {
     navigate('/requests');
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Not set';
-    return new Date(dateString).toLocaleDateString();
-  };
+  if (isLoading) {
+    return <LoadingIndicator />;
+  }
+
+  if (error || !rfi) {
+    return (
+      <div className="text-center py-8">
+        <h2 className="text-2xl font-bold text-destructive mb-2">Error Loading RFI</h2>
+        <p className="mb-4">{error || 'RFI not found'}</p>
+        <Button onClick={handleBackClick}>
+          <ChevronLeft className="mr-1 h-4 w-4" />
+          Back to RFIs
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

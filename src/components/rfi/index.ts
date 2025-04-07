@@ -13,3 +13,12 @@ export { default as RFIStatusBadge } from './detail/RFIStatusBadge';
 export { default as InformationCard } from './detail/InformationCard';
 export { default as ActionsCard } from './detail/ActionsCard';
 export { default as DetailTabs } from './detail/DetailTabs';
+
+// Hooks
+export { useRFIDetail } from './hooks/useRFIDetail';
+export { useRFIResponse } from './hooks/useRFIResponse';
+export { useComments } from './hooks/useComments';
+export { type Comment } from './hooks/useComments';
+
+// Utils
+export { formatDate } from './utils/dateUtils';
