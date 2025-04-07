@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -57,13 +56,10 @@ const App = () => (
                     <Route path="/onboarding" element={<Onboarding />} />
                     <Route path="/unauthorized" element={<Unauthorized />} />
                     
-                    {/* Base protected route - requires authentication */}
                     <Route element={<ProtectedRoute />}>
                       <Route element={<AppLayout />}>
-                        {/* Dashboard as the main page */}
                         <Route index element={<Dashboard />} />
                         <Route path="dashboard" element={<Dashboard />} />
-                        {/* Redirect /equipment to /inventory */}
                         <Route path="equipment" element={<Navigate to="/inventory" replace />} />
                         <Route path="inventory" element={<Inventory />} />
                         <Route path="projects" element={<Projects />} />
@@ -71,18 +67,15 @@ const App = () => (
                         <Route path="account" element={<AccountPage />} />
                         <Route path="documentation" element={<ApplicationDocumentation />} />
                         
-                        {/* Admin-only routes */}
                         <Route element={<ProtectedRoute requiredRoles={['admin']} redirectTo="/unauthorized" />}>
                           <Route path="users" element={<Users />} />
                         </Route>
                         
-                        {/* Manager and above routes */}
                         <Route element={<ProtectedRoute requiredRoles={['manager', 'admin']} redirectTo="/unauthorized" />}>
                           <Route path="reports" element={<UnderConstruction pageName="Reports" />} />
                           <Route path="billing" element={<UnderConstruction pageName="Billing" />} />
                         </Route>
 
-                        {/* Operator and above routes */}
                         <Route element={<ProtectedRoute requiredRoles={['operator', 'manager', 'admin']} redirectTo="/unauthorized" />}>
                           <Route path="gps-integration" element={<GPSIntegration />} />
                           <Route path="scheduling" element={<UnderConstruction pageName="Scheduling" />} />
@@ -92,7 +85,6 @@ const App = () => (
                           <Route path="workflow" element={<WorkflowPage />} />
                         </Route>
                         
-                        {/* All authenticated users routes */}
                         <Route path="settings" element={<Settings />} />
                         <Route path="notifications" element={<UnderConstruction pageName="Notifications" />} />
                         <Route path="support" element={<UnderConstruction pageName="Support" />} />
