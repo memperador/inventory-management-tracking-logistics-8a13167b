@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { UseFormReturn } from 'react-hook-form';
 import { INDUSTRY_CODE_TYPES } from '@/types/tenant';
-import { IndustryCodeFormData } from '@/hooks/useIndustryCodeForm';
+import { IndustryCodeFormData } from '@/hooks/industry/types';
 
 interface IndustryCodeFormFieldsProps {
   form: UseFormReturn<IndustryCodeFormData>;
