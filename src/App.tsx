@@ -26,6 +26,8 @@ import Analytics from '@/pages/Analytics';
 import GPSIntegration from '@/pages/GPSIntegration';
 import WorkflowPage from '@/pages/WorkflowPage';
 import PaymentPage from '@/pages/PaymentPage';
+import RequestManagement from '@/pages/RequestManagement';
+import RFIDetail from '@/pages/RFIDetail';
 
 // Components
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -73,6 +75,13 @@ function App() {
                         <Route path="payment" element={<PaymentPage />} />
                         <Route path="onboarding" element={<Onboarding />} />
                         <Route path="unauthorized" element={<Unauthorized />} />
+                        
+                        {/* Request Management Routes */}
+                        <Route path="requests" element={<RequestManagement />} />
+                        <Route path="rfi/:id" element={<RFIDetail />} />
+                        <Route path="rfq/:id" element={<RFIDetail />} />
+                        <Route path="rfp/:id" element={<RFIDetail />} />
+                        
                         <Route path="*" element={<NotFound />} />
                       </Route>
                     </Routes>
