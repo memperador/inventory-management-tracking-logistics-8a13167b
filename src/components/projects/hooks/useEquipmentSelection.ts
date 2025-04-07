@@ -44,7 +44,8 @@ export const useEquipmentSelection = (projectId: string, tenantId: string | unde
           name: item.name,
           type: item.type || '',
           status: item.status as Equipment['status'] || 'Operational',
-          category: item.category as Equipment['category'] || undefined,
+          // Set category from type if not present in database
+          category: item.type as Equipment['category'] || undefined,
           location: item.location || '',
           tenant_id: item.tenant_id,
           gpsTag: item.gps_tag || '',

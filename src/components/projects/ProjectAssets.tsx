@@ -57,11 +57,16 @@ export const ProjectAssets: React.FC<ProjectAssetsProps> = ({ projectId }) => {
           ...item.equipment,
           // Ensure equipment properties match Equipment type
           status: item.equipment.status as Equipment['status'] || 'Operational',
-          category: item.equipment.category as Equipment['category'] || undefined,
+          // Use type as category if not present in database
+          category: item.equipment.type as Equipment['category'] || undefined,
           type: item.equipment.type || '',
           name: item.equipment.name,
           id: item.equipment.id,
-          tenant_id: item.equipment.tenant_id
+          tenant_id: item.equipment.tenant_id,
+          location: item.equipment.location || '',
+          gpsTag: item.equipment.gps_tag || '',
+          lastMaintenance: item.equipment.last_maintenance || new Date().toISOString(),
+          nextMaintenance: item.equipment.next_maintenance || new Date().toISOString()
         }
       })) || [];
       
