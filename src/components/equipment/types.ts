@@ -1,14 +1,28 @@
 
-export type EquipmentStatus = 'operational' | 'maintenance' | 'out-of-service';
-
-export type Equipment = {
+export interface Equipment {
   id: string;
   name: string;
   type: string;
-  status: EquipmentStatus;
+  image: string;
+  status: 'Operational' | 'Maintenance' | 'Out of Service';
   location: string;
-  lastMaintenance: string;
-  nextMaintenance: string;
-  gpsTag: string;
-  tenantId: string;
-};
+  utilization: number;
+  lastMaintenance?: string;
+  nextMaintenance?: string;
+  documentCount: number;
+  documents?: Document[];
+  isCheckedOut?: boolean;
+  checkedOutTo?: string;
+  gpsTag?: string;
+  csi_code?: string;
+  nec_code?: string;
+}
+
+export interface Document {
+  id: string;
+  name: string;
+  type: string;
+  size: string;
+  uploadDate: string;
+  uploadedBy: string;
+}

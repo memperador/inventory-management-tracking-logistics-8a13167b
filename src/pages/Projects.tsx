@@ -1,84 +1,24 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, MapPin, Calendar, Users, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import NewProjectModal from '@/components/projects/NewProjectModal';
 
 type Project = {
   id: string;
   name: string;
-  location: string;
-  startDate: string;
-  endDate: string;
+  site_address: string;
+  start_date: string;
+  end_date: string;
   status: 'active' | 'completed' | 'planned';
-  equipmentCount: number;
-  teamSize: number;
+  equipment_count?: number;
+  team_size?: number;
 };
-
-const projectsData: Project[] = [
-  {
-    id: 'PRJ-001',
-    name: 'Downtown High-rise Construction',
-    location: '123 Main St, Metropolis',
-    startDate: '2024-01-15',
-    endDate: '2025-06-30',
-    status: 'active',
-    equipmentCount: 24,
-    teamSize: 85
-  },
-  {
-    id: 'PRJ-002',
-    name: 'Highway Extension Phase 2',
-    location: 'Route 66, Westside',
-    startDate: '2024-02-01',
-    endDate: '2024-11-15',
-    status: 'active',
-    equipmentCount: 38,
-    teamSize: 120
-  },
-  {
-    id: 'PRJ-003',
-    name: 'Commercial Complex',
-    location: '45 Business Park Ave',
-    startDate: '2024-03-10',
-    endDate: '2025-05-20',
-    status: 'active',
-    equipmentCount: 17,
-    teamSize: 65
-  },
-  {
-    id: 'PRJ-004',
-    name: 'Warehouse Renovation',
-    location: '89 Industrial Lane',
-    startDate: '2024-02-15',
-    endDate: '2024-07-10',
-    status: 'active',
-    equipmentCount: 12,
-    teamSize: 30
-  },
-  {
-    id: 'PRJ-005',
-    name: 'Bridge Maintenance',
-    location: 'Riverside Ave',
-    startDate: '2024-01-05',
-    endDate: '2024-03-20',
-    status: 'completed',
-    equipmentCount: 8,
-    teamSize: 25
-  },
-  {
-    id: 'PRJ-006',
-    name: 'Solar Farm Installation',
-    location: 'Rural Route 7',
-    startDate: '2024-05-01',
-    endDate: '2024-12-15',
-    status: 'planned',
-    equipmentCount: 15,
-    teamSize: 45
-  }
-];
 
 const getStatusColor = (status: Project['status']) => {
   switch (status) {
@@ -94,6 +34,54 @@ const getStatusColor = (status: Project['status']) => {
 };
 
 const Projects = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+  const { toast } = useToast();
+
+  // Fetch projects
+  const fetchProjects = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*');
+
+      if (error) throw error;
+
+      // Transform data to match the Project type
+      const transformedData = data.map(project => ({
+        ...project,
+        equipment_count: 0, // These would be calculated or fetched in a real app
+        team_size: 0
+      }));
+
+      setProjects(transformedData);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      toast({
+        title: "Error fetching projects",
+        description: "Please try again later",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  // Filter projects based on search query
+  const filteredProjects = projects.filter(
+    project => 
+      project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.site_address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -101,7 +89,7 @@ const Projects = () => {
           <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
           <p className="text-gray-500 mt-1">Manage your project sites</p>
         </div>
-        <Button>
+        <Button onClick={() => setShowNewProjectModal(true)}>
           <Plus className="mr-2 h-4 w-4" />
           New Project
         </Button>
@@ -112,68 +100,91 @@ const Projects = () => {
         <Input 
           placeholder="Search projects..." 
           className="pl-9 mb-6"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
       
-      <div className="border rounded-lg overflow-hidden bg-white">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Project</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Timeline</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Resources</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {projectsData.map((project) => (
-              <TableRow key={project.id}>
-                <TableCell>
-                  <div>
-                    <div className="font-medium">{project.name}</div>
-                    <div className="text-sm text-gray-500">{project.id}</div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <MapPin className="h-4 w-4 text-gray-400 mr-2" />
-                    <span>{project.location}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                    <span>
-                      {new Date(project.startDate).toLocaleDateString()} - {new Date(project.endDate).toLocaleDateString()}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge 
-                    variant="outline" 
-                    className={`${getStatusColor(project.status)} capitalize`}
-                  >
-                    {project.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center">
-                      <Package className="h-4 w-4 text-gray-400 mr-1" />
-                      <span>{project.equipmentCount}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Users className="h-4 w-4 text-gray-400 mr-1" />
-                      <span>{project.teamSize}</span>
-                    </div>
-                  </div>
-                </TableCell>
+      {isLoading ? (
+        <div className="flex justify-center p-8">
+          <p>Loading projects...</p>
+        </div>
+      ) : (
+        <div className="border rounded-lg overflow-hidden bg-white">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Project</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Timeline</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Resources</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {filteredProjects.length > 0 ? (
+                filteredProjects.map((project) => (
+                  <TableRow key={project.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{project.name}</div>
+                        <div className="text-sm text-gray-500">{project.id}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <MapPin className="h-4 w-4 text-gray-400 mr-2" />
+                        <span>{project.site_address || 'N/A'}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 text-gray-400 mr-2" />
+                        <span>
+                          {project.start_date ? new Date(project.start_date).toLocaleDateString() : 'N/A'} - 
+                          {project.end_date ? new Date(project.end_date).toLocaleDateString() : 'N/A'}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant="outline" 
+                        className={`${getStatusColor(project.status)} capitalize`}
+                      >
+                        {project.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center">
+                          <Package className="h-4 w-4 text-gray-400 mr-1" />
+                          <span>{project.equipment_count}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <Users className="h-4 w-4 text-gray-400 mr-1" />
+                          <span>{project.team_size}</span>
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8">
+                    No projects found. {searchQuery ? 'Try a different search term.' : 'Create your first project!'}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      <NewProjectModal 
+        open={showNewProjectModal} 
+        onClose={() => setShowNewProjectModal(false)}
+        onSuccess={fetchProjects}
+      />
     </div>
   );
 };

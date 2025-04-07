@@ -1,13 +1,17 @@
 
 import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, LayoutGrid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EquipmentFilters } from '@/components/equipment/EquipmentFilters';
 import { EquipmentList } from '@/components/equipment/EquipmentList';
+import { EquipmentListView } from '@/components/equipment/EquipmentListView';
 import { equipmentData } from '@/components/equipment/EquipmentData';
+
+type ViewMode = 'grid' | 'list';
 
 const Equipment = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   
   // Filter equipment based on search query
   const filteredEquipment = equipmentData.filter(
@@ -31,12 +35,35 @@ const Equipment = () => {
         </Button>
       </div>
       
-      <EquipmentFilters 
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <EquipmentFilters 
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
+        
+        <div className="flex items-center gap-2">
+          <Button 
+            variant={viewMode === 'grid' ? 'default' : 'outline'} 
+            size="sm"
+            onClick={() => setViewMode('grid')}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant={viewMode === 'list' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+          >
+            <List className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
       
-      <EquipmentList equipmentData={filteredEquipment} />
+      {viewMode === 'grid' ? (
+        <EquipmentList equipmentData={filteredEquipment} />
+      ) : (
+        <EquipmentListView equipmentData={filteredEquipment} />
+      )}
     </div>
   );
 };
