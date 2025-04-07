@@ -29,6 +29,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { StripeProvider } from "./components/payment/StripeProvider";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import UnderConstruction from "./components/common/UnderConstruction";
+import Index from "./pages/Index";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -59,7 +60,8 @@ const App = () => (
                     {/* Base protected route - requires authentication */}
                     <Route element={<ProtectedRoute />}>
                       <Route element={<AppLayout />}>
-                        <Route index element={<Dashboard />} />
+                        {/* Root path renders Index component instead of redirecting */}
+                        <Route path="/" element={<Index />} />
                         <Route path="dashboard" element={<Dashboard />} />
                         <Route path="equipment" element={<Equipment />} />
                         <Route path="projects" element={<Projects />} />

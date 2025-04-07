@@ -18,11 +18,13 @@ import {
   Book,
   MessageSquare,
   CreditCard,
-  GitBranch
+  GitBranch,
+  Home
 } from 'lucide-react';
 import { NavItem } from './SidebarNavGroup';
 
 export const mainNavigation: NavItem[] = [
+  { name: 'Home', href: '/', icon: Home, roles: ['viewer', 'operator', 'manager', 'admin'] },
   { name: 'Dashboard', href: '/dashboard', icon: Layers, roles: ['viewer', 'operator', 'manager', 'admin'] },
   { name: 'Equipment', href: '/equipment', icon: Package, roles: ['viewer', 'operator', 'manager', 'admin'] },
   { name: 'Projects', href: '/projects', icon: Map, roles: ['viewer', 'operator', 'manager', 'admin'] },
