@@ -1,5 +1,5 @@
 
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import Papa from "papaparse";
 import { Equipment } from "@/components/equipment/types";
 
