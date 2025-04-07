@@ -7,12 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { INVENTORY_CATEGORIES } from '@/components/equipment/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useIndustryCodeForm } from '@/hooks/useIndustryCodeForm';
-import { industryCodeFormUtils } from '@/hooks/industry/industryCodeFormUtils';
+import { useIndustryCodeOptions } from '@/hooks/industry/useIndustryCodeOptions';
 
 export const InventoryItemFormFields = ({ form }) => {
-  const { csiOptions, necOptions, necPlaceholder, csiPlaceholder } = useIndustryCodeForm();
-  const { showTypeSpecificFields } = industryCodeFormUtils();
+  const { csiOptions, necOptions, necPlaceholder, csiPlaceholder, showTypeSpecificFields } = useIndustryCodeOptions();
 
   return (
     <Tabs defaultValue="general" className="w-full">

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -195,7 +196,7 @@ export const ComplianceReports: React.FC<ComplianceReportsProps> = ({ equipmentD
                         {!item.certificationExpiry ? 'Unknown' : 
                           new Date(item.certificationExpiry) < new Date() 
                             ? <Badge variant="destructive">Expired</Badge> 
-                            : <Badge variant="success">Valid</Badge>}
+                            : <Badge variant="default">Valid</Badge>}
                       </td>
                       <td className="p-2">{item.certificationExpiry 
                         ? format(new Date(item.certificationExpiry), 'MMM d, yyyy') 
