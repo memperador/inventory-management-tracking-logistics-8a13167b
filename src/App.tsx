@@ -59,9 +59,9 @@ const App = () => (
                     {/* Base protected route - requires authentication */}
                     <Route element={<ProtectedRoute />}>
                       <Route element={<AppLayout />}>
-                        {/* Redirect root path to dashboard */}
-                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                        <Route path="dashboard" element={<Dashboard />} />
+                        {/* Dashboard as the main page */}
+                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="equipment" element={<Equipment />} />
                         <Route path="projects" element={<Projects />} />
                         <Route path="analytics" element={<Analytics />} />
