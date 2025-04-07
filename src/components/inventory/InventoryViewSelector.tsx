@@ -47,4 +47,5 @@ export const InventoryViewSelector: React.FC<InventoryViewSelectorProps> = ({
   );
 };
 
-export { type ViewMode };
+// Remove the duplicate export at the end of the file
+// export { type ViewMode };
