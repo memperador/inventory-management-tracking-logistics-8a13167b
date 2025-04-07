@@ -14,7 +14,7 @@ type ViewMode = 'grid' | 'list';
 
 const Inventory = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('list'); // Changed default to list view
   const [activeCategory, setActiveCategory] = useState<InventoryCategory | 'All'>('All');
   const [activeStatus, setActiveStatus] = useState<string>('All');
   

@@ -11,7 +11,7 @@ type ViewMode = 'grid' | 'list';
 
 const Equipment = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('list'); // Changed default to list view
   
   // Show only Heavy Equipment in this view to differentiate from the Inventory page
   const heavyEquipment = equipmentData.filter(
@@ -27,8 +27,9 @@ const Equipment = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Equipment</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Heavy Equipment</h1>
           <p className="text-gray-500 mt-1">Manage your heavy equipment inventory</p>
+          <p className="text-sm text-blue-600 mt-2">For all inventory types, visit the <a href="/inventory" className="underline">Inventory Management</a> page</p>
         </div>
         <Button>
           <Plus className="mr-2 h-4 w-4" />
