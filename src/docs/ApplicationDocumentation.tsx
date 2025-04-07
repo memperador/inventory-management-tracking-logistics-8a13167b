@@ -10,6 +10,7 @@ import GPSIntegrationDocumentation from './tabs/GPSIntegrationDocumentation';
 import AssetTrackingDocumentation from './tabs/AssetTrackingDocumentation';
 import AIAssistantTab from './tabs/AIAssistantTab';
 import GeneralDocumentation from './tabs/GeneralDocumentation';
+import ProjectManagementDocumentation from './tabs/ProjectManagementDocumentation';
 
 const ApplicationDocumentation = () => {
   return (
@@ -22,8 +23,9 @@ const ApplicationDocumentation = () => {
       </div>
 
       <Tabs defaultValue="inventory">
-        <TabsList className="grid grid-cols-6 w-full mb-4">
+        <TabsList className="grid grid-cols-7 w-full mb-4">
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
+          <TabsTrigger value="project-management">Projects</TabsTrigger>
           <TabsTrigger value="compliance">Compliance</TabsTrigger>
           <TabsTrigger value="gps-integration">GPS Integration</TabsTrigger>
           <TabsTrigger value="asset-tracking">Asset Tracking</TabsTrigger>
@@ -33,6 +35,10 @@ const ApplicationDocumentation = () => {
 
         <TabsContent value="inventory" className="space-y-4">
           <InventoryDocumentation />
+        </TabsContent>
+        
+        <TabsContent value="project-management" className="space-y-4">
+          <ProjectManagementDocumentation />
         </TabsContent>
 
         <TabsContent value="compliance" className="space-y-4">
