@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { InventoryHeader } from '@/components/inventory/InventoryHeader';
 import { InventoryFilters } from '@/components/inventory/InventoryFilters';
@@ -103,6 +102,12 @@ const Inventory = () => {
       <NewInventoryItemDialog 
         open={isNewItemDialogOpen} 
         onOpenChange={setIsNewItemDialogOpen} 
+      />
+      
+      <button 
+        id="add-inventory-item" 
+        onClick={() => setIsNewItemDialogOpen(true)}
+        className="hidden"
       />
       
       <input 
