@@ -12,6 +12,8 @@ import { Form } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { useRFIForm } from './hooks/useRFIForm';
 import RequestFormFields from './form/RequestFormFields';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 interface CreateRFIDialogProps {
   open: boolean;
@@ -26,7 +28,7 @@ const CreateRFIDialog: React.FC<CreateRFIDialogProps> = ({
   onCreateRequest,
   requestType
 }) => {
-  const { form, onSubmit } = useRFIForm({
+  const { form, onSubmit, isSubmitting, errors } = useRFIForm({
     onCreateRequest,
     requestType,
     onClose: () => onOpenChange(false)
@@ -41,6 +43,9 @@ const CreateRFIDialog: React.FC<CreateRFIDialogProps> = ({
     }
   };
 
+  // Check if there are any form-level errors (not tied to specific fields)
+  const hasFormErrors = Object.keys(errors).length > 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
@@ -50,6 +55,15 @@ const CreateRFIDialog: React.FC<CreateRFIDialogProps> = ({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {hasFormErrors && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Please fix the validation errors before submitting.
+                </AlertDescription>
+              </Alert>
+            )}
+            
             <RequestFormFields form={form} requestType={requestType} />
 
             <DialogFooter>
@@ -57,10 +71,16 @@ const CreateRFIDialog: React.FC<CreateRFIDialogProps> = ({
                 type="button" 
                 variant="outline" 
                 onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button type="submit">Create {requestType.toUpperCase()}</Button>
+              <Button 
+                type="submit"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Creating...' : `Create ${requestType.toUpperCase()}`}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

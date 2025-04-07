@@ -41,6 +41,13 @@ const RequestFormFields: React.FC<RequestFormFieldsProps> = ({ form, requestType
     }
   };
 
+  // Get tomorrow's date as min date for the date picker
+  const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  };
+
   return (
     <>
       <FormField
@@ -50,7 +57,11 @@ const RequestFormFields: React.FC<RequestFormFieldsProps> = ({ form, requestType
           <FormItem>
             <FormLabel>Title</FormLabel>
             <FormControl>
-              <Input placeholder={`Enter ${requestType.toUpperCase()} title...`} {...field} />
+              <Input 
+                placeholder={`Enter ${requestType.toUpperCase()} title...`} 
+                {...field} 
+                className={form.formState.errors.title ? "border-destructive" : ""}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -66,7 +77,7 @@ const RequestFormFields: React.FC<RequestFormFieldsProps> = ({ form, requestType
             <FormControl>
               <Textarea 
                 placeholder="Enter a detailed description of your request..." 
-                className="min-h-[100px]" 
+                className={`min-h-[100px] ${form.formState.errors.description ? "border-destructive" : ""}`} 
                 {...field} 
               />
             </FormControl>
@@ -87,7 +98,7 @@ const RequestFormFields: React.FC<RequestFormFieldsProps> = ({ form, requestType
                 defaultValue={field.value}
               >
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className={form.formState.errors.category ? "border-destructive" : ""}>
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                 </FormControl>
@@ -109,7 +120,12 @@ const RequestFormFields: React.FC<RequestFormFieldsProps> = ({ form, requestType
             <FormItem>
               <FormLabel>Due Date (optional)</FormLabel>
               <FormControl>
-                <Input type="date" {...field} />
+                <Input 
+                  type="date" 
+                  min={getTomorrowDate()}
+                  className={form.formState.errors.dueDate ? "border-destructive" : ""}
+                  {...field} 
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -120,7 +136,7 @@ const RequestFormFields: React.FC<RequestFormFieldsProps> = ({ form, requestType
       <FormField
         control={form.control}
         name="attachments"
-        render={() => (
+        render={({ field }) => (
           <FormItem>
             <FormLabel>Attachments (optional)</FormLabel>
             <FormControl>
