@@ -1,4 +1,3 @@
-
 import { UserRole } from '@/types/roles';
 import { 
   LayoutDashboard, 
@@ -39,11 +38,6 @@ export const dashboardNavigation = [
     name: 'Projects',
     href: '/projects',
     icon: FolderKanban
-  },
-  {
-    name: 'Requests',
-    href: '/requests',
-    icon: ClipboardList
   },
   {
     name: 'Analytics',
