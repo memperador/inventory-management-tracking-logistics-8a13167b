@@ -68,8 +68,11 @@ export function CSICodeCustomization({ tenantId, onNextStep }: CSICodeCustomizat
       // Save CSI code preferences to tenant using stringified JSON
       const updateData = {
         industry_code_preferences: JSON.stringify({
-          companyPrefix: data.companyPrefix,
-          customCodes: codes
+          industryCodeSettings: {
+            selectedCodeType: 'CSI',
+            companyPrefix: data.companyPrefix,
+            customCodes: codes
+          }
         })
       };
 

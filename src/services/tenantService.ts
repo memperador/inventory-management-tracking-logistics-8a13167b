@@ -122,7 +122,7 @@ export const updateTenantSettings = async (tenantId: string, settings: Partial<T
     const { error } = await supabase
       .from('tenants')
       .update({ 
-        industry_code_preferences: newPreferences
+        industry_code_preferences: JSON.stringify(newPreferences)
       })
       .eq('id', tenantId);
       

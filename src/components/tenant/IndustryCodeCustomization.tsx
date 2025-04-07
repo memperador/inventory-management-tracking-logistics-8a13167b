@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -84,16 +85,30 @@ export function IndustryCodeCustomization({ tenantId, onNextStep }: IndustryCode
           form.setValue('codeType', codeType);
           
           // Parse preferences from industry_code_preferences
-          const preferences = data.industry_code_preferences;
-          let parsedPreferences = preferences;
+          let settings;
           
-          if (typeof preferences === 'string') {
-            parsedPreferences = JSON.parse(preferences);
+          if (data.industry_code_preferences) {
+            // Parse if string, or use directly if already an object
+            let parsedPreferences;
+            
+            if (typeof data.industry_code_preferences === 'string') {
+              try {
+                parsedPreferences = JSON.parse(data.industry_code_preferences);
+              } catch (e) {
+                console.error('Failed to parse industry_code_preferences:', e);
+                parsedPreferences = {};
+              }
+            } else {
+              parsedPreferences = data.industry_code_preferences;
+            }
+            
+            // Check if industryCodeSettings property exists
+            if (parsedPreferences && typeof parsedPreferences === 'object' && 'industryCodeSettings' in parsedPreferences) {
+              settings = parsedPreferences.industryCodeSettings;
+            }
           }
           
-          if (parsedPreferences?.industryCodeSettings) {
-            const settings = parsedPreferences.industryCodeSettings;
-            
+          if (settings) {
             // Set company prefix
             if (settings.companyPrefix) {
               form.setValue('companyPrefix', settings.companyPrefix);
@@ -152,14 +167,17 @@ export function IndustryCodeCustomization({ tenantId, onNextStep }: IndustryCode
         }
       }
       
-      // Save industry code preferences as stringified JSON
+      // Prepare the settings object
+      const industryCodeSettings = {
+        selectedCodeType: data.codeType,
+        companyPrefix: data.companyPrefix,
+        customCodes: codes
+      };
+      
+      // Stringify the entire object for storage
       const updateData = {
         industry_code_preferences: JSON.stringify({
-          industryCodeSettings: {
-            selectedCodeType: data.codeType,
-            companyPrefix: data.companyPrefix,
-            customCodes: codes
-          }
+          industryCodeSettings: industryCodeSettings
         })
       };
 
@@ -384,3 +402,4 @@ export function IndustryCodeCustomization({ tenantId, onNextStep }: IndustryCode
     </Form>
   );
 }
+
