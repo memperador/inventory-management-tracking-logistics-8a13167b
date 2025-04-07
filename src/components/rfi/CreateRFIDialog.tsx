@@ -43,7 +43,7 @@ const CreateRFIDialog: React.FC<CreateRFIDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>{getDialogTitle()}</DialogTitle>
         </DialogHeader>

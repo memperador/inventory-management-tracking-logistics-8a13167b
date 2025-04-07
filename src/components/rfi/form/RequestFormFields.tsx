@@ -24,6 +24,7 @@ import {
   RFQ_CATEGORIES, 
   RFP_CATEGORIES
 } from '../types';
+import FileUploadField from './FileUploadField';
 
 interface RequestFormFieldsProps {
   form: UseFormReturn<RFIFormValues>;
@@ -115,6 +116,20 @@ const RequestFormFields: React.FC<RequestFormFieldsProps> = ({ form, requestType
           )}
         />
       </div>
+
+      <FormField
+        control={form.control}
+        name="attachments"
+        render={() => (
+          <FormItem>
+            <FormLabel>Attachments (optional)</FormLabel>
+            <FormControl>
+              <FileUploadField />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </>
   );
 };

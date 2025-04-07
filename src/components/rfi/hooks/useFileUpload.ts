@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { validateRFIDocument } from '../utils/fileUtils';
 
@@ -7,6 +7,7 @@ type FileUploadState = {
   isUploading: boolean;
   files: File[];
   uploadProgress: number;
+  isDragging: boolean;
 };
 
 export const useFileUpload = () => {
@@ -14,12 +15,11 @@ export const useFileUpload = () => {
     isUploading: false,
     files: [],
     uploadProgress: 0,
+    isDragging: false
   });
   const { toast } = useToast();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    
+  const processFiles = useCallback((selectedFiles: File[]) => {
     // Validate files
     const invalidFiles = selectedFiles.filter(file => !validateRFIDocument(file));
     
@@ -43,31 +43,60 @@ export const useFileUpload = () => {
       ...prev,
       files: [...prev.files, ...selectedFiles],
     }));
-  };
+  }, [toast]);
 
-  const removeFile = (indexToRemove: number) => {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    processFiles(selectedFiles);
+  }, [processFiles]);
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setState(prev => ({ ...prev, isDragging: true }));
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setState(prev => ({ ...prev, isDragging: false }));
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setState(prev => ({ ...prev, isDragging: false }));
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const droppedFiles = Array.from(e.dataTransfer.files);
+      processFiles(droppedFiles);
+    }
+  }, [processFiles]);
+
+  const removeFile = useCallback((indexToRemove: number) => {
     setState(prev => ({
       ...prev,
       files: prev.files.filter((_, index) => index !== indexToRemove),
     }));
-  };
+  }, []);
 
-  const resetFiles = () => {
+  const resetFiles = useCallback(() => {
     setState(prev => ({
       ...prev,
       files: [],
       uploadProgress: 0,
     }));
-  };
+  }, []);
 
-  const uploadFiles = async () => {
+  const uploadFiles = useCallback(async () => {
     if (state.files.length === 0) {
       toast({
         title: "No files selected",
         description: "Please select files to upload.",
         variant: "destructive",
       });
-      return;
+      return false;
     }
     
     setState(prev => ({ ...prev, isUploading: true }));
@@ -100,7 +129,7 @@ export const useFileUpload = () => {
     } finally {
       setState(prev => ({ ...prev, isUploading: false, uploadProgress: 0 }));
     }
-  };
+  }, [state.files.length, toast, resetFiles]);
 
   return {
     ...state,
@@ -108,5 +137,8 @@ export const useFileUpload = () => {
     removeFile,
     uploadFiles,
     resetFiles,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop
   };
 };

@@ -6,6 +6,7 @@ export const rfiFormSchema = z.object({
   description: z.string().min(10, 'Description must be at least 10 characters'),
   category: z.string().min(1, 'Please select a category'),
   dueDate: z.string().optional(),
+  attachments: z.array(z.instanceof(File)).optional(),
 });
 
 export type RFIFormValues = z.infer<typeof rfiFormSchema>;

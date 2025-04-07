@@ -17,6 +17,7 @@ export { default as RFIAssistant } from './detail/RFIAssistant';
 
 // Form components
 export { default as RequestFormFields } from './form/RequestFormFields';
+export { default as FileUploadField } from './form/FileUploadField';
 
 // Hooks
 export { useRFIDetail } from './hooks/useRFIDetail';
