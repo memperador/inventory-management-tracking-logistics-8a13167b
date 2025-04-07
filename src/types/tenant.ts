@@ -7,6 +7,7 @@ export interface Tenant {
   settings: {
     theme: string;
     features: string[];
+    logoUrl?: string | null;
   };
 }
 

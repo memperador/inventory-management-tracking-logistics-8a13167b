@@ -15,6 +15,7 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
+import LogoUpload from './LogoUpload';
 
 interface TenantFormData {
   name: string;
@@ -53,6 +54,11 @@ const GeneralSettings = () => {
         <p className="text-sm text-muted-foreground">
           View and manage your organization information
         </p>
+      </div>
+
+      {/* Logo Upload Section */}
+      <div className="pb-6 border-b">
+        <LogoUpload />
       </div>
 
       <Form {...form}>
