@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,11 +15,11 @@ import {
 } from './industry/industryCodeService';
 import { 
   industryCodeSchema, 
-  IndustryCodeFormData,
+  IndustryCodeFormData as ImportedIndustryCodeFormData,
   UseIndustryCodeFormResult 
 } from './industry/types';
 
-export { IndustryCodeFormData };
+export type IndustryCodeFormData = ImportedIndustryCodeFormData;
 
 export const useIndustryCodeForm = (tenantId: string, onNextStep?: () => void): UseIndustryCodeFormResult => {
   const [codes, setCodes] = useState<IndustryCode[]>([]);
@@ -37,7 +36,6 @@ export const useIndustryCodeForm = (tenantId: string, onNextStep?: () => void): 
     }
   });
 
-  // Load tenant settings
   useEffect(() => {
     const loadTenantSettings = async () => {
       try {
@@ -45,43 +43,35 @@ export const useIndustryCodeForm = (tenantId: string, onNextStep?: () => void): 
         
         if (!data) return;
 
-        // Set company type
         const currentCompanyType = data.company_type || 'construction';
         setCompanyType(currentCompanyType);
         form.setValue('companyType', currentCompanyType as any);
         
-        // Set code type based on company type
         const codeType = getCodeTypeForCompanyType(currentCompanyType);
         setSelectedCodeType(codeType);
         form.setValue('codeType', codeType);
         
-        // Parse preferences from industry_code_preferences
         const settings = parseIndustryCodeSettings(data.industry_code_preferences);
         
         if (settings) {
-          // Set company prefix
           if (settings.companyPrefix) {
             form.setValue('companyPrefix', settings.companyPrefix);
           }
           
-          // Set selected code type
           if (settings.selectedCodeType) {
             setSelectedCodeType(settings.selectedCodeType);
             form.setValue('codeType', settings.selectedCodeType);
           }
           
-          // Set custom codes
           if (settings.customCodes && Array.isArray(settings.customCodes)) {
             setCodes(settings.customCodes);
             form.setValue('customCodes', settings.customCodes);
           } else {
-            // Use default codes for selected code type
             const defaultCodes = loadDefaultCodesForType(codeType);
             setCodes(defaultCodes);
             form.setValue('customCodes', defaultCodes);
           }
         } else {
-          // Use default codes for selected code type
           const defaultCodes = loadDefaultCodesForType(codeType);
           setCodes(defaultCodes);
           form.setValue('customCodes', defaultCodes);
@@ -106,11 +96,9 @@ export const useIndustryCodeForm = (tenantId: string, onNextStep?: () => void): 
         data.companyType && data.companyType !== companyType ? data.companyType : undefined
       );
 
-      // Call next step if provided
       onNextStep?.();
     } catch (error) {
       console.error('Submission failed:', error);
-      // Error already handled in saveIndustryCodeSettings
     }
   };
 
@@ -118,12 +106,10 @@ export const useIndustryCodeForm = (tenantId: string, onNextStep?: () => void): 
     setCompanyType(type);
     form.setValue('companyType', type as any);
     
-    // Update code type based on company type
     const newCodeType = getCodeTypeForCompanyType(type);
     setSelectedCodeType(newCodeType);
     form.setValue('codeType', newCodeType);
     
-    // Load default codes for the selected code type
     const defaultCodes = loadDefaultCodesForType(newCodeType);
     setCodes(defaultCodes);
     form.setValue('customCodes', defaultCodes);
@@ -133,7 +119,6 @@ export const useIndustryCodeForm = (tenantId: string, onNextStep?: () => void): 
     setSelectedCodeType(type);
     form.setValue('codeType', type);
     
-    // Load default codes for the selected code type
     const defaultCodes = loadDefaultCodesForType(type);
     setCodes(defaultCodes);
     form.setValue('customCodes', defaultCodes);
