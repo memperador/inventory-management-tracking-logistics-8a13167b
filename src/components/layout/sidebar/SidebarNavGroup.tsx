@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { UserRole } from '@/types/roles';
 import { useRole } from '@/hooks/useRoleContext';
@@ -16,7 +17,7 @@ export interface NavItem {
   href: string;
   icon: string | React.ElementType;
   roles?: UserRole[];
-  requiredRoles?: string[];
+  requiredRoles?: UserRole[];
 }
 
 interface SidebarNavGroupProps {
@@ -37,7 +38,7 @@ export const SidebarNavGroup = ({ label, items, showSeparator = false, closeSide
     }
     // Otherwise, if requiredRoles is defined, use it
     else if (item.requiredRoles) {
-      return hasPermission(item.requiredRoles as UserRole[]);
+      return hasPermission(item.requiredRoles);
     }
     // If neither is defined, always show the item
     return true;
