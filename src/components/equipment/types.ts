@@ -1,4 +1,5 @@
 
+
 export interface Equipment {
   id: string;
   name: string;
@@ -44,3 +45,4 @@ export interface ProjectType {
   electrical_category?: string;
   permit_number?: string;
 }
+
