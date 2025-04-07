@@ -1,115 +1,85 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AppLayout } from '@/components/layout/AppLayout';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { TenantProvider } from '@/contexts/TenantContext';
+import { RoleProvider } from '@/contexts/RoleContext';
+import { Toaster } from '@/components/ui/sonner';
 
-import AppLayout from "./components/layout/AppLayout";
-import Dashboard from "./pages/Dashboard";
-import Inventory from "./pages/Inventory";
-import Projects from "./pages/Projects";
-import Analytics from "./pages/Analytics";
-import Users from "./pages/Users";
-import NotFound from "./pages/NotFound";
-import Onboarding from "./pages/Onboarding";
-import GPSIntegration from "./pages/GPSIntegration";
-import PaymentPage from "./pages/PaymentPage";
-import WorkflowPage from "./pages/WorkflowPage";
-import AccountPage from "./pages/AccountPage";
-import Settings from "./pages/Settings";
-import Auth from "./pages/Auth";
-import ResetPassword from "./pages/ResetPassword";
-import Unauthorized from "./pages/Unauthorized";
-import ApplicationDocumentation from "./docs/ApplicationDocumentation";
-import AIAssistant from "./pages/AIAssistant";
-import { TenantProvider } from "./contexts/TenantContext";
-import { AuthProvider } from "./contexts/AuthContext";
-import { RoleProvider } from "./contexts/RoleContext";
-import { ThemeProvider } from "./contexts/ThemeContext";
-import { ErrorBoundary } from "./components/ErrorBoundary";
-import { StripeProvider } from "./components/payment/StripeProvider";
-import ProtectedRoute from "./components/auth/ProtectedRoute";
-import UnderConstruction from "./components/common/UnderConstruction";
+// Pages
+import Auth from '@/pages/Auth';
+import Dashboard from '@/pages/Dashboard';
+import Inventory from '@/pages/Inventory';
+import Projects from '@/pages/Projects';
+import ProjectDetail from '@/pages/ProjectDetail';
+import Settings from '@/pages/Settings';
+import AIAssistant from '@/pages/AIAssistant';
+import Users from '@/pages/Users';
+import NotFound from '@/pages/NotFound';
+import Unauthorized from '@/pages/Unauthorized';
+import ResetPassword from '@/pages/ResetPassword';
+import Onboarding from '@/pages/Onboarding';
+import AccountPage from '@/pages/AccountPage';
+import Analytics from '@/pages/Analytics';
+import GPSIntegration from '@/pages/GPSIntegration';
+import WorkflowPage from '@/pages/WorkflowPage';
+import PaymentPage from '@/pages/PaymentPage';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1
-    }
-  }
-});
+// Components
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { StripeProvider } from '@/components/payment/StripeProvider';
 
-const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+function App() {
+  return (
+    <ErrorBoundary>
+      <ThemeProvider>
         <AuthProvider>
           <TenantProvider>
             <RoleProvider>
-              <ThemeProvider>
-                <TooltipProvider>
-                  <Toaster />
-                  <Sonner />
+              <StripeProvider>
+                <Router>
                   <Routes>
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/auth/reset-password" element={<ResetPassword />} />
-                    <Route path="/onboarding" element={<Onboarding />} />
-                    <Route path="/unauthorized" element={<Unauthorized />} />
+                    <Route path="/login" element={<Auth />} />
+                    <Route path="/signup" element={<Auth mode="signup" />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                     
-                    <Route element={<ProtectedRoute />}>
-                      <Route element={<AppLayout />}>
-                        <Route index element={<Dashboard />} />
-                        <Route path="dashboard" element={<Dashboard />} />
-                        <Route path="equipment" element={<Navigate to="/inventory" replace />} />
-                        <Route path="inventory" element={<Inventory />} />
-                        <Route path="projects" element={<Projects />} />
-                        <Route path="analytics" element={<Analytics />} />
-                        <Route path="account" element={<AccountPage />} />
-                        <Route path="documentation" element={<ApplicationDocumentation />} />
-                        <Route path="ai-assistant" element={<AIAssistant />} />
-                        
-                        <Route element={<ProtectedRoute requiredRoles={['admin']} redirectTo="/unauthorized" />}>
-                          <Route path="users" element={<Users />} />
-                        </Route>
-                        
-                        <Route element={<ProtectedRoute requiredRoles={['manager', 'admin']} redirectTo="/unauthorized" />}>
-                          <Route path="reports" element={<UnderConstruction pageName="Reports" />} />
-                          <Route path="billing" element={<UnderConstruction pageName="Billing" />} />
-                        </Route>
-
-                        <Route element={<ProtectedRoute requiredRoles={['operator', 'manager', 'admin']} redirectTo="/unauthorized" />}>
-                          <Route path="gps-integration" element={<GPSIntegration />} />
-                          <Route path="scheduling" element={<UnderConstruction pageName="Scheduling" />} />
-                          <Route path="maintenance" element={<UnderConstruction pageName="Maintenance" />} />
-                          <Route path="fleet" element={<UnderConstruction pageName="Fleet" />} />
-                          <Route path="materials" element={<UnderConstruction pageName="Materials" />} />
-                          <Route path="workflow" element={<WorkflowPage />} />
-                        </Route>
-                        
-                        <Route path="settings" element={<Settings />} />
-                        <Route path="notifications" element={<UnderConstruction pageName="Notifications" />} />
-                        <Route path="support" element={<UnderConstruction pageName="Support" />} />
-                        <Route path="chat" element={<UnderConstruction pageName="Chat" />} />
-                        <Route path="payments" element={
-                          <StripeProvider>
-                            <PaymentPage />
-                          </StripeProvider>
-                        } />
-                      </Route>
+                    <Route 
+                      path="/" 
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout />
+                        </ProtectedRoute>
+                      }
+                    >
+                      <Route index element={<Dashboard />} />
+                      <Route path="dashboard" element={<Dashboard />} />
+                      <Route path="inventory" element={<Inventory />} />
+                      <Route path="projects" element={<Projects />} />
+                      <Route path="project/:id" element={<ProjectDetail />} />
+                      <Route path="settings" element={<Settings />} />
+                      <Route path="ai-assistant" element={<AIAssistant />} />
+                      <Route path="users" element={<Users />} />
+                      <Route path="account" element={<AccountPage />} />
+                      <Route path="analytics" element={<Analytics />} />
+                      <Route path="gps" element={<GPSIntegration />} />
+                      <Route path="workflow" element={<WorkflowPage />} />
+                      <Route path="payment" element={<PaymentPage />} />
+                      <Route path="onboarding" element={<Onboarding />} />
+                      <Route path="unauthorized" element={<Unauthorized />} />
+                      <Route path="*" element={<NotFound />} />
                     </Route>
-                    
-                    <Route path="*" element={<NotFound />} />
                   </Routes>
-                </TooltipProvider>
-              </ThemeProvider>
+                </Router>
+                <Toaster position="top-right" />
+              </StripeProvider>
             </RoleProvider>
           </TenantProvider>
         </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
-  </ErrorBoundary>
-);
+      </ThemeProvider>
+    </ErrorBoundary>
+  );
+}
 
 export default App;

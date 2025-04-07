@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,26 +19,39 @@ const Projects = () => {
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Fetch projects
+  // Fetch projects with equipment counts
   const fetchProjects = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // Fetch projects
+      const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('*');
 
-      if (error) throw error;
+      if (projectsError) throw projectsError;
 
-      // Transform data to match the Project type
-      const transformedData: ProjectType[] = data.map(project => ({
-        ...project,
-        equipment_count: 0, // These would be calculated or fetched in a real app
-        team_size: 0,
-        electrical_category: project.electrical_category || 'Unspecified',
-        permit_number: project.permit_number || 'Not assigned'
+      // For each project, get equipment count
+      const projectsWithCounts = await Promise.all(projectsData.map(async (project) => {
+        // Get equipment count
+        const { count: equipmentCount, error: countError } = await supabase
+          .from('project_equipment')
+          .select('*', { count: 'exact', head: true })
+          .eq('project_id', project.id)
+          .is('removed_date', null);
+        
+        if (countError) console.error('Error counting equipment:', countError);
+        
+        // Transform data to match the Project type
+        return {
+          ...project,
+          equipment_count: equipmentCount || 0,
+          team_size: 0,
+          electrical_category: project.electrical_category || 'Unspecified',
+          permit_number: project.permit_number || 'Not assigned'
+        };
       }));
 
-      setProjects(transformedData);
+      setProjects(projectsWithCounts);
     } catch (error) {
       console.error('Error fetching projects:', error);
       toast({
@@ -65,7 +77,7 @@ const Projects = () => {
     <div className="space-y-6">
       <PageHeader
         title="Projects"
-        description="Manage your project sites"
+        description="Manage your project sites and their equipment"
         actions={
           <Button onClick={() => setShowNewProjectModal(true)}>
             <Plus className="mr-2 h-4 w-4" />
