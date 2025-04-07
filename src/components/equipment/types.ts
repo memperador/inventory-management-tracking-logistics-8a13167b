@@ -20,6 +20,12 @@ export interface Equipment {
   cost?: number;
   purchaseDate?: string; // Date when equipment was purchased
   lifespan?: number; // Expected lifespan in years
+  category?: InventoryCategory; // New property to categorize by inventory type
+  model?: string;
+  manufacturer?: string;
+  serialNumber?: string;
+  warrantyExpiration?: string;
+  condition?: string;
 }
 
 export interface Document {
@@ -48,4 +54,37 @@ export interface ProjectType {
   geofence_coordinates?: any;
   electrical_category?: string;
   permit_number?: string;
+}
+
+// New enum for inventory categories
+export type InventoryCategory = 
+  | 'Heavy Equipment' 
+  | 'Power Tools' 
+  | 'Hand Tools' 
+  | 'Vehicles' 
+  | 'Electrical' 
+  | 'Plumbing' 
+  | 'HVAC' 
+  | 'Safety' 
+  | 'Materials' 
+  | 'Specialty';
+
+export const INVENTORY_CATEGORIES: InventoryCategory[] = [
+  'Heavy Equipment',
+  'Power Tools',
+  'Hand Tools',
+  'Vehicles',
+  'Electrical',
+  'Plumbing',
+  'HVAC',
+  'Safety',
+  'Materials',
+  'Specialty'
+];
+
+export interface InventoryFilters {
+  searchQuery: string;
+  category?: InventoryCategory | 'All';
+  status?: Equipment['status'] | 'All';
+  location?: string | 'All';
 }

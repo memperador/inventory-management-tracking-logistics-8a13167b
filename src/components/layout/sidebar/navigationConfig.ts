@@ -18,13 +18,15 @@ import {
   Book,
   MessageSquare,
   CreditCard,
-  GitBranch
+  GitBranch,
+  Boxes
 } from 'lucide-react';
 import { NavItem } from './SidebarNavGroup';
 
 export const mainNavigation: NavItem[] = [
   { name: 'Dashboard', href: '/', icon: Layers, roles: ['viewer', 'operator', 'manager', 'admin'] },
   { name: 'Equipment', href: '/equipment', icon: Package, roles: ['viewer', 'operator', 'manager', 'admin'] },
+  { name: 'Inventory', href: '/inventory', icon: Boxes, roles: ['viewer', 'operator', 'manager', 'admin'] },
   { name: 'Projects', href: '/projects', icon: Map, roles: ['viewer', 'operator', 'manager', 'admin'] },
   { name: 'Users', href: '/users', icon: Users, roles: ['admin'] },
   { name: 'Analytics', href: '/analytics', icon: BarChart2, roles: ['manager', 'admin'] },
@@ -36,7 +38,7 @@ export const integrationNavigation: NavItem[] = [
   { name: 'Scheduling', href: '/scheduling', icon: Calendar, roles: ['operator', 'manager', 'admin'] },
   { name: 'Maintenance', href: '/maintenance', icon: Wrench, roles: ['operator', 'manager', 'admin'] },
   { name: 'Fleet', href: '/fleet', icon: Truck, roles: ['operator', 'manager', 'admin'] },
-  { name: 'Inventory', href: '/inventory', icon: ShoppingCart, roles: ['operator', 'manager', 'admin'] },
+  { name: 'Materials', href: '/materials', icon: ShoppingCart, roles: ['operator', 'manager', 'admin'] },
   { name: 'Payment', href: '/payments', icon: CreditCard, roles: ['viewer', 'operator', 'manager', 'admin'] },
   { name: 'Workflow', href: '/workflow', icon: GitBranch, roles: ['operator', 'manager', 'admin'] },
 ];
