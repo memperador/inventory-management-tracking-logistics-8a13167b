@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Plus, LayoutGrid, List, Import, Export, Package } from 'lucide-react';
+import { Plus, LayoutGrid, List, Import, FileDown, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,14 +16,13 @@ type ViewMode = 'grid' | 'list';
 
 const Inventory = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<ViewMode>('list'); // List view as default
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [activeCategory, setActiveCategory] = useState<InventoryCategory | 'All'>('All');
   const [activeStatus, setActiveStatus] = useState<string>('All');
   const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
   const [showVendorIntegration, setShowVendorIntegration] = useState(false);
   const { toast } = useToast();
   
-  // Filter equipment based on search query and active filters
   const filteredEquipment = equipmentData.filter(equipment => {
     const matchesSearch = 
       equipment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -109,7 +107,7 @@ const Inventory = () => {
             Import
           </Button>
           <Button variant="outline" onClick={handleExport}>
-            <Export className="mr-2 h-4 w-4" />
+            <FileDown className="mr-2 h-4 w-4" />
             Export
           </Button>
           <Button variant="outline" onClick={() => setShowVendorIntegration(!showVendorIntegration)}>
