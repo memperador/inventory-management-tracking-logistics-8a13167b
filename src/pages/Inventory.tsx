@@ -1,28 +1,31 @@
+
 import React, { useState } from 'react';
-import { Plus, LayoutGrid, List, Import, FileDown, Package } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { InventoryHeader } from '@/components/inventory/InventoryHeader';
+import { InventoryFilters } from '@/components/inventory/InventoryFilters';
+import { InventoryViewSelector, ViewMode } from '@/components/inventory/InventoryViewSelector';
+import { InventoryCategoryTabs } from '@/components/inventory/InventoryCategoryTabs';
+import { EmptyInventoryState } from '@/components/inventory/EmptyInventoryState';
+import { ComplianceSection } from '@/components/inventory/ComplianceSection';
+import { useInventoryImportExport } from '@/components/inventory/inventoryUtils';
 import { EquipmentList } from '@/components/equipment/EquipmentList';
 import { EquipmentListView } from '@/components/equipment/EquipmentListView';
 import { equipmentData } from '@/components/equipment/EquipmentData';
-import { InventoryCategory, INVENTORY_CATEGORIES } from '@/components/equipment/types';
-import { InventoryFilters } from '@/components/inventory/InventoryFilters';
-import { NewInventoryItemDialog } from '@/components/inventory/NewInventoryItemDialog';
+import { InventoryCategory } from '@/components/equipment/types';
 import { VendorIntegration } from '@/components/inventory/VendorIntegration';
-import { useToast } from '@/components/ui/use-toast';
-
-type ViewMode = 'grid' | 'list';
+import { NewInventoryItemDialog } from '@/components/inventory/NewInventoryItemDialog';
 
 const Inventory = () => {
+  // State management
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [activeCategory, setActiveCategory] = useState<InventoryCategory | 'All'>('All');
   const [activeStatus, setActiveStatus] = useState<string>('All');
   const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
   const [showVendorIntegration, setShowVendorIntegration] = useState(false);
-  const { toast } = useToast();
   
+  const { handleImport, handleFileUpload, handleExport } = useInventoryImportExport();
+  
+  // Filter equipment based on search query and active filters
   const filteredEquipment = equipmentData.filter(equipment => {
     const matchesSearch = 
       equipment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -41,89 +44,28 @@ const Inventory = () => {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const handleImport = () => {
-    document.getElementById('file-upload')?.click();
+  // Handler functions
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setActiveCategory('All');
+    setActiveStatus('All');
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const importedData = JSON.parse(event.target?.result as string);
-        console.log("Imported data:", importedData);
-        toast({
-          title: "Import Successful",
-          description: `Imported ${importedData.length || 0} items`,
-        });
-      } catch (error) {
-        console.error("Import error:", error);
-        toast({
-          title: "Import Failed",
-          description: "The file format is not valid",
-          variant: "destructive",
-        });
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  const handleExport = () => {
-    const dataStr = JSON.stringify(filteredEquipment, null, 2);
-    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
-    
-    const exportFileDefaultName = `inventory-export-${new Date().toISOString().slice(0, 10)}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-    
-    toast({
-      title: "Export Successful",
-      description: `${filteredEquipment.length} items exported to JSON`,
-    });
+  const handleExportData = () => {
+    handleExport(filteredEquipment);
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Inventory Management</h1>
-          <p className="text-gray-500 mt-1">Manage your complete inventory assets across all equipment types</p>
-        </div>
-        <div className="flex gap-2 flex-wrap justify-end">
-          <input 
-            type="file" 
-            id="file-upload" 
-            accept=".json" 
-            onChange={handleFileUpload} 
-            className="hidden"
-          />
-          <Button variant="outline" onClick={handleImport}>
-            <Import className="mr-2 h-4 w-4" />
-            Import
-          </Button>
-          <Button variant="outline" onClick={handleExport}>
-            <FileDown className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-          <Button variant="outline" onClick={() => setShowVendorIntegration(!showVendorIntegration)}>
-            <Package className="mr-2 h-4 w-4" />
-            Vendor Integration
-          </Button>
-          <Button onClick={() => setIsNewItemDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Item
-          </Button>
-        </div>
-      </div>
+      <InventoryHeader 
+        onImport={handleImport}
+        onExport={handleExportData}
+        onAddItem={() => setIsNewItemDialogOpen(true)}
+        onToggleVendorIntegration={() => setShowVendorIntegration(!showVendorIntegration)}
+        showVendorIntegration={showVendorIntegration}
+      />
       
-      {showVendorIntegration && (
-        <VendorIntegration />
-      )}
+      {showVendorIntegration && <VendorIntegration />}
       
       <InventoryFilters 
         searchQuery={searchQuery}
@@ -135,39 +77,15 @@ const Inventory = () => {
       />
       
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <Tabs defaultValue="all" className="w-full">
-          <TabsList className="mb-4 overflow-auto max-w-full flex flex-nowrap pb-1">
-            <TabsTrigger value="all" onClick={() => setActiveCategory('All')}>
-              All Items
-            </TabsTrigger>
-            {INVENTORY_CATEGORIES.map(category => (
-              <TabsTrigger 
-                key={category} 
-                value={category.toLowerCase().replace(' ', '-')}
-                onClick={() => setActiveCategory(category)}
-              >
-                {category}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+        <InventoryCategoryTabs 
+          activeCategory={activeCategory}
+          onCategoryChange={setActiveCategory}
+        />
         
-        <div className="flex items-center gap-2">
-          <Button 
-            variant={viewMode === 'grid' ? 'default' : 'outline'} 
-            size="sm"
-            onClick={() => setViewMode('grid')}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant={viewMode === 'list' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('list')}
-          >
-            <List className="h-4 w-4" />
-          </Button>
-        </div>
+        <InventoryViewSelector 
+          viewMode={viewMode} 
+          onViewModeChange={setViewMode}
+        />
       </div>
 
       {filteredEquipment.length > 0 ? (
@@ -177,58 +95,22 @@ const Inventory = () => {
           <EquipmentListView equipmentData={filteredEquipment} />
         )
       ) : (
-        <Card>
-          <CardContent className="py-10 text-center">
-            <p className="text-muted-foreground">No inventory items found matching your filters.</p>
-            <Button variant="outline" className="mt-4" onClick={() => {
-              setSearchQuery('');
-              setActiveCategory('All');
-              setActiveStatus('All');
-            }}>
-              Clear Filters
-            </Button>
-          </CardContent>
-        </Card>
+        <EmptyInventoryState onClearFilters={handleClearFilters} />
       )}
       
-      <div className="mt-6">
-        <h2 className="text-xl font-semibold mb-4">Industry Compliance</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Code Compliance</CardTitle>
-              <CardDescription>Industry standards and regulatory requirements</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm">Track equipment compliance with NEC, CSI, and other industry code requirements.</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Maintenance Records</CardTitle>
-              <CardDescription>OSHA and manufacturer requirements</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm">Track maintenance schedules and history for audit and safety compliance.</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Certifications</CardTitle>
-              <CardDescription>Required equipment certification</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm">Manage equipment certification requirements and renewal dates.</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <ComplianceSection />
       
       <NewInventoryItemDialog 
         open={isNewItemDialogOpen} 
         onOpenChange={setIsNewItemDialogOpen} 
+      />
+      
+      <input 
+        type="file" 
+        id="file-upload" 
+        accept=".json" 
+        onChange={handleFileUpload} 
+        className="hidden"
       />
     </div>
   );
