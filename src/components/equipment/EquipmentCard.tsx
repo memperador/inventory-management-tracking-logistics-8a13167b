@@ -5,6 +5,8 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge';
 import { DocumentDialog } from '@/components/equipment/DocumentDialog';
 import { Equipment } from './types';
+import { useTenant } from '@/hooks/useTenantContext';
+import { COMPANY_TYPE_TO_CODE_MAP } from '@/types/tenant';
 
 interface EquipmentCardProps {
   equipment: Equipment;
@@ -28,6 +30,64 @@ const getStatusColor = (status: Equipment['status']) => {
 };
 
 export const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment }) => {
+  const { currentTenant } = useTenant();
+  
+  // Determine which code to display based on company type
+  const getCodeDisplay = () => {
+    if (!currentTenant || !currentTenant.company_type) {
+      // If no company type, default to showing CSI code, falling back to NEC
+      return equipment.csi_code ? (
+        <div className="flex items-center">
+          <FileText className="h-4 w-4 text-inventory-blue mr-2" />
+          <span className="text-inventory-blue font-medium">CSI: {equipment.csi_code}</span>
+        </div>
+      ) : equipment.nec_code ? (
+        <div className="flex items-center">
+          <FileText className="h-4 w-4 text-inventory-blue mr-2" />
+          <span className="text-inventory-blue font-medium">NEC: {equipment.nec_code}</span>
+        </div>
+      ) : null;
+    }
+    
+    // Get the code type based on company type
+    const codeType = COMPANY_TYPE_TO_CODE_MAP[currentTenant.company_type];
+    
+    // Show the appropriate code
+    if (codeType === 'CSI' && equipment.csi_code) {
+      return (
+        <div className="flex items-center">
+          <FileText className="h-4 w-4 text-inventory-blue mr-2" />
+          <span className="text-inventory-blue font-medium">CSI: {equipment.csi_code}</span>
+        </div>
+      );
+    } else if (codeType === 'NEC' && equipment.nec_code) {
+      return (
+        <div className="flex items-center">
+          <FileText className="h-4 w-4 text-inventory-blue mr-2" />
+          <span className="text-inventory-blue font-medium">NEC: {equipment.nec_code}</span>
+        </div>
+      );
+    } else if (equipment.csi_code) {
+      // Fallback to CSI code
+      return (
+        <div className="flex items-center">
+          <FileText className="h-4 w-4 text-inventory-blue mr-2" />
+          <span className="text-inventory-blue font-medium">CSI: {equipment.csi_code}</span>
+        </div>
+      );
+    } else if (equipment.nec_code) {
+      // Fallback to NEC code
+      return (
+        <div className="flex items-center">
+          <FileText className="h-4 w-4 text-inventory-blue mr-2" />
+          <span className="text-inventory-blue font-medium">NEC: {equipment.nec_code}</span>
+        </div>
+      );
+    }
+    
+    return null;
+  };
+  
   return (
     <Card className="overflow-hidden">
       <CardHeader className="p-0">
@@ -83,12 +143,7 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment }) => {
             )}
             <span>Next maintenance: {new Date(equipment.nextMaintenance).toLocaleDateString()}</span>
           </div>
-          {equipment.nec_code && (
-            <div className="flex items-center">
-              <FileText className="h-4 w-4 text-inventory-blue mr-2" />
-              <span className="text-inventory-blue font-medium">NEC: {equipment.nec_code}</span>
-            </div>
-          )}
+          {getCodeDisplay()}
         </div>
       </CardContent>
       <CardFooter className="bg-gray-50 px-6 py-3 border-t">

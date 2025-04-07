@@ -7,6 +7,7 @@ import ThemeSettings from '@/components/settings/ThemeSettings';
 import FeatureSettings from '@/components/settings/FeatureSettings';
 import GeneralSettings from '@/components/settings/GeneralSettings';
 import ImplementationStatus from '@/components/settings/ImplementationStatus';
+import CompanyTypeSettings from '@/components/settings/CompanyTypeSettings';
 import { useToast } from '@/hooks/use-toast';
 
 const Settings = () => {
@@ -29,6 +30,7 @@ const Settings = () => {
           <TabsList className="mb-6">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="appearance">Appearance</TabsTrigger>
+            <TabsTrigger value="company">Company</TabsTrigger>
             <TabsTrigger value="features">Features</TabsTrigger>
             <TabsTrigger value="implementation">Implementation Status</TabsTrigger>
           </TabsList>
@@ -40,6 +42,10 @@ const Settings = () => {
             
             <TabsContent value="appearance" className="space-y-6">
               <ThemeSettings />
+            </TabsContent>
+            
+            <TabsContent value="company" className="space-y-6">
+              <CompanyTypeSettings />
             </TabsContent>
             
             <TabsContent value="features" className="space-y-6">

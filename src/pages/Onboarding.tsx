@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { OrganizationDetailsForm } from '@/components/tenant/OrganizationDetailsForm';
-import { CSICodeCustomization } from '@/components/tenant/CSICodeCustomization';
+import { IndustryCodeCustomization } from '@/components/tenant/IndustryCodeCustomization';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
@@ -70,8 +70,8 @@ const Onboarding: React.FC = () => {
       title: 'Organization Details'
     },
     {
-      component: CSICodeCustomization,
-      title: 'CSI Code Customization'
+      component: IndustryCodeCustomization,
+      title: 'Industry Code Customization'
     }
     // Future steps will be added here
   ];

@@ -1,9 +1,10 @@
+
 import React, { createContext, useState, ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { Tenant, TenantContextType } from '@/types/tenant';
-import { fetchTenant, updateTenantSettings as updateTenantSettingsService } from '@/services/tenantService';
+import { fetchTenant, updateTenantSettings as updateTenantSettingsService, updateTenantCompanyType } from '@/services/tenantService';
 
 // Create context with default values and export it
 export const TenantContext = createContext<TenantContextType | undefined>(undefined);
@@ -64,6 +65,24 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
     }
   });
   
+  // Mutation for updating tenant company type
+  const updateCompanyTypeMutation = useMutation({
+    mutationFn: async (companyType: Tenant['company_type']) => {
+      if (!tenantId) throw new Error('No tenant selected');
+      return updateTenantCompanyType(tenantId, companyType);
+    },
+    onSuccess: (companyType) => {
+      // Optimistically update the cache
+      queryClient.setQueryData(['tenant', tenantId], (oldData: Tenant | undefined) => {
+        if (!oldData) return null;
+        return {
+          ...oldData,
+          company_type: companyType,
+        };
+      });
+    }
+  });
+  
   const setCurrentTenant = (tenant: Tenant) => {
     setTenantId(tenant.id);
   };
@@ -72,12 +91,17 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
     updateSettingsMutation.mutate(settings);
   };
   
+  const updateCompanyType = (companyType: Tenant['company_type']) => {
+    updateCompanyTypeMutation.mutate(companyType);
+  };
+  
   const value = {
     currentTenant: currentTenant || null,
     isLoading,
     error: error as Error | null,
     setCurrentTenant,
     updateTenantSettings,
+    updateCompanyType,
   };
   
   return (
