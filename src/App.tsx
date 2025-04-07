@@ -59,7 +59,8 @@ const App = () => (
                     {/* Base protected route - requires authentication */}
                     <Route element={<ProtectedRoute />}>
                       <Route element={<AppLayout />}>
-                        <Route index element={<Dashboard />} />
+                        <Route index element={<Navigate to="/dashboard" replace />} />
+                        <Route path="dashboard" element={<Dashboard />} />
                         <Route path="equipment" element={<Equipment />} />
                         <Route path="projects" element={<Projects />} />
                         <Route path="analytics" element={<Analytics />} />
@@ -81,7 +82,7 @@ const App = () => (
                           <Route path="gps-integration" element={<GPSIntegration />} />
                           <Route path="scheduling" element={<UnderConstruction pageName="Scheduling" />} />
                           <Route path="maintenance" element={<UnderConstruction pageName="Maintenance" />} />
-                          <Route path="fleet" element={<UnderConstruction pageName="Fleet Management" />} />
+                          <Route path="fleet" element={<UnderConstruction pageName="Fleet" />} />
                           <Route path="inventory" element={<UnderConstruction pageName="Inventory" />} />
                           <Route path="workflow" element={<WorkflowPage />} />
                         </Route>
