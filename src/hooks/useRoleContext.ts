@@ -12,3 +12,6 @@ export const useRole = () => {
 
 // For backward compatibility
 export const useRoleContext = useRole;
+
+// Default export for backward compatibility
+export default useRole;

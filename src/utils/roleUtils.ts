@@ -1,5 +1,6 @@
 
 import { UserRole } from '@/types/roles';
+import { NavItem } from '@/components/layout/sidebar/SidebarNavGroup';
 
 export const getRoleBadgeColor = (role: UserRole): string => {
   switch (role) {
@@ -18,4 +19,22 @@ export const getRoleBadgeColor = (role: UserRole): string => {
 
 export const getAllRoles = (): UserRole[] => {
   return ['admin', 'manager', 'operator', 'viewer'];
+};
+
+// Filter navigation items based on user role and required roles
+export const filterNavItemsByRole = (items: NavItem[], userRole: UserRole | null): NavItem[] => {
+  if (!userRole) return [];
+  
+  return items.filter(item => {
+    // If roles is defined, check if user has one of those roles
+    if (item.roles) {
+      return item.roles.includes(userRole);
+    }
+    // If requiredRoles is defined, check if user has one of those roles
+    else if (item.requiredRoles) {
+      return item.requiredRoles.includes(userRole);
+    }
+    // If neither is defined, show the item to everyone
+    return true;
+  });
 };

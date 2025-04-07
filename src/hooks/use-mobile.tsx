@@ -19,5 +19,8 @@ export function useIsMobile() {
   return !!isMobile
 }
 
-// For backward compatibility
-export const useMobile = { useIsMobile, isMobile: false }
+// For backward compatibility - expose as an object with utilities
+export const useMobile = {
+  useIsMobile,
+  isMobile: false
+}

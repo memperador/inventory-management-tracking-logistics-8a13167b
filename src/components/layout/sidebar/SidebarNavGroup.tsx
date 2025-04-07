@@ -21,13 +21,20 @@ export interface NavItem {
 }
 
 interface SidebarNavGroupProps {
-  label: string;
+  title: string;
   items: NavItem[];
+  currentPath: string;
   showSeparator?: boolean;
   closeSidebar?: () => void;
 }
 
-export const SidebarNavGroup = ({ label, items, showSeparator = false, closeSidebar }: SidebarNavGroupProps) => {
+export const SidebarNavGroup = ({ 
+  title, 
+  items, 
+  currentPath,
+  showSeparator = false,
+  closeSidebar 
+}: SidebarNavGroupProps) => {
   const { hasPermission } = useRole();
   
   // Filter menu items based on user role, supporting both roles and requiredRoles properties
@@ -53,7 +60,7 @@ export const SidebarNavGroup = ({ label, items, showSeparator = false, closeSide
     <>
       {showSeparator && <SidebarSeparator />}
       <SidebarGroup>
-        <SidebarGroupLabel>{label}</SidebarGroupLabel>
+        <SidebarGroupLabel>{title}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             {filteredItems.map((item) => (
