@@ -4,7 +4,7 @@ export interface Equipment {
   name: string;
   type: string;
   image?: string;
-  status: 'Operational' | 'Maintenance' | 'Out of Service';
+  status: 'Operational' | 'Maintenance' | 'Out of Service' | 'Testing' | 'Certification Pending';
   location: string;
   utilization?: number;
   lastMaintenance?: string;
@@ -26,4 +26,21 @@ export interface Document {
   size: string;
   uploadDate: string;
   uploadedBy: string;
+}
+
+export interface ProjectType {
+  id: string;
+  name: string;
+  site_address: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  status: 'active' | 'completed' | 'planned' | string;
+  equipment_count?: number;
+  team_size?: number;
+  created_at?: string;
+  updated_at?: string;
+  tenant_id?: string;
+  geofence_coordinates?: any;
+  electrical_category?: string;
+  permit_number?: string;
 }

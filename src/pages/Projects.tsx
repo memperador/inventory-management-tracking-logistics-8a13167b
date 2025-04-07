@@ -1,31 +1,23 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, MapPin, Calendar, Users, Package } from 'lucide-react';
+import { Search, Plus, MapPin, Calendar, Users, Package, Filter, ChevronDown, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import NewProjectModal from '@/components/projects/NewProjectModal';
 import { Json } from '@/integrations/supabase/types';
+import { ProjectType } from '@/components/equipment/types';
 
-type Project = {
-  id: string;
-  name: string;
-  site_address: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  status: 'active' | 'completed' | 'planned' | string | null;
-  equipment_count?: number;
-  team_size?: number;
-  created_at?: string;
-  updated_at?: string;
-  tenant_id?: string;
-  geofence_coordinates?: Json | null;
-};
-
-const getStatusColor = (status: Project['status']) => {
+const getStatusColor = (status: ProjectType['status']) => {
   switch (status) {
     case 'active':
       return 'bg-inventory-green-light text-inventory-green border-inventory-green';
@@ -38,11 +30,15 @@ const getStatusColor = (status: Project['status']) => {
   }
 };
 
+const ELECTRICAL_CATEGORIES = ['Residential', 'Commercial', 'Industrial', 'Maintenance', 'Emergency'];
+
 const Projects = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<ProjectType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Fetch projects
@@ -56,10 +52,12 @@ const Projects = () => {
       if (error) throw error;
 
       // Transform data to match the Project type
-      const transformedData: Project[] = data.map(project => ({
+      const transformedData: ProjectType[] = data.map(project => ({
         ...project,
         equipment_count: 0, // These would be calculated or fetched in a real app
-        team_size: 0
+        team_size: 0,
+        electrical_category: project.electrical_category || 'Unspecified',
+        permit_number: project.permit_number || 'Not assigned'
       }));
 
       setProjects(transformedData);
@@ -79,13 +77,25 @@ const Projects = () => {
     fetchProjects();
   }, []);
 
-  // Filter projects based on search query
+  // Filter projects based on search query and filters
   const filteredProjects = projects.filter(
-    project => 
-      project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.site_address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.id.toLowerCase().includes(searchQuery.toLowerCase())
+    project => {
+      const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.site_address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.permit_number?.toLowerCase().includes(searchQuery.toLowerCase());
+        
+      const matchesStatus = !statusFilter || project.status === statusFilter;
+      const matchesCategory = !categoryFilter || project.electrical_category === categoryFilter;
+      
+      return matchesSearch && matchesStatus && matchesCategory;
+    }
   );
+
+  const clearFilters = () => {
+    setStatusFilter(null);
+    setCategoryFilter(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -100,14 +110,69 @@ const Projects = () => {
         </Button>
       </div>
       
-      <div className="relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-        <Input 
-          placeholder="Search projects..." 
-          className="pl-9 mb-6"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="relative flex-grow">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Input 
+            placeholder="Search projects by name, location, or permit #..." 
+            className="pl-9"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-1">
+                <Filter className="h-4 w-4" />
+                Status
+                <ChevronDown className="h-3 w-3 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setStatusFilter('active')}>
+                Active
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter('planned')}>
+                Planned
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter('completed')}>
+                Completed
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-1">
+                <Zap className="h-4 w-4" />
+                Category
+                <ChevronDown className="h-3 w-3 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {ELECTRICAL_CATEGORIES.map(category => (
+                <DropdownMenuItem 
+                  key={category}
+                  onClick={() => setCategoryFilter(category)}
+                >
+                  {category}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          {(statusFilter || categoryFilter) && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={clearFilters}
+            >
+              Clear filters
+            </Button>
+          )}
+        </div>
       </div>
       
       {isLoading ? (
@@ -123,6 +188,7 @@ const Projects = () => {
                 <TableHead>Location</TableHead>
                 <TableHead>Timeline</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Electrical Info</TableHead>
                 <TableHead>Resources</TableHead>
               </TableRow>
             </TableHeader>
@@ -160,6 +226,17 @@ const Projects = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
+                      <div className="flex flex-col space-y-1">
+                        <div className="flex items-center">
+                          <Zap className="h-4 w-4 text-gray-400 mr-1" />
+                          <span className="text-sm">{project.electrical_category || 'Unspecified'}</span>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Permit: {project.permit_number || 'Not assigned'}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center space-x-4">
                         <div className="flex items-center">
                           <Package className="h-4 w-4 text-gray-400 mr-1" />
@@ -175,8 +252,8 @@ const Projects = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
-                    No projects found. {searchQuery ? 'Try a different search term.' : 'Create your first project!'}
+                  <TableCell colSpan={6} className="text-center py-8">
+                    No projects found. {searchQuery || statusFilter || categoryFilter ? 'Try removing some filters.' : 'Create your first project!'}
                   </TableCell>
                 </TableRow>
               )}

@@ -10,7 +10,7 @@ interface EquipmentListViewProps {
   onSelect?: (equipment: Equipment) => void;
 }
 
-const getStatusBadge = (status: string) => {
+const getStatusBadge = (status: Equipment['status']) => {
   switch (status) {
     case 'Operational':
       return <Badge className="bg-inventory-green-light text-inventory-green border-inventory-green">Operational</Badge>;
@@ -18,6 +18,10 @@ const getStatusBadge = (status: string) => {
       return <Badge className="bg-inventory-yellow-light text-inventory-yellow border-inventory-yellow">Maintenance</Badge>;
     case 'Out of Service':
       return <Badge className="bg-inventory-red-light text-inventory-red border-inventory-red">Out of Service</Badge>;
+    case 'Testing':
+      return <Badge className="bg-inventory-blue-light text-inventory-blue border-inventory-blue">Testing</Badge>;
+    case 'Certification Pending':
+      return <Badge className="bg-purple-100 text-purple-600 border-purple-600">Certification Pending</Badge>;
     default:
       return <Badge variant="outline">{status}</Badge>;
   }
@@ -33,7 +37,7 @@ export const EquipmentListView: React.FC<EquipmentListViewProps> = ({ equipmentD
             <TableHead>Type</TableHead>
             <TableHead>Location</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>CSI Code</TableHead>
+            <TableHead>Codes</TableHead>
             <TableHead>Maintenance</TableHead>
           </TableRow>
         </TableHeader>
@@ -62,9 +66,19 @@ export const EquipmentListView: React.FC<EquipmentListViewProps> = ({ equipmentD
                   {getStatusBadge(equipment.status)}
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center">
-                    <FileText className="h-4 w-4 text-gray-400 mr-2" />
-                    <span>{equipment.csi_code || 'N/A'}</span>
+                  <div className="flex flex-col gap-1">
+                    {equipment.csi_code && (
+                      <div className="flex items-center text-sm">
+                        <FileText className="h-3 w-3 text-gray-400 mr-1" />
+                        <span>CSI: {equipment.csi_code}</span>
+                      </div>
+                    )}
+                    {equipment.nec_code && (
+                      <div className="flex items-center text-sm text-inventory-blue font-medium">
+                        <FileText className="h-3 w-3 text-inventory-blue mr-1" />
+                        <span>NEC: {equipment.nec_code}</span>
+                      </div>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>

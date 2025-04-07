@@ -19,6 +19,7 @@ export type Database = {
           location: string | null
           maintenance_history: Json | null
           name: string
+          nec_code: string | null
           next_maintenance: string | null
           status: string | null
           tenant_id: string
@@ -34,6 +35,7 @@ export type Database = {
           location?: string | null
           maintenance_history?: Json | null
           name: string
+          nec_code?: string | null
           next_maintenance?: string | null
           status?: string | null
           tenant_id: string
@@ -49,6 +51,7 @@ export type Database = {
           location?: string | null
           maintenance_history?: Json | null
           name?: string
+          nec_code?: string | null
           next_maintenance?: string | null
           status?: string | null
           tenant_id?: string

@@ -11,6 +11,8 @@ export const equipmentData: Equipment[] = [
     lastMaintenance: '2024-03-15',
     nextMaintenance: '2024-05-15',
     gpsTag: 'GT-7851',
+    csi_code: '33 05 23',
+    nec_code: 'NFPA 70E 130.7',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000' 
   },
   {
@@ -22,6 +24,7 @@ export const equipmentData: Equipment[] = [
     lastMaintenance: '2024-02-20',
     nextMaintenance: '2024-04-20',
     gpsTag: 'GT-9245',
+    nec_code: 'NFPA 70 110.26',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000'
   },
   {
@@ -33,6 +36,7 @@ export const equipmentData: Equipment[] = [
     lastMaintenance: '2024-03-01',
     nextMaintenance: '2024-05-01',
     gpsTag: 'GT-3487',
+    nec_code: 'NFPA 70 110.13',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000'
   },
   {
@@ -44,6 +48,7 @@ export const equipmentData: Equipment[] = [
     lastMaintenance: '2023-12-10',
     nextMaintenance: '2024-04-10',
     gpsTag: 'GT-6120',
+    nec_code: 'NFPA 70 400.7',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000'
   },
   {
@@ -55,6 +60,7 @@ export const equipmentData: Equipment[] = [
     lastMaintenance: '2024-03-25',
     nextMaintenance: '2024-05-25',
     gpsTag: 'GT-1742',
+    nec_code: 'NFPA 70 620.51',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000'
   },
   {
@@ -66,6 +72,7 @@ export const equipmentData: Equipment[] = [
     lastMaintenance: '2024-01-05',
     nextMaintenance: '2024-04-05',
     gpsTag: 'GT-5390',
+    nec_code: 'NFPA 70 440.12',
     tenant_id: '550e8400-e29b-41d4-a716-446655440000'
   }
 ];

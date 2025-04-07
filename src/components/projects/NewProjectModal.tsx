@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { Calendar } from 'lucide-react';
+import { Calendar, Zap, FileText } from 'lucide-react';
 import { 
   Dialog, 
   DialogContent, 
@@ -19,6 +19,13 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useTenantContext } from '@/hooks/useTenantContext';
@@ -34,7 +41,11 @@ interface ProjectFormData {
   location: string;
   startDate: string;
   endDate: string;
+  electricalCategory: string;
+  permitNumber: string;
 }
+
+const ELECTRICAL_CATEGORIES = ['Residential', 'Commercial', 'Industrial', 'Maintenance', 'Emergency'];
 
 export const NewProjectModal: React.FC<NewProjectModalProps> = ({ 
   open, 
@@ -49,7 +60,9 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
       name: '',
       location: '',
       startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      electricalCategory: 'Residential',
+      permitNumber: ''
     }
   });
   
@@ -63,7 +76,9 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           start_date: new Date(data.startDate).toISOString(),
           end_date: new Date(data.endDate).toISOString(),
           status: 'planned',
-          tenant_id: currentTenant?.id || ''
+          tenant_id: currentTenant?.id || '',
+          electrical_category: data.electricalCategory,
+          permit_number: data.permitNumber || null
         });
       
       if (error) throw error;
@@ -155,6 +170,60 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                         <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                         <Input 
                           type="date" 
+                          className="pl-9"
+                          {...field} 
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="electricalCategory"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Electrical Category</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <div className="relative">
+                          <Zap className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <SelectTrigger className="pl-9">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                        </div>
+                      </FormControl>
+                      <SelectContent>
+                        {ELECTRICAL_CATEGORIES.map(category => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="permitNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Permit Number (Optional)</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <FileText className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input 
+                          placeholder="Enter permit number" 
                           className="pl-9"
                           {...field} 
                         />

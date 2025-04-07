@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MapPin, Calendar, AlertTriangle } from 'lucide-react';
+import { MapPin, Calendar, AlertTriangle, FileText } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DocumentDialog } from '@/components/equipment/DocumentDialog';
@@ -18,6 +18,10 @@ const getStatusColor = (status: Equipment['status']) => {
       return 'bg-inventory-yellow-light text-inventory-yellow border-inventory-yellow';
     case 'Out of Service':
       return 'bg-inventory-red-light text-inventory-red border-inventory-red';
+    case 'Testing':
+      return 'bg-inventory-blue-light text-inventory-blue border-inventory-blue';
+    case 'Certification Pending':
+      return 'bg-purple-100 text-purple-600 border-purple-600';
     default:
       return '';
   }
@@ -32,6 +36,8 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment }) => {
             className={`h-full ${
               equipment.status === 'Operational' ? 'bg-inventory-green' : 
               equipment.status === 'Maintenance' ? 'bg-inventory-yellow' : 
+              equipment.status === 'Testing' ? 'bg-inventory-blue' :
+              equipment.status === 'Certification Pending' ? 'bg-purple-600' :
               'bg-inventory-red'
             }`}
             style={{ width: equipment.status === 'Operational' ? '100%' : '60%' }}
@@ -77,6 +83,12 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment }) => {
             )}
             <span>Next maintenance: {new Date(equipment.nextMaintenance).toLocaleDateString()}</span>
           </div>
+          {equipment.nec_code && (
+            <div className="flex items-center">
+              <FileText className="h-4 w-4 text-inventory-blue mr-2" />
+              <span className="text-inventory-blue font-medium">NEC: {equipment.nec_code}</span>
+            </div>
+          )}
         </div>
       </CardContent>
       <CardFooter className="bg-gray-50 px-6 py-3 border-t">
