@@ -1,35 +1,30 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { cn } from '@/lib/utils';
-import {
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
+import { SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 
 interface SidebarNavItemProps {
   name: string;
   href: string;
   icon: React.ElementType;
-  active?: boolean;
+  closeSidebar?: () => void;
 }
 
-export const SidebarNavItem = ({ name, href, icon: Icon, active }: SidebarNavItemProps) => {
+export const SidebarNavItem = ({ name, href, icon: Icon, closeSidebar }: SidebarNavItemProps) => {
   const location = useLocation();
-  const isActive = active !== undefined ? active : location.pathname === href;
+  const isActive = location.pathname === href || location.pathname.startsWith(`${href}/`);
 
   return (
-    <SidebarMenuItem key={name}>
-      <SidebarMenuButton 
-        tooltip={name}
-        isActive={isActive}
+    <SidebarMenuItem>
+      <SidebarMenuButton
         asChild
+        isActive={isActive}
+        tooltip={name}
       >
-        <Link to={href}>
-          <Icon className={cn(
-            "mr-3 h-5 w-5", 
-            isActive ? "text-inventory-blue" : "text-gray-400"
-          )} />
+        <Link
+          to={href}
+          onClick={() => closeSidebar && closeSidebar()}
+        >
+          <Icon />
           <span>{name}</span>
         </Link>
       </SidebarMenuButton>

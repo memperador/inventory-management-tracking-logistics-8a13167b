@@ -22,9 +22,10 @@ interface SidebarNavGroupProps {
   label: string;
   items: NavItem[];
   showSeparator?: boolean;
+  closeSidebar?: () => void;
 }
 
-export const SidebarNavGroup = ({ label, items, showSeparator = false }: SidebarNavGroupProps) => {
+export const SidebarNavGroup = ({ label, items, showSeparator = false, closeSidebar }: SidebarNavGroupProps) => {
   const { hasPermission } = useRole();
   
   // Filter menu items based on user role
@@ -48,6 +49,7 @@ export const SidebarNavGroup = ({ label, items, showSeparator = false }: Sidebar
                 name={item.name}
                 href={item.href}
                 icon={item.icon}
+                closeSidebar={closeSidebar}
               />
             ))}
           </SidebarMenu>
