@@ -8,11 +8,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { SidebarNavGroup } from './sidebar/SidebarNavGroup';
 import { SidebarFooterContent } from './sidebar/SidebarFooterContent';
 import { 
-  dashboardNavigation, 
-  managementNavigation, 
-  operationsNavigation, 
-  supportNavigation, 
-  accountNavigation 
+  mainNavItems, 
+  managementNavItems, 
+  systemNavItems 
 } from './sidebar/navigationConfig';
 import { useRole } from '@/hooks/useRoleContext';
 import { filterNavItemsByRole } from '@/utils/roleUtils';
@@ -27,22 +25,17 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ closeSidebar }) => {
   const { userRole } = useRole();
 
   // Filter navigation items based on user role
-  const filteredManagementNav = filterNavItemsByRole(managementNavigation, userRole);
-  const filteredOperationsNav = filterNavItemsByRole(operationsNavigation, userRole);
-  const filteredSupportNav = filterNavItemsByRole(supportNavigation, userRole);
+  const filteredManagementNav = filterNavItemsByRole(managementNavItems, userRole);
+  const filteredSystemNav = filterNavItemsByRole(systemNavItems, userRole);
 
   // Determine which section should be open by default based on current path
-  const isDashboardActive = location.pathname.startsWith('/dashboard') || location.pathname === '/';
+  const isMainActive = mainNavItems.some(item => 
+    location.pathname.startsWith(item.href)
+  );
   const isManagementActive = filteredManagementNav.some(item => 
     location.pathname.startsWith(item.href)
   );
-  const isOperationsActive = filteredOperationsNav.some(item => 
-    location.pathname.startsWith(item.href)
-  );
-  const isAccountActive = accountNavigation.some(item => 
-    location.pathname.startsWith(item.href)
-  );
-  const isSupportActive = filteredSupportNav.some(item => 
+  const isSystemActive = filteredSystemNav.some(item => 
     location.pathname.startsWith(item.href)
   );
 
@@ -56,10 +49,10 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ closeSidebar }) => {
           <ScrollArea className="flex-1">
             <div className="px-2 py-2">
               <SidebarNavGroup 
-                title="Dashboard" 
-                items={dashboardNavigation} 
+                title="Main" 
+                items={mainNavItems} 
                 currentPath={location.pathname} 
-                defaultOpen={isDashboardActive}
+                defaultOpen={isMainActive}
               />
               
               {filteredManagementNav.length > 0 && (
@@ -71,28 +64,14 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ closeSidebar }) => {
                 />
               )}
               
-              {filteredOperationsNav.length > 0 && (
+              {filteredSystemNav.length > 0 && (
                 <SidebarNavGroup 
-                  title="Operations" 
-                  items={filteredOperationsNav} 
+                  title="System" 
+                  items={filteredSystemNav} 
                   currentPath={location.pathname} 
-                  defaultOpen={isOperationsActive}
+                  defaultOpen={isSystemActive}
                 />
               )}
-              
-              <SidebarNavGroup 
-                title="Account" 
-                items={accountNavigation} 
-                currentPath={location.pathname} 
-                defaultOpen={isAccountActive}
-              />
-
-              <SidebarNavGroup 
-                title="Support" 
-                items={filteredSupportNav} 
-                currentPath={location.pathname} 
-                defaultOpen={isSupportActive}
-              />
             </div>
           </ScrollArea>
           <SidebarFooterContent />

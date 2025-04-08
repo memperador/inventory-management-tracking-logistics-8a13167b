@@ -1,8 +1,8 @@
 
 import { useEffect } from 'react';
-import { PageTitle } from '@/components/common/PageTitle';
-import { PageHeader } from '@/components/common/PageHeader';
-import { PageDescription } from '@/components/common/PageDescription';
+import PageTitle from '@/components/common/PageTitle';
+import PageHeader from '@/components/common/PageHeader';
+import PageDescription from '@/components/common/PageDescription';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useNotificationContext } from '@/contexts/NotificationContext';

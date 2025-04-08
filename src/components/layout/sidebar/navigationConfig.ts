@@ -16,6 +16,7 @@ import {
   Workflow, 
   Bell
 } from 'lucide-react';
+import { UserRole } from '@/types/roles';
 
 export const mainNavItems: NavItem[] = [
   {
@@ -40,19 +41,19 @@ export const managementNavItems: NavItem[] = [
     title: 'Request Management',
     href: '/requests',
     icon: MessageSquareText,
-    roles: ['admin', 'manager', 'approver']
+    roles: ['admin', 'manager'] as UserRole[]
   },
   {
     title: 'GPS Integration',
     href: '/gps',
     icon: Map,
-    roles: ['admin', 'manager']
+    roles: ['admin', 'manager'] as UserRole[]
   },
   {
     title: 'Analytics',
     href: '/analytics',
     icon: BarChart3,
-    roles: ['admin', 'manager']
+    roles: ['admin', 'manager'] as UserRole[]
   },
   {
     title: 'Notifications',
@@ -66,7 +67,7 @@ export const systemNavItems: NavItem[] = [
     title: 'User Management',
     href: '/users',
     icon: Users,
-    roles: ['admin']
+    roles: ['admin'] as UserRole[]
   },
   {
     title: 'AI Assistant',
@@ -77,13 +78,13 @@ export const systemNavItems: NavItem[] = [
     title: 'Workflow',
     href: '/workflow',
     icon: Workflow,
-    roles: ['admin', 'manager']
+    roles: ['admin', 'manager'] as UserRole[]
   },
   {
     title: 'Payment',
     href: '/payment',
     icon: CreditCard,
-    roles: ['admin']
+    roles: ['admin'] as UserRole[]
   },
   {
     title: 'Account',
