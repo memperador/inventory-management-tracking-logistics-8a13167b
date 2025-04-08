@@ -20,7 +20,7 @@ const CustomerOnboarding: React.FC = () => {
   // Function to be passed to OnboardingAssistant to set AI prompt
   const handleOpenAIAssistant = (prompt?: string) => {
     if (prompt) {
-      setInput(prompt);
+      setAiInput(prompt);
       toast({
         title: "AI Assistant",
         description: "Your question has been sent to the AI Assistant. You can modify it if needed.",

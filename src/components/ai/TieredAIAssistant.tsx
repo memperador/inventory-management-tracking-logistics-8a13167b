@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bot } from 'lucide-react';
+import { Bot, AlertCircle } from 'lucide-react';
 import { useTenant } from '@/hooks/useTenantContext';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useTieredAIChat } from './hooks/useTieredAIChat';
@@ -10,6 +10,8 @@ import AICapabilities from './components/AICapabilities';
 import ApiKeyInput from './components/ApiKeyInput';
 import MessageList from './components/MessageList';
 import ChatInput from './components/ChatInput';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useSecuredAIService } from '@/hooks/ai/useSecuredAIService';
 
 interface TieredAIAssistantProps {
   initialInput?: string;
@@ -27,9 +29,11 @@ const TieredAIAssistant: React.FC<TieredAIAssistantProps> = ({ initialInput = ''
     input,
     setInput,
     isLoading,
-    apiKey,
-    setApiKey,
-    isKeySet,
+    localApiKey,
+    setLocalApiKey,
+    isReady,
+    isEnabled,
+    fallbackToUserInput,
     handleSetApiKey,
     handleSendMessage
   } = useTieredAIChat({ tier, initialInput });
@@ -46,11 +50,20 @@ const TieredAIAssistant: React.FC<TieredAIAssistantProps> = ({ initialInput = ''
       <CardContent className="flex-1 overflow-hidden">
         <AICapabilities capabilities={currentAssistant.capabilities} />
         
-        {!isKeySet && (
+        {!isEnabled && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              AI features are currently disabled for your organization. Please contact your administrator.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {isEnabled && !isReady && fallbackToUserInput && (
           <ApiKeyInput 
-            apiKey={apiKey}
+            apiKey={localApiKey}
             tier={tier}
-            onApiKeyChange={setApiKey}
+            onApiKeyChange={setLocalApiKey}
             onSetApiKey={handleSetApiKey}
           />
         )}
@@ -66,6 +79,7 @@ const TieredAIAssistant: React.FC<TieredAIAssistantProps> = ({ initialInput = ''
           input={input}
           tier={tier}
           isLoading={isLoading}
+          disabled={!isEnabled}
           onInputChange={setInput}
           onSendMessage={handleSendMessage}
         />

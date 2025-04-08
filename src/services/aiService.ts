@@ -40,7 +40,7 @@ export const getAIAssistantResponse = async (
   { apiKey, tier = 'basic' }: AIServiceProps
 ): Promise<string> => {
   if (!apiKey) {
-    return "API key is missing. Please check your settings.";
+    return "AI service is not properly configured. Please contact your administrator.";
   }
 
   try {
@@ -82,7 +82,7 @@ export const getAIAssistantResponse = async (
     return data.choices[0].message.content;
   } catch (error) {
     console.error('Error getting AI response:', error);
-    return "Sorry, I encountered an error processing your request. Please try again later.";
+    return "Sorry, I encountered an error processing your request. Please contact your administrator.";
   }
 };
 
