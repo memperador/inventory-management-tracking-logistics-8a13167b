@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { InventoryDashboard } from '@/components/inventory/InventoryDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LayoutGrid, LineChart, ListFilter } from 'lucide-react';
+import { LayoutGrid, LineChart } from 'lucide-react';
 
 const Inventory = () => {
   // State management
@@ -29,6 +29,14 @@ const Inventory = () => {
   const [activeTab, setActiveTab] = useState<'list' | 'dashboard'>('list');
   const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
   const [showVendorIntegration, setShowVendorIntegration] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState({
+    location: 'All',
+    necCode: '',
+    csiCode: '',
+    maintenanceStatus: 'All',
+    minCost: '',
+    maxCost: '',
+  });
   const { toast } = useToast();
   
   const { handleImport, handleFileUpload, handleExport, handleExportCSV } = useInventoryImportExport();
@@ -38,21 +46,60 @@ const Inventory = () => {
     // Assign default category if not present (for backward compatibility)
     const equipmentCategory = equipment.category || 'Heavy Equipment';
     
+    // Basic search matching
     const matchesSearch = 
-      equipment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      equipment.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      equipment.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      equipment.id.toLowerCase().includes(searchQuery.toLowerCase());
+      (equipment.name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (equipment.type?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (equipment.location?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (equipment.id?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (equipment.nec_code?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (equipment.csi_code?.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    const matchesCategory = 
-      activeCategory === 'All' || 
-      equipmentCategory === activeCategory;
+    // Category and status filtering  
+    const matchesCategory = activeCategory === 'All' || equipmentCategory === activeCategory;
+    const matchesStatus = activeStatus === 'All' || equipment.status === activeStatus;
+    
+    // Advanced filtering
+    const matchesLocation = advancedFilters.location === 'All' || 
+                           equipment.location === advancedFilters.location;
+    
+    const matchesNecCode = !advancedFilters.necCode || 
+                          (equipment.nec_code && 
+                           equipment.nec_code.toLowerCase().includes(advancedFilters.necCode.toLowerCase()));
+    
+    const matchesCsiCode = !advancedFilters.csiCode || 
+                          (equipment.csi_code && 
+                           equipment.csi_code.toLowerCase().includes(advancedFilters.csiCode.toLowerCase()));
+    
+    // Maintenance status filtering
+    let matchesMaintenance = true;
+    if (advancedFilters.maintenanceStatus !== 'All' && equipment.nextMaintenance) {
+      const today = new Date();
+      const nextMaintDate = new Date(equipment.nextMaintenance);
+      const daysUntilMaintenance = Math.floor((nextMaintDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
       
-    const matchesStatus = 
-      activeStatus === 'All' || 
-      equipment.status === activeStatus;
-      
-    return matchesSearch && matchesCategory && matchesStatus;
+      if (advancedFilters.maintenanceStatus === 'Due Soon') {
+        matchesMaintenance = daysUntilMaintenance > 0 && daysUntilMaintenance <= 30;
+      } else if (advancedFilters.maintenanceStatus === 'Overdue') {
+        matchesMaintenance = daysUntilMaintenance < 0;
+      } else if (advancedFilters.maintenanceStatus === 'Up to Date') {
+        matchesMaintenance = daysUntilMaintenance > 30;
+      }
+    }
+    
+    // Cost range filtering
+    const minCost = advancedFilters.minCost ? parseFloat(advancedFilters.minCost as string) : 0;
+    const maxCost = advancedFilters.maxCost ? parseFloat(advancedFilters.maxCost as string) : Infinity;
+    const matchesCost = equipment.cost ? (equipment.cost >= minCost && equipment.cost <= maxCost) : true;
+    
+    return matchesSearch && 
+           matchesCategory && 
+           matchesStatus && 
+           matchesLocation && 
+           matchesNecCode && 
+           matchesCsiCode && 
+           matchesMaintenance &&
+           matchesCost;
   });
 
   // Handler functions
@@ -60,6 +107,14 @@ const Inventory = () => {
     setSearchQuery('');
     setActiveCategory('All');
     setActiveStatus('All');
+    setAdvancedFilters({
+      location: 'All',
+      necCode: '',
+      csiCode: '',
+      maintenanceStatus: 'All',
+      minCost: '',
+      maxCost: '',
+    });
     
     toast({
       title: "Filters Reset",
@@ -147,6 +202,8 @@ const Inventory = () => {
               onCategoryChange={setActiveCategory}
               activeStatus={activeStatus}
               onStatusChange={setActiveStatus}
+              advancedFilters={advancedFilters}
+              onAdvancedFilterChange={setAdvancedFilters}
             />
             
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
