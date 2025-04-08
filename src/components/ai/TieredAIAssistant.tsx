@@ -28,10 +28,8 @@ const TieredAIAssistant: React.FC = () => {
   const { hasSubscriptionTier, canAccessFeature } = useFeatureAccess();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Get current subscription tier or default to basic
   const tier = currentTenant?.subscription_tier || 'basic';
   
-  // Assistant configuration based on tier
   const assistantConfig = {
     basic: {
       name: 'Inventory Expert',
@@ -52,14 +50,12 @@ const TieredAIAssistant: React.FC = () => {
   
   const currentAssistant = assistantConfig[tier as keyof typeof assistantConfig] || assistantConfig.basic;
 
-  // Scroll to bottom when messages change
   React.useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
-  // Initialize with welcome message
   React.useEffect(() => {
     const welcomeMessage = getWelcomeMessage();
     setMessages([
@@ -114,14 +110,12 @@ const TieredAIAssistant: React.FC = () => {
     try {
       let response: string;
       
-      // Use real API if key is set, otherwise use mock responses
       if (isKeySet && apiKey) {
         response = await getAIAssistantResponse(input, { 
           apiKey, 
           tier: tier as 'basic' | 'standard' | 'premium'
         });
       } else {
-        // Simulate API delay
         await new Promise((resolve) => setTimeout(resolve, 1200));
         response = getMockAIResponse(input, tier as 'basic' | 'standard' | 'premium');
       }
@@ -168,7 +162,7 @@ const TieredAIAssistant: React.FC = () => {
           
           {!isKeySet && (
             <div className="mb-4 space-y-3">
-              <Alert variant="default" className="bg-muted/50">
+              <Alert variant="outline" className="bg-muted/50">
                 <AlertDescription>
                   {tier === 'premium' ? 
                     "Set your Perplexity API key to activate live AI responses with our most advanced model." :
@@ -248,7 +242,6 @@ const TieredAIAssistant: React.FC = () => {
           </Button>
         </div>
         
-        {/* Premium tier callout for lower tiers */}
         {tier !== 'premium' && (
           <div className="text-xs text-muted-foreground flex items-center gap-1.5">
             <Lock className="h-3 w-3" />

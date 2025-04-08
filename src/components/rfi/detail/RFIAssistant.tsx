@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState } from 'react';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -58,7 +59,7 @@ const RFIAssistant: React.FC = () => {
       
       {!isKeySet && (
         <div className="px-4 mb-3">
-          <Alert variant="default" className="bg-muted/30">
+          <Alert variant="outline" className="bg-muted/30">
             <AlertDescription className="text-sm">
               {isPremium ? 
                 "Set your Perplexity API key to access premium RFI guidance with our most advanced AI model." : 
