@@ -4,7 +4,7 @@ import { InventoryHeader } from '@/components/inventory/InventoryHeader';
 import { ComplianceSection } from '@/components/inventory/ComplianceSection';
 import { useInventoryImportExport } from '@/components/inventory/inventoryUtils';
 import { equipmentData as initialEquipmentData } from '@/components/equipment/EquipmentData';
-import { VendorIntegration } from '@/components/inventory/VendorIntegration';
+import { VendorIntegration } from '@/components/inventory/vendor/VendorIntegration';
 import { NewInventoryItemDialog } from '@/components/inventory/NewInventoryItemDialog';
 import { useToast } from '@/hooks/use-toast';
 import { NotificationProvider } from '@/contexts/NotificationContext';
