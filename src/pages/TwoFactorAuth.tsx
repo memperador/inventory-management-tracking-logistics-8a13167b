@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,8 +47,9 @@ const TwoFactorAuth = () => {
         throw new Error('No authentication factor found');
       }
       
-      const { data, error } = await supabase.auth.mfa.verifyOTP({
+      const { data, error } = await supabase.auth.mfa.verify({
         factorId,
+        challengeId: '',
         code: otp,
       });
       
