@@ -62,9 +62,10 @@ const NotificationsPage = () => {
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <PageHeader>
-        <div className="flex items-center justify-between">
-          <PageTitle>Notifications</PageTitle>
+      <PageHeader 
+        title="Notifications"
+        description="Manage your notifications and alerts"
+        actions={
           <div className="space-x-2">
             <Button 
               variant="outline" 
@@ -85,11 +86,8 @@ const NotificationsPage = () => {
               Clear all
             </Button>
           </div>
-        </div>
-        <PageDescription>
-          Manage your notifications and alerts
-        </PageDescription>
-      </PageHeader>
+        }
+      />
 
       <Card>
         <CardHeader className="pb-0">
