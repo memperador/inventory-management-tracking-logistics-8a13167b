@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Equipment } from '@/components/equipment/types';
-import { PurchaseOrder, NewOrderFormData } from '../types';
+import { PurchaseOrder, NewOrderFormData, BulkOrderItem } from '../types';
 import { useToast } from '@/hooks/use-toast';
 
 export const useProcurement = (equipmentData: Equipment[]) => {
@@ -28,6 +28,7 @@ export const useProcurement = (equipmentData: Equipment[]) => {
     }
   ]);
   const [newOrderDialog, setNewOrderDialog] = useState(false);
+  const [bulkOrderDialog, setBulkOrderDialog] = useState(false);
   const [lowStockItems] = useState<Equipment[]>(equipmentData.slice(0, 3));
   const { toast } = useToast();
   
@@ -98,16 +99,50 @@ export const useProcurement = (equipmentData: Equipment[]) => {
     });
     setNewOrderDialog(true);
   };
+  
+  const createBulkPurchaseOrders = (bulkItems: BulkOrderItem[]) => {
+    if (bulkItems.length === 0) {
+      toast({
+        title: "No items to order",
+        description: "Please add items to your bulk order",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const newPurchaseOrders = bulkItems.map((item, index) => {
+      return {
+        id: `PO-${1003 + purchaseOrders.length + index}`,
+        equipmentName: item.equipmentName,
+        quantity: item.quantity,
+        status: 'pending' as const,
+        requestDate: new Date().toISOString().split('T')[0],
+        vendor: item.vendor,
+        cost: parseFloat(item.estimatedCost) || 0
+      };
+    });
+    
+    setPurchaseOrders([...purchaseOrders, ...newPurchaseOrders]);
+    setBulkOrderDialog(false);
+    
+    toast({
+      title: "Bulk Order Created",
+      description: `${newPurchaseOrders.length} purchase orders have been created`,
+    });
+  };
 
   return {
     purchaseOrders,
     newOrderDialog,
     setNewOrderDialog,
+    bulkOrderDialog,
+    setBulkOrderDialog,
     lowStockItems,
     newOrder,
     setNewOrder,
     createPurchaseOrder,
     updateOrderStatus,
-    reorderItem
+    reorderItem,
+    createBulkPurchaseOrders
   };
 };

@@ -1,13 +1,20 @@
 
 import React from 'react';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PurchaseOrderList } from './components/PurchaseOrderList';
 import { LowStockItems } from './components/LowStockItems';
 import { NewOrderForm } from './components/NewOrderForm';
+import { BulkOrderUpload } from './components/BulkOrderUpload';
 import { useProcurement } from './hooks/useProcurement';
 import { ProcurementIntegrationProps } from './types';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export const ProcurementIntegration: React.FC<ProcurementIntegrationProps> = ({
   equipmentData
@@ -16,22 +23,31 @@ export const ProcurementIntegration: React.FC<ProcurementIntegrationProps> = ({
     purchaseOrders,
     newOrderDialog,
     setNewOrderDialog,
+    bulkOrderDialog,
+    setBulkOrderDialog,
     lowStockItems,
     newOrder,
     setNewOrder,
     createPurchaseOrder,
     updateOrderStatus,
-    reorderItem
+    reorderItem,
+    createBulkPurchaseOrders
   } = useProcurement(equipmentData);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h2 className="text-2xl font-bold">Procurement Integration</h2>
-        <Button onClick={() => setNewOrderDialog(true)}>
-          <ShoppingCart className="mr-2 h-4 w-4" />
-          New Purchase Order
-        </Button>
+        <div className="flex gap-2 flex-wrap">
+          <Button onClick={() => setNewOrderDialog(true)}>
+            <ShoppingCart className="mr-2 h-4 w-4" />
+            New Purchase Order
+          </Button>
+          <Button variant="outline" onClick={() => setBulkOrderDialog(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Bulk Upload
+          </Button>
+        </div>
       </div>
       
       <Tabs defaultValue="orders">
@@ -67,6 +83,15 @@ export const ProcurementIntegration: React.FC<ProcurementIntegrationProps> = ({
         setFormData={setNewOrder}
         onSubmit={createPurchaseOrder}
       />
+      
+      <Dialog open={bulkOrderDialog} onOpenChange={setBulkOrderDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Bulk Order Upload</DialogTitle>
+          </DialogHeader>
+          <BulkOrderUpload onBulkOrderSubmit={createBulkPurchaseOrders} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -20,6 +20,13 @@ export interface NewOrderFormData {
   estimatedCost: string;
 }
 
+export interface BulkOrderItem {
+  equipmentName: string;
+  quantity: number;
+  vendor: string;
+  estimatedCost: string;
+}
+
 export interface ProcurementIntegrationProps {
   equipmentData: Equipment[];
 }
