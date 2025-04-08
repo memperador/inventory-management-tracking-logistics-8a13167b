@@ -22,6 +22,8 @@ import { InventoryTabList } from '@/components/inventory/inventory-tabs/Inventor
 import { InventoryTabView } from '@/components/inventory/inventory-tabs/InventoryTabView';
 import { InventoryFeatureControls } from '@/components/inventory/inventory-tabs/InventoryFeatureControls';
 import { useEquipmentSelection } from '@/components/inventory/hooks/useEquipmentSelection';
+import { QRCodeGenerator } from '@/components/inventory/qrcode/QRCodeGenerator';
+import GPSIntegration from '@/pages/GPSIntegration';
 
 const Inventory = () => {
   // State management
@@ -199,6 +201,14 @@ const Inventory = () => {
           
           <TabsContent value="procurement">
             <ProcurementIntegration equipmentData={equipmentData} />
+          </TabsContent>
+          
+          <TabsContent value="qrcode">
+            <QRCodeGenerator equipmentData={filteredEquipment} />
+          </TabsContent>
+          
+          <TabsContent value="gps">
+            <GPSIntegration />
           </TabsContent>
           
           <TabsContent value="analytics">

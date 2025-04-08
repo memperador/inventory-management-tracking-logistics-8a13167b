@@ -1,60 +1,43 @@
 
 import React from 'react';
+import { InventoryTabType } from '@/components/inventory/hooks/useInventoryTabs';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { InventoryTabType } from '../hooks/useInventoryTabs';
-import { LayoutGrid, ShoppingCart, LineChart, Bell, FileText } from 'lucide-react';
+import { LayoutGrid, ActivitySquare, Bell, FileText, ShoppingCart, QrCode, Map } from 'lucide-react';
 
 interface InventoryTabListProps {
   activeTab: InventoryTabType;
-  onTabChange: (value: InventoryTabType) => void;
+  onTabChange: (tab: InventoryTabType) => void;
 }
 
 export const InventoryTabList: React.FC<InventoryTabListProps> = ({
   activeTab,
   onTabChange
 }) => {
+  // Tab configuration with icons and responsive display
+  const tabs = [
+    { id: 'inventory' as const, label: 'Inventory', icon: <LayoutGrid className="h-4 w-4" /> },
+    { id: 'procurement' as const, label: 'Procurement', icon: <ShoppingCart className="h-4 w-4" /> },
+    { id: 'qrcode' as const, label: 'QR Codes', icon: <QrCode className="h-4 w-4" /> },
+    { id: 'gps' as const, label: 'GPS Tracker', icon: <Map className="h-4 w-4" /> },
+    { id: 'analytics' as const, label: 'Analytics', icon: <ActivitySquare className="h-4 w-4" /> },
+    { id: 'alerts' as const, label: 'Alerts', icon: <Bell className="h-4 w-4" /> },
+    { id: 'audit' as const, label: 'Audit', icon: <FileText className="h-4 w-4" /> },
+  ];
+
   return (
-    <TabsList className="w-full mb-4">
-      <TabsTrigger 
-        value="inventory" 
-        onClick={() => onTabChange('inventory')}
-        className="flex items-center gap-1"
-      >
-        <LayoutGrid className="h-4 w-4" />
-        <span className="sm:inline">Inventory</span>
-      </TabsTrigger>
-      <TabsTrigger 
-        value="procurement" 
-        onClick={() => onTabChange('procurement')}
-        className="flex items-center gap-1"
-      >
-        <ShoppingCart className="h-4 w-4" />
-        <span className="sm:inline">Procurement</span>
-      </TabsTrigger>
-      <TabsTrigger 
-        value="analytics" 
-        onClick={() => onTabChange('analytics')}
-        className="flex items-center gap-1"
-      >
-        <LineChart className="h-4 w-4" />
-        <span className="sm:inline">Analytics</span>
-      </TabsTrigger>
-      <TabsTrigger 
-        value="alerts" 
-        onClick={() => onTabChange('alerts')}
-        className="flex items-center gap-1"
-      >
-        <Bell className="h-4 w-4" />
-        <span className="sm:inline">Alerts</span>
-      </TabsTrigger>
-      <TabsTrigger 
-        value="audit" 
-        onClick={() => onTabChange('audit')}
-        className="flex items-center gap-1"
-      >
-        <FileText className="h-4 w-4" />
-        <span className="sm:inline">Audit</span>
-      </TabsTrigger>
+    <TabsList className="mb-4">
+      {tabs.map(tab => (
+        <TabsTrigger
+          key={tab.id}
+          value={tab.id}
+          className="flex items-center gap-2 flex-shrink-0"
+          onClick={() => onTabChange(tab.id)}
+        >
+          {tab.icon}
+          <span className="hidden sm:inline">{tab.label}</span>
+          <span className="sm:hidden">{tab.id === 'procurement' ? 'Orders' : tab.label}</span>
+        </TabsTrigger>
+      ))}
     </TabsList>
   );
 };

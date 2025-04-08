@@ -67,6 +67,7 @@ export const InventoryFeatureControls: React.FC<InventoryFeatureControlsProps> =
               equipment={filteredEquipment.find(e => !e.isCheckedOut)!}
               onCheckout={onCheckout}
               onCheckin={onCheckin}
+              onAddDocument={onAddDocument}
             />
           )}
         </div>
