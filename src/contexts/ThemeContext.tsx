@@ -1,6 +1,6 @@
 
 import React, { createContext, useEffect, useState } from 'react';
-import { useTenant } from './TenantContext';
+import { useTenant } from '@/hooks/useTenantContext';
 import { ThemeConfig, themePresets } from '@/types/theme';
 import { applyThemeToDOM } from '@/utils/themeUtils';
 
