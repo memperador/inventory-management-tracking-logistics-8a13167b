@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -169,7 +168,7 @@ const TieredAIAssistant: React.FC = () => {
           
           {!isKeySet && (
             <div className="mb-4 space-y-3">
-              <Alert variant="outline" className="bg-muted/50">
+              <Alert variant="default" className="bg-muted/50">
                 <AlertDescription>
                   {tier === 'premium' ? 
                     "Set your Perplexity API key to activate live AI responses with our most advanced model." :

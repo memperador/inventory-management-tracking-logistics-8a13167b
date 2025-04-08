@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +17,6 @@ const RFIAssistant: React.FC = () => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const isPremium = hasSubscriptionTier('premium');
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     if (scrollAreaRef.current) {
       const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
@@ -60,7 +58,7 @@ const RFIAssistant: React.FC = () => {
       
       {!isKeySet && (
         <div className="px-4 mb-3">
-          <Alert variant="outline" className="bg-muted/30">
+          <Alert variant="default" className="bg-muted/30">
             <AlertDescription className="text-sm">
               {isPremium ? 
                 "Set your Perplexity API key to access premium RFI guidance with our most advanced AI model." : 
@@ -132,7 +130,6 @@ const RFIAssistant: React.FC = () => {
           </Button>
         </form>
         
-        {/* Premium tier callout for lower tiers */}
         {!isPremium && (
           <div className="text-xs text-muted-foreground flex items-center gap-1.5 w-full">
             <Lock className="h-3 w-3" />
