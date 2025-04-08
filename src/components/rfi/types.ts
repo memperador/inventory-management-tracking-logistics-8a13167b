@@ -17,6 +17,8 @@ export interface RFI {
   attachments?: string[];
   category?: string;
   type: RequestType;
+  notifyParticipants?: boolean; // Added this field to match the usage in useRFIForm.ts
+  responseRequired?: boolean; // Added this field for completeness
 }
 
 export type SubmittalStatus = 'draft' | 'pending' | 'approved' | 'rejected' | 'revised';
