@@ -9,12 +9,14 @@ import { EmailSettings } from './components/EmailSettings';
 import { useAlertConfigs } from './hooks/useAlertConfigs';
 import { useEmailSettings } from './hooks/useEmailSettings';
 
-interface InventoryAlertsProps {
+export interface InventoryAlertsProps {
   equipmentData: Equipment[];
+  hasAdvancedAlerts?: boolean;
 }
 
 export const InventoryAlerts: React.FC<InventoryAlertsProps> = ({
-  equipmentData
+  equipmentData,
+  hasAdvancedAlerts = false
 }) => {
   const { alertConfigs, toggleAlertChannel, updateInventoryLevel } = useAlertConfigs();
   const { emailSettings, updateEmail, saveEmailSettings } = useEmailSettings();
@@ -64,7 +66,7 @@ export const InventoryAlerts: React.FC<InventoryAlertsProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center">
             <BellRing className="mr-2 h-5 w-5" />
-            Inventory Alerts Configuration
+            {hasAdvancedAlerts ? "Advanced Inventory Alerts" : "Inventory Alerts"} Configuration
           </CardTitle>
         </CardHeader>
         <CardContent>

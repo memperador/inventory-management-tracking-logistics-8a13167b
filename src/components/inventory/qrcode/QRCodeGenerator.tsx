@@ -24,11 +24,15 @@ const QRCode: React.FC<{ value: string; size?: number }> = ({ value, size = 200 
   );
 };
 
-interface QRCodeGeneratorProps {
+export interface QRCodeGeneratorProps {
   equipmentData: Equipment[];
+  hasBulkAccess?: boolean;
 }
 
-export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({ equipmentData }) => {
+export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({ 
+  equipmentData,
+  hasBulkAccess = false
+}) => {
   const [open, setOpen] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(
     equipmentData.length > 0 ? equipmentData[0] : null
@@ -77,7 +81,7 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({ equipmentData 
       <Tabs defaultValue="single" className="w-full">
         <TabsList>
           <TabsTrigger value="single">Single QR Code</TabsTrigger>
-          <TabsTrigger value="batch">Batch Generation</TabsTrigger>
+          {hasBulkAccess && <TabsTrigger value="batch">Batch Generation</TabsTrigger>}
         </TabsList>
         
         <TabsContent value="single" className="space-y-4">
@@ -131,41 +135,43 @@ export const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({ equipmentData 
           </div>
         </TabsContent>
         
-        <TabsContent value="batch" className="space-y-4">
-          <div className="border rounded-md p-4">
-            <h4 className="font-medium mb-4">Batch QR Code Generation</h4>
-            <p className="text-muted-foreground mb-4">Generate QR codes for multiple equipment items at once.</p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {equipmentData.slice(0, 6).map(item => (
-                <div key={item.id} className="border rounded-md p-3 flex flex-col items-center">
-                  <QRCode value={`equipment:${item.id}`} size={120} />
-                  <div className="mt-2 text-center">
-                    <p className="font-medium">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">ID: {item.id}</p>
+        {hasBulkAccess && (
+          <TabsContent value="batch" className="space-y-4">
+            <div className="border rounded-md p-4">
+              <h4 className="font-medium mb-4">Batch QR Code Generation</h4>
+              <p className="text-muted-foreground mb-4">Generate QR codes for multiple equipment items at once.</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {equipmentData.slice(0, 6).map(item => (
+                  <div key={item.id} className="border rounded-md p-3 flex flex-col items-center">
+                    <QRCode value={`equipment:${item.id}`} size={120} />
+                    <div className="mt-2 text-center">
+                      <p className="font-medium">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">ID: {item.id}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+              
+              {equipmentData.length > 6 && (
+                <p className="text-sm text-muted-foreground mt-4">
+                  Showing 6 of {equipmentData.length} items. Use the print button below to generate all QR codes.
+                </p>
+              )}
+              
+              <div className="flex gap-2 mt-6">
+                <Button variant="outline" className="w-full">
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print All QR Codes ({equipmentData.length})
+                </Button>
+                <Button variant="outline" className="w-full">
+                  <Download className="mr-2 h-4 w-4" />
+                  Download All as PDF
+                </Button>
+              </div>
             </div>
-            
-            {equipmentData.length > 6 && (
-              <p className="text-sm text-muted-foreground mt-4">
-                Showing 6 of {equipmentData.length} items. Use the print button below to generate all QR codes.
-              </p>
-            )}
-            
-            <div className="flex gap-2 mt-6">
-              <Button variant="outline" className="w-full">
-                <Printer className="mr-2 h-4 w-4" />
-                Print All QR Codes ({equipmentData.length})
-              </Button>
-              <Button variant="outline" className="w-full">
-                <Download className="mr-2 h-4 w-4" />
-                Download All as PDF
-              </Button>
-            </div>
-          </div>
-        </TabsContent>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

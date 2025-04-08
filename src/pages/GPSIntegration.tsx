@@ -11,7 +11,11 @@ import ChecklistCategoryComponent from '@/components/gps/ChecklistCategory';
 import MapVisualization from '@/components/gps/MapVisualization';
 import GPSIntelligence from '@/components/gps/GPSIntelligence';
 
-const GPSIntegration: React.FC = () => {
+interface GPSIntegrationProps {
+  simplified?: boolean;
+}
+
+const GPSIntegration: React.FC<GPSIntegrationProps> = ({ simplified = false }) => {
   const [categories, setCategories] = useState<ChecklistCategory[]>([
     { 
       name: 'hardware', 
@@ -127,6 +131,15 @@ const GPSIntegration: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // If simplified mode is enabled (used in inventory GPS tab)
+  if (simplified) {
+    return (
+      <div className="space-y-6">
+        <MapVisualization />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
