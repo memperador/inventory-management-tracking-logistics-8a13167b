@@ -3,10 +3,11 @@ import React from 'react';
 import { ProjectType } from '@/components/equipment/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Building, Calendar, FileText, Zap, MapPin } from 'lucide-react';
+import { Building, Calendar, FileText, Zap, MapPin, ClipboardCheck } from 'lucide-react';
 import { getStatusColor } from './projectUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ProjectAssets from './ProjectAssets';
+import PreConstructionPlanComponent from './preconstruction/PreConstructionPlan';
 
 interface ProjectDetailsProps {
   project: ProjectType;
@@ -66,11 +67,25 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project }) => {
         </CardContent>
       </Card>
       
-      <Tabs defaultValue="assets" className="w-full">
-        <TabsList className="grid grid-cols-2 w-[400px]">
-          <TabsTrigger value="assets">Assets</TabsTrigger>
-          <TabsTrigger value="details">Additional Details</TabsTrigger>
+      <Tabs defaultValue="pre-construction" className="w-full">
+        <TabsList className="grid grid-cols-3 w-[600px]">
+          <TabsTrigger value="pre-construction">
+            <ClipboardCheck className="h-4 w-4 mr-2" />
+            Pre-Construction
+          </TabsTrigger>
+          <TabsTrigger value="assets">
+            <Building className="h-4 w-4 mr-2" />
+            Assets
+          </TabsTrigger>
+          <TabsTrigger value="details">
+            <FileText className="h-4 w-4 mr-2" />
+            Additional Details
+          </TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="pre-construction">
+          <PreConstructionPlanComponent projectId={project.id} />
+        </TabsContent>
         
         <TabsContent value="assets">
           <Card>

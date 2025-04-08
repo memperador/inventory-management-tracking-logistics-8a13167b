@@ -11,7 +11,7 @@ import PageHeader from '@/components/common/PageHeader';
 import ProjectDetails from '@/components/projects/ProjectDetails';
 
 const ProjectDetailPage = () => {
-  const { id } = useParams<{ id: string }>();
+  const { projectId } = useParams<{ projectId: string }>();
   const [project, setProject] = useState<ProjectType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -19,13 +19,13 @@ const ProjectDetailPage = () => {
 
   useEffect(() => {
     const fetchProject = async () => {
-      if (!id) return;
+      if (!projectId) return;
       
       try {
         const { data, error } = await supabase
           .from('projects')
           .select('*')
-          .eq('id', id)
+          .eq('id', projectId)
           .single();
         
         if (error) {
@@ -47,7 +47,7 @@ const ProjectDetailPage = () => {
     };
     
     fetchProject();
-  }, [id]);
+  }, [projectId]);
 
   const handleBack = () => {
     navigate('/projects');
