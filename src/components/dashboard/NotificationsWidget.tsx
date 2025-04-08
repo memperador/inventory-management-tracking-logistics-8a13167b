@@ -1,14 +1,14 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { useNotificationContext } from "@/contexts/NotificationContext";
-import { Bell, AlertCircle, Calendar, FileText, Wrench, ExternalLink } from "lucide-react";
+import { Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { NotificationType } from "@/components/types/notification";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { getNotificationIcon, getNotificationColor } from "@/components/notifications/notificationUtils";
 
 export const NotificationsWidget = () => {
   const { notifications, unreadCount, markAsRead } = useNotificationContext();
@@ -16,24 +16,6 @@ export const NotificationsWidget = () => {
   const recentNotifications = notifications
     .filter(notification => !notification.read)
     .slice(0, 5);
-  
-  const getNotificationIcon = (type: NotificationType) => {
-    switch (type) {
-      case 'maintenance_due':
-      case 'maintenance_overdue':
-        return <Wrench className="h-4 w-4 text-blue-500" />;
-      case 'certification_expiring':
-      case 'certification_expired':
-        return <FileText className="h-4 w-4 text-purple-500" />;
-      case 'inspection_due':
-      case 'inspection_overdue':
-        return <Calendar className="h-4 w-4 text-green-500" />;
-      case 'status_change':
-        return <AlertCircle className="h-4 w-4 text-yellow-500" />;
-      default:
-        return <Bell className="h-4 w-4 text-gray-500" />;
-    }
-  };
   
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
@@ -89,7 +71,7 @@ export const NotificationsWidget = () => {
             {recentNotifications.map((notification) => (
               <div
                 key={notification.id}
-                className="p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                className={`p-3 border rounded-lg hover:bg-gray-50 transition-colors ${getNotificationColor(notification.priority)}`}
               >
                 <div className="flex items-start space-x-3">
                   <div className="mt-0.5">
@@ -124,14 +106,8 @@ export const NotificationsWidget = () => {
         
         <div className="mt-3 text-center">
           <Link
-            to="#"
+            to="/notifications"
             className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              document.querySelector('[aria-label^="Notifications"]')?.dispatchEvent(
-                new MouseEvent('click', { bubbles: true })
-              );
-            }}
           >
             View all notifications
           </Link>
