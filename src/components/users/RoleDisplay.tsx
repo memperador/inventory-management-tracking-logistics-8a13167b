@@ -11,7 +11,7 @@ import RoleDropdown from './RoleDropdown';
 
 interface RoleDisplayProps {
   userId: string;
-  initialRole: UserRole;
+  initialRole: UserRole;  // This ensures we accept the full UserRole type
 }
 
 const RoleDisplay: React.FC<RoleDisplayProps> = ({ userId, initialRole }) => {
