@@ -4,15 +4,20 @@ import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuditLogger } from '@/middleware/auditLogger';
+import { Loader2 } from 'lucide-react';
 
 interface PaymentFormProps {
   amount: number;
+  selectedTier?: string;
+  disabled?: boolean;
   onSuccess?: (paymentIntent: any) => void;
   onError?: (error: Error) => void;
 }
 
 const PaymentForm: React.FC<PaymentFormProps> = ({ 
   amount, 
+  selectedTier,
+  disabled = false,
   onSuccess, 
   onError 
 }) => {
@@ -38,7 +43,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     try {
       // In a real implementation, this would call your backend API
       // to create a PaymentIntent and return the client_secret
-      const clientSecret = await createPaymentIntent(amount);
+      // The API would also store the selected tier
+      const clientSecret = await createPaymentIntent(amount, selectedTier);
 
       const cardElement = elements.getElement(CardElement);
 
@@ -75,6 +81,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             amount,
             status: paymentIntent.status,
             id: paymentIntent.id,
+            tier: selectedTier
           },
         });
         
@@ -100,6 +107,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         entityId: 'attempt',
         metadata: {
           amount,
+          tier: selectedTier,
           error: errorMessage,
         },
       });
@@ -114,8 +122,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
 
   // Mock function to simulate creating a payment intent
   // In a real app, this would be an API call to your backend
-  const createPaymentIntent = async (amount: number): Promise<string> => {
-    console.log(`Creating payment intent for $${(amount / 100).toFixed(2)}`);
+  const createPaymentIntent = async (amount: number, tier?: string): Promise<string> => {
+    console.log(`Creating payment intent for $${(amount / 100).toFixed(2)} with tier ${tier || 'unknown'}`);
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     // Return a fake client secret
@@ -149,11 +157,24 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
       
       <Button 
         type="submit" 
-        disabled={!stripe || loading} 
+        disabled={!stripe || loading || disabled} 
         className="w-full"
       >
-        {loading ? 'Processing...' : `Pay $${(amount / 100).toFixed(2)}`}
+        {loading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Processing...
+          </>
+        ) : (
+          `Pay $${(amount / 100).toFixed(2)}`
+        )}
       </Button>
+      
+      {disabled && (
+        <p className="text-sm text-destructive text-center">
+          Please agree to the payment processing terms to continue
+        </p>
+      )}
     </form>
   );
 };
