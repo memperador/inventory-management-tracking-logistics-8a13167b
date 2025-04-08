@@ -56,11 +56,7 @@ export const useFeatureAccess = () => {
       toast({
         title: upgradeInfo.title,
         description: upgradeInfo.description,
-        action: (
-          <Button onClick={() => navigate('/payment')}>
-            Upgrade
-          </Button>
-        )
+        action: <Button onClick={() => navigate('/payment')}>Upgrade</Button>
       });
     }
   };
