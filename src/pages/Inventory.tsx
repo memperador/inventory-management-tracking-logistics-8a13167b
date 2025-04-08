@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { InventoryHeader } from '@/components/inventory/InventoryHeader';
 import { InventoryFilters } from '@/components/inventory/InventoryFilters';
 import { InventoryViewSelector, ViewMode } from '@/components/inventory/InventoryViewSelector';
@@ -14,6 +14,7 @@ import { equipmentData } from '@/components/equipment/EquipmentData';
 import { InventoryCategory } from '@/components/equipment/types';
 import { VendorIntegration } from '@/components/inventory/VendorIntegration';
 import { NewInventoryItemDialog } from '@/components/inventory/NewInventoryItemDialog';
+import { useToast } from '@/hooks/use-toast';
 
 const Inventory = () => {
   // State management
@@ -23,6 +24,7 @@ const Inventory = () => {
   const [activeStatus, setActiveStatus] = useState<string>('All');
   const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
   const [showVendorIntegration, setShowVendorIntegration] = useState(false);
+  const { toast } = useToast();
   
   const { handleImport, handleFileUpload, handleExport, handleExportCSV } = useInventoryImportExport();
   
@@ -50,6 +52,11 @@ const Inventory = () => {
     setSearchQuery('');
     setActiveCategory('All');
     setActiveStatus('All');
+    
+    toast({
+      title: "Filters Reset",
+      description: "All inventory filters have been cleared."
+    });
   };
 
   const handleExportData = () => {
@@ -59,6 +66,32 @@ const Inventory = () => {
   const handleExportDataCSV = () => {
     handleExportCSV(filteredEquipment);
   };
+  
+  // Check for compliance issues on initial load
+  useEffect(() => {
+    const expiredItems = equipmentData.filter(item => {
+      if (item.certificationRequired && item.certificationExpiry) {
+        const expiryDate = new Date(item.certificationExpiry);
+        if (expiryDate < new Date()) {
+          return true;
+        }
+      }
+      return false;
+    });
+    
+    if (expiredItems.length > 0) {
+      // Show toast only after component has mounted
+      const timer = setTimeout(() => {
+        toast({
+          title: "Compliance Alert",
+          description: `${expiredItems.length} items have expired certifications`,
+          variant: "destructive",
+        });
+      }, 1500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   return (
     <div className="space-y-6">

@@ -7,6 +7,7 @@ import { equipmentData } from '@/components/equipment/EquipmentData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMaintenanceTracker } from '@/components/inventory/compliance/useMaintenanceTracker';
 import { useToast } from "@/hooks/use-toast";
+import { ComplianceNotifications } from '@/components/inventory/compliance/ComplianceNotifications';
 
 export const ComplianceSection: React.FC = () => {
   const { maintenanceUpdates } = useMaintenanceTracker(equipmentData);
@@ -29,10 +30,13 @@ export const ComplianceSection: React.FC = () => {
   }, [maintenanceUpdates, toast]);
 
   return (
-    <div className="mt-8">
+    <div className="mt-8 space-y-6">
       <h2 className="text-xl font-semibold mb-4">Industry Compliance</h2>
       
-      <ComplianceAlerts equipmentData={equipmentData} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ComplianceNotifications equipmentData={equipmentData} />
+        <ComplianceAlerts equipmentData={equipmentData} />
+      </div>
       
       <Tabs defaultValue="status" className="mb-6">
         <TabsList className="grid w-full grid-cols-2">
