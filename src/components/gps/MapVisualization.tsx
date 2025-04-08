@@ -9,11 +9,11 @@ import { toast } from '@/hooks/use-toast';
 
 // Mock GPS data for equipment
 const MOCK_GPS_DATA = [
-  { id: '1', name: 'Excavator #103', lat: 37.7749, lng: -122.4194, lastUpdate: '2025-04-08T10:30:00Z', status: 'active' },
-  { id: '2', name: 'Bulldozer #87', lat: 37.7665, lng: -122.4274, lastUpdate: '2025-04-08T09:15:00Z', status: 'active' },
-  { id: '3', name: 'Crane #54', lat: 37.7822, lng: -122.4167, lastUpdate: '2025-04-07T16:45:00Z', status: 'idle' },
-  { id: '4', name: 'Forklift #29', lat: 37.7759, lng: -122.4245, lastUpdate: '2025-04-08T08:20:00Z', status: 'inactive' },
-  { id: '5', name: 'Generator #62', lat: 37.7716, lng: -122.4105, lastUpdate: '2025-04-08T11:05:00Z', status: 'active' },
+  { id: '1', name: 'Excavator #103', lat: 37.7749, lng: -122.4194, lastUpdate: '2025-04-08T10:30:00Z', status: 'active' as const },
+  { id: '2', name: 'Bulldozer #87', lat: 37.7665, lng: -122.4274, lastUpdate: '2025-04-08T09:15:00Z', status: 'active' as const },
+  { id: '3', name: 'Crane #54', lat: 37.7822, lng: -122.4167, lastUpdate: '2025-04-07T16:45:00Z', status: 'idle' as const },
+  { id: '4', name: 'Forklift #29', lat: 37.7759, lng: -122.4245, lastUpdate: '2025-04-08T08:20:00Z', status: 'inactive' as const },
+  { id: '5', name: 'Generator #62', lat: 37.7716, lng: -122.4105, lastUpdate: '2025-04-08T11:05:00Z', status: 'active' as const },
 ];
 
 interface EquipmentLocation {
