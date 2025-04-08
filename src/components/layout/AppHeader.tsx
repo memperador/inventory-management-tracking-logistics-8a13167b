@@ -34,7 +34,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ toggleMenu, isMenuOpen }) 
     <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-800 py-2 px-4 flex items-center justify-between">
       <div className="flex items-center space-x-4">
         <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')}>
-          FleetTrack
+          Inventory Track Pro
         </Button>
         <EmailVerificationIndicator />
       </div>

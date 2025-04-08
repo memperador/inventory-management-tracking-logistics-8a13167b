@@ -43,7 +43,7 @@ const AppSidebar: React.FC<AppSidebarProps> = ({ closeSidebar }) => {
     <Sidebar className={cn(isMobile && 'hidden md:flex')}>
       <div className="border-r h-screen">
         <SidebarHeader className="h-14 flex items-center px-4">
-          <span className="font-semibold">FleetTrack Pro</span>
+          <span className="font-semibold">Inventory Track Pro</span>
         </SidebarHeader>
         <SidebarContent className="flex flex-col h-[calc(100vh-3.5rem)]">
           <ScrollArea className="flex-1">
