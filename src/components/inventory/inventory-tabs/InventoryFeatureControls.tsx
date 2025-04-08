@@ -1,21 +1,21 @@
 
 import React from 'react';
-import { Equipment, Document as EquipmentDocument } from '@/components/equipment/types';
-import { SavedFiltersDialog } from '../filters/SavedFiltersDialog';
-import { CheckoutDialog } from '../checkout/CheckoutDialog';
-import { QRCodeGenerator } from '../qrcode/QRCodeGenerator';
-import { DocumentAttachment } from '../compliance/DocumentAttachment';
+import { Equipment, Document } from '@/components/equipment/types';
+import { FilterBadges } from '@/components/inventory/filters/FilterBadges';
+import { SavedFiltersDialog } from '@/components/inventory/filters/SavedFiltersDialog';
+import { CheckoutDialog } from '@/components/inventory/checkout/CheckoutDialog';
+import { AdvancedFiltersType } from '@/components/inventory/filters/types';
 
 interface InventoryFeatureControlsProps {
   filteredEquipment: Equipment[];
   searchQuery: string;
   activeCategory: any;
   activeStatus: string;
-  advancedFilters: any;
+  advancedFilters: AdvancedFiltersType;
   onApplyFilter: (filter: any) => void;
   onCheckout: (equipment: Equipment, name: string, returnDate: Date) => void;
   onCheckin: (equipment: Equipment) => void;
-  onAddDocument: (equipment: Equipment, document: EquipmentDocument) => void;
+  onAddDocument: (equipment: Equipment, document: Document) => void;
   isMobile: boolean;
 }
 
@@ -31,44 +31,34 @@ export const InventoryFeatureControls: React.FC<InventoryFeatureControlsProps> =
   onAddDocument,
   isMobile
 }) => {
-  if (isMobile) {
-    return (
-      <div className="flex justify-end gap-2 flex-wrap">
-        <SavedFiltersDialog
-          currentSearchQuery={searchQuery}
-          currentCategory={activeCategory}
-          currentStatus={activeStatus}
-          currentAdvancedFilters={advancedFilters}
-          onApplyFilter={onApplyFilter}
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="flex justify-end gap-2 flex-wrap">
-      <SavedFiltersDialog
-        currentSearchQuery={searchQuery}
-        currentCategory={activeCategory}
-        currentStatus={activeStatus}
-        currentAdvancedFilters={advancedFilters}
-        onApplyFilter={onApplyFilter}
-      />
-
-      {filteredEquipment.map(item => (
-        <React.Fragment key={item.id}>
-          <CheckoutDialog 
-            equipment={item} 
+    <div>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <FilterBadges
+          searchQuery={searchQuery}
+          activeCategory={activeCategory}
+          activeStatus={activeStatus}
+          advancedFilters={advancedFilters}
+        />
+        
+        <div className="flex gap-2">
+          <SavedFiltersDialog 
+            currentFilters={{
+              searchQuery,
+              activeCategory,
+              activeStatus,
+              advancedFilters
+            }}
+            onApplyFilter={onApplyFilter}
+          />
+          <CheckoutDialog
+            equipmentList={filteredEquipment.filter(e => !e.isCheckedOut)}
             onCheckout={onCheckout}
             onCheckin={onCheckin}
-          />
-          <QRCodeGenerator equipment={item} />
-          <DocumentAttachment
-            equipment={item}
             onAddDocument={onAddDocument}
           />
-        </React.Fragment>
-      ))}
+        </div>
+      </div>
     </div>
   );
 };

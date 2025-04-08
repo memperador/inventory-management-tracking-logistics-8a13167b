@@ -14,14 +14,14 @@ export const InventoryTabList: React.FC<InventoryTabListProps> = ({
   onTabChange
 }) => {
   return (
-    <TabsList className="w-full mb-4 flex-wrap overflow-x-auto">
+    <TabsList className="w-full mb-4">
       <TabsTrigger 
         value="inventory" 
         onClick={() => onTabChange('inventory')}
         className="flex items-center gap-1"
       >
         <LayoutGrid className="h-4 w-4" />
-        <span className="hidden sm:inline">Inventory</span>
+        <span className="sm:inline">Inventory</span>
       </TabsTrigger>
       <TabsTrigger 
         value="procurement" 
@@ -29,7 +29,7 @@ export const InventoryTabList: React.FC<InventoryTabListProps> = ({
         className="flex items-center gap-1"
       >
         <ShoppingCart className="h-4 w-4" />
-        <span className="hidden sm:inline">Procurement</span>
+        <span className="sm:inline">Procurement</span>
       </TabsTrigger>
       <TabsTrigger 
         value="analytics" 
@@ -37,7 +37,7 @@ export const InventoryTabList: React.FC<InventoryTabListProps> = ({
         className="flex items-center gap-1"
       >
         <LineChart className="h-4 w-4" />
-        <span className="hidden sm:inline">Analytics</span>
+        <span className="sm:inline">Analytics</span>
       </TabsTrigger>
       <TabsTrigger 
         value="alerts" 
@@ -45,7 +45,7 @@ export const InventoryTabList: React.FC<InventoryTabListProps> = ({
         className="flex items-center gap-1"
       >
         <Bell className="h-4 w-4" />
-        <span className="hidden sm:inline">Alerts & Notifications</span>
+        <span className="sm:inline">Alerts</span>
       </TabsTrigger>
       <TabsTrigger 
         value="audit" 
@@ -53,7 +53,7 @@ export const InventoryTabList: React.FC<InventoryTabListProps> = ({
         className="flex items-center gap-1"
       >
         <FileText className="h-4 w-4" />
-        <span className="hidden sm:inline">Audit Logs</span>
+        <span className="sm:inline">Audit</span>
       </TabsTrigger>
     </TabsList>
   );
