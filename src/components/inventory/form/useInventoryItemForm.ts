@@ -5,12 +5,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { inventoryItemFormSchema, InventoryItemFormValues } from '@/components/rfi/utils/formSchemas';
 
-interface UseInventoryItemFormProps {
+export interface UseInventoryItemFormProps {
   onSuccess: () => void;
   initialData?: Partial<InventoryItemFormValues>;
 }
 
-export const useInventoryItemForm = ({ onSuccess, initialData }: UseInventoryItemFormProps) => {
+export const useInventoryItemForm = ({ onSuccess, initialData = {} }: UseInventoryItemFormProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   

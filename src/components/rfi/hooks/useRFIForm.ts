@@ -68,7 +68,7 @@ export const useRFIForm = ({ onCreateRequest, requestType, onClose }: UseRFIForm
         createdBy: 'Current User', // In a real app, this would come from auth context
         assignedTo: null,
         status: getDefaultStatus() as any,
-        priority: values.priority || 'medium',
+        // Fixed: Removed priority field as it doesn't exist in RFI type
         dueDate: values.dueDate || null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

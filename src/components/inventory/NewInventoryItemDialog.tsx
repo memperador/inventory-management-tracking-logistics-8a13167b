@@ -15,7 +15,11 @@ export const NewInventoryItemDialog: React.FC<NewInventoryItemDialogProps> = ({
   open, 
   onOpenChange 
 }) => {
-  const { form, onSubmit } = useInventoryItemForm(() => onOpenChange(false));
+  // Fixed: Passing an object with onSuccess property instead of just a function
+  const { form, onSubmit } = useInventoryItemForm({
+    onSuccess: () => onOpenChange(false),
+    initialData: {}
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
