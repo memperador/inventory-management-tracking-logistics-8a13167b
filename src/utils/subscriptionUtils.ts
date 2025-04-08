@@ -1,7 +1,7 @@
 
 import { Tenant } from '@/types/tenant';
 
-export type FeatureAccessLevel = 'basic' | 'standard' | 'premium';
+export type FeatureAccessLevel = 'basic' | 'standard' | 'premium' | 'enterprise';
 
 // Features and their required subscription tiers
 export const FEATURE_ACCESS_MAP: Record<string, FeatureAccessLevel> = {
@@ -30,7 +30,15 @@ export const FEATURE_ACCESS_MAP: Record<string, FeatureAccessLevel> = {
   'gps_intelligence': 'premium',
   'premium_ai_assistant': 'premium',
   'predictive_maintenance': 'premium',
-  'custom_ai_queries': 'premium'
+  'custom_ai_queries': 'premium',
+  
+  // Enterprise tier features
+  'white_labeling': 'enterprise',
+  'sso_integration': 'enterprise',
+  'custom_api': 'enterprise',
+  'dedicated_support': 'enterprise',
+  'custom_implementation': 'enterprise',
+  'sla_guarantees': 'enterprise'
 };
 
 // AI assistant features by tier
@@ -52,6 +60,14 @@ export const AI_ASSISTANT_FEATURES: Record<FeatureAccessLevel, string[]> = {
     'Route optimization recommendations',
     'Advanced asset utilization analysis',
     'Cross-project resource allocation'
+  ],
+  'enterprise': [
+    'All premium features',
+    'Custom AI model training',
+    'Integration with enterprise systems',
+    'Advanced predictive analytics',
+    'Custom data sources integration',
+    'Organization-wide intelligence'
   ]
 };
 
@@ -59,7 +75,16 @@ export const AI_ASSISTANT_FEATURES: Record<FeatureAccessLevel, string[]> = {
 export const AI_ASSISTANT_MODELS: Record<FeatureAccessLevel, string> = {
   'basic': 'llama-3.1-sonar-small-128k-online', // 8B parameter model
   'standard': 'llama-3.1-sonar-small-128k-online', // Same model with enhanced context
-  'premium': 'llama-3.1-sonar-large-128k-online' // 70B parameter model
+  'premium': 'llama-3.1-sonar-large-128k-online', // 70B parameter model
+  'enterprise': 'llama-3.1-sonar-large-128k-online' // 70B parameter model with custom fine-tuning
+};
+
+// Subscription tier limits
+export const SUBSCRIPTION_TIER_LIMITS: Record<FeatureAccessLevel, {assets: number | string, users: number | string}> = {
+  'basic': { assets: 25, users: 3 },
+  'standard': { assets: 75, users: 10 },
+  'premium': { assets: 500, users: 25 },
+  'enterprise': { assets: 'Unlimited', users: 'Unlimited' }
 };
 
 // Check if user has access to a specific feature
@@ -75,7 +100,8 @@ export const hasFeatureAccess = (
   const tierHierarchy: Record<FeatureAccessLevel, number> = {
     'basic': 1,
     'standard': 2,
-    'premium': 3
+    'premium': 3,
+    'enterprise': 4
   };
   
   const userTierLevel = tierHierarchy[tenant.subscription_tier as FeatureAccessLevel] || 0;
@@ -142,6 +168,32 @@ export const getUpgradePromptForFeature = (
     'custom_ai_queries': {
       title: 'Access Custom AI Queries',
       description: 'Ask complex questions about your assets and get detailed, data-driven responses from our most advanced AI.'
+    },
+    
+    // Enterprise tier features
+    'white_labeling': {
+      title: 'Upgrade to Enterprise for White Labeling',
+      description: 'Remove our branding and replace it with your own company branding.'
+    },
+    'sso_integration': {
+      title: 'Enable Single Sign-On Integration',
+      description: 'Integrate with your company\'s SSO system for seamless authentication.'
+    },
+    'custom_api': {
+      title: 'Get Custom API Access',
+      description: 'Access our API with custom endpoints tailored to your organization\'s needs.'
+    },
+    'dedicated_support': {
+      title: 'Get Dedicated Support',
+      description: 'Work with a dedicated account manager and receive priority support.'
+    },
+    'custom_implementation': {
+      title: 'Custom Implementation Services',
+      description: 'Get personalized onboarding and implementation services tailored to your organization.'
+    },
+    'sla_guarantees': {
+      title: 'Service Level Agreement',
+      description: 'Get guaranteed response times and uptime commitments.'
     }
   };
   
@@ -161,7 +213,8 @@ export const getAvailableFeaturesForTier = (tier: FeatureAccessLevel | null): st
   const tierHierarchy: Record<FeatureAccessLevel, number> = {
     'basic': 1,
     'standard': 2,
-    'premium': 3
+    'premium': 3,
+    'enterprise': 4
   };
   
   const userTierLevel = tierHierarchy[tier] || 0;
@@ -172,4 +225,12 @@ export const getAvailableFeaturesForTier = (tier: FeatureAccessLevel | null): st
       return userTierLevel >= requiredTierLevel;
     })
     .map(([featureKey, _]) => featureKey);
+};
+
+// Get the limits for a specific subscription tier
+export const getSubscriptionTierLimits = (tier: FeatureAccessLevel | null) => {
+  if (!tier || !SUBSCRIPTION_TIER_LIMITS[tier]) {
+    return { assets: 0, users: 0 };
+  }
+  return SUBSCRIPTION_TIER_LIMITS[tier];
 };

@@ -1,7 +1,12 @@
 
 import { useTenant } from '@/hooks/useTenantContext';
 import { useRole } from '@/hooks/useRoleContext';
-import { hasFeatureAccess, getUpgradePromptForFeature, getAvailableFeaturesForTier } from '@/utils/subscriptionUtils';
+import { 
+  hasFeatureAccess, 
+  getUpgradePromptForFeature, 
+  getAvailableFeaturesForTier,
+  getSubscriptionTierLimits
+} from '@/utils/subscriptionUtils';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -21,13 +26,14 @@ export const useFeatureAccess = () => {
   };
 
   // Check if specific tier is active
-  const hasSubscriptionTier = (tier: 'basic' | 'standard' | 'premium'): boolean => {
+  const hasSubscriptionTier = (tier: 'basic' | 'standard' | 'premium' | 'enterprise'): boolean => {
     if (!currentTenant || !currentTenant.subscription_tier) return false;
     
     const tierHierarchy = {
       'basic': 1,
       'standard': 2,
-      'premium': 3
+      'premium': 3,
+      'enterprise': 4
     };
     
     const userTierLevel = tierHierarchy[currentTenant.subscription_tier as keyof typeof tierHierarchy] || 0;
@@ -40,11 +46,18 @@ export const useFeatureAccess = () => {
   const getAccessibleFeatures = (): string[] => {
     if (userRole === 'admin') {
       // Admins can access all features
-      return Object.keys(getAvailableFeaturesForTier('premium'));
+      return Object.keys(getAvailableFeaturesForTier('enterprise'));
     }
     
     return getAvailableFeaturesForTier(
-      currentTenant?.subscription_tier as 'basic' | 'standard' | 'premium' | null
+      currentTenant?.subscription_tier as 'basic' | 'standard' | 'premium' | 'enterprise' | null
+    );
+  };
+
+  // Get current subscription limits
+  const getSubscriptionLimits = () => {
+    return getSubscriptionTierLimits(
+      currentTenant?.subscription_tier as 'basic' | 'standard' | 'premium' | 'enterprise' | null
     );
   };
 
@@ -61,16 +74,33 @@ export const useFeatureAccess = () => {
     }
   };
 
+  // Check if a user is under the asset limit for their tier
+  const isUnderAssetLimit = (assetCount: number): boolean => {
+    const limits = getSubscriptionLimits();
+    if (typeof limits.assets === 'string') return true; // Unlimited
+    return assetCount < limits.assets;
+  };
+
+  // Check if a user is under the user limit for their tier
+  const isUnderUserLimit = (userCount: number): boolean => {
+    const limits = getSubscriptionLimits();
+    if (typeof limits.users === 'string') return true; // Unlimited
+    return userCount < limits.users;
+  };
+
   // Get available AI features for current tier
   const getAvailableAIFeatures = (): string[] => {
     if (!currentTenant || !currentTenant.subscription_tier) return [];
     
-    const tier = currentTenant.subscription_tier as 'basic' | 'standard' | 'premium';
+    const tier = currentTenant.subscription_tier as 'basic' | 'standard' | 'premium' | 'enterprise';
     const aiFeatures = {
       'basic': ['basic_ai_assistant', 'inventory_suggestions'],
       'standard': ['basic_ai_assistant', 'inventory_suggestions', 'tracking_insights', 'route_suggestions'],
       'premium': ['basic_ai_assistant', 'inventory_suggestions', 'tracking_insights', 'route_suggestions', 
-                  'advanced_analytics', 'predictive_maintenance', 'custom_ai_queries']
+                  'advanced_analytics', 'predictive_maintenance', 'custom_ai_queries'],
+      'enterprise': ['basic_ai_assistant', 'inventory_suggestions', 'tracking_insights', 'route_suggestions', 
+                  'advanced_analytics', 'predictive_maintenance', 'custom_ai_queries',
+                  'enterprise_ai_reporting', 'custom_model_training', 'cross_system_intelligence']
     };
     
     return aiFeatures[tier] || [];
@@ -82,6 +112,9 @@ export const useFeatureAccess = () => {
     getAccessibleFeatures,
     getAvailableAIFeatures,
     promptUpgrade,
-    currentTier: currentTenant?.subscription_tier as 'basic' | 'standard' | 'premium' | null
+    getSubscriptionLimits,
+    isUnderAssetLimit,
+    isUnderUserLimit,
+    currentTier: currentTenant?.subscription_tier as 'basic' | 'standard' | 'premium' | 'enterprise' | null
   };
 };
