@@ -30,7 +30,7 @@ export const EquipmentIdInfo: React.FC<EquipmentIdInfoProps> = ({ id }) => {
             <ul className="list-disc list-inside mt-2 space-y-1">
               <li><span className="font-mono text-primary">{prefix}</span>: Equipment prefix</li>
               <li><span className="font-mono text-primary">{tenantCode}</span>: Organization identifier</li>
-              <li><span className="font-mono text-primary">{number}</span>: Sequential number</li>
+              <li><span className="font-mono text-primary">{number}</span>: Sequential number (5 digits)</li>
             </ul>
           </div>
         </div>
