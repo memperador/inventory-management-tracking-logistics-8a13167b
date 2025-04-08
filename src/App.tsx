@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import Dashboard from '@/pages/Dashboard';
@@ -34,6 +34,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // Create a client
 const queryClient = new QueryClient();
 
+// Helper component to handle project redirect
+const ProjectRedirect = () => {
+  const { projectId } = useParams();
+  return <Navigate to={`/projects/${projectId}`} replace />;
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -52,7 +58,7 @@ function App() {
                     <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
 
                     {/* Add redirect for incorrect "project" (singular) URL to "projects" (plural) */}
-                    <Route path="/project/:projectId" element={<Navigate to={(params) => `/projects/${params.projectId}`} replace />} />
+                    <Route path="/project/:projectId" element={<ProjectRedirect />} />
 
                     <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                       <Route path="/dashboard" element={<Dashboard />} />
