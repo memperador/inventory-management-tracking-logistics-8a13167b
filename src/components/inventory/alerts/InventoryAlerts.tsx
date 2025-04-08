@@ -45,13 +45,17 @@ export const InventoryAlerts: React.FC<InventoryAlertsProps> = ({
         break;
     }
     
-    addNotification({
-      type: notificationType as any,
-      title,
-      message,
-      priority: 'high',
-      showToast: true
-    });
+    // Fix the addNotification call to use the proper number of arguments
+    addNotification(
+      notificationType as any, // type
+      title, // title
+      message, // message
+      'high', // priority
+      undefined, // equipmentId
+      undefined, // equipmentName
+      undefined, // actionUrl
+      true // showToast
+    );
   };
 
   return (
