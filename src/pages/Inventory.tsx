@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { InventoryHeader } from '@/components/inventory/InventoryHeader';
-import { InventoryTabContent } from '@/components/inventory/InventoryTabContent';
 import { ComplianceSection } from '@/components/inventory/ComplianceSection';
 import { useInventoryImportExport } from '@/components/inventory/inventoryUtils';
 import { equipmentData as initialEquipmentData } from '@/components/equipment/EquipmentData';
@@ -11,28 +10,28 @@ import { useToast } from '@/hooks/use-toast';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { useInventoryFilters } from '@/components/inventory/hooks/useInventoryFilters';
 import { BatchOperationsBar } from '@/components/inventory/batch/BatchOperationsBar';
-import { CheckoutDialog } from '@/components/inventory/checkout/CheckoutDialog';
-import { QRCodeGenerator } from '@/components/inventory/qrcode/QRCodeGenerator';
-import { EnhancedDashboard } from '@/components/inventory/analytics/EnhancedDashboard';
-import { SavedFiltersDialog } from '@/components/inventory/filters/SavedFiltersDialog';
-import { InventoryAlerts } from '@/components/inventory/alerts/InventoryAlerts';
-import { DocumentAttachment } from '@/components/inventory/compliance/DocumentAttachment';
-import { MobileInventoryView } from '@/components/inventory/mobile/MobileInventoryView';
 import { ProcurementIntegration } from '@/components/inventory/procurement/ProcurementIntegration';
+import { EnhancedDashboard } from '@/components/inventory/analytics/EnhancedDashboard';
+import { InventoryAlerts } from '@/components/inventory/alerts/InventoryAlerts';
 import { InventoryAuditLogs } from '@/components/inventory/audit/InventoryAuditLogs';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Equipment, Document as EquipmentDocument } from '@/components/equipment/types';
 import { useMediaQuery } from '@/hooks/use-mobile';
+import { useInventoryTabs, InventoryTabType } from '@/components/inventory/hooks/useInventoryTabs';
+import { InventoryTabList } from '@/components/inventory/inventory-tabs/InventoryTabList';
+import { InventoryTabView } from '@/components/inventory/inventory-tabs/InventoryTabView';
+import { InventoryFeatureControls } from '@/components/inventory/inventory-tabs/InventoryFeatureControls';
+import { useEquipmentSelection } from '@/components/inventory/hooks/useEquipmentSelection';
 
 const Inventory = () => {
   // State management
   const [equipmentData, setEquipmentData] = useState<Equipment[]>(initialEquipmentData);
   const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
   const [showVendorIntegration, setShowVendorIntegration] = useState(false);
-  const [selectedEquipment, setSelectedEquipment] = useState<Equipment[]>([]);
-  const [activeTab, setActiveTab] = useState<string>("inventory");
   const { toast } = useToast();
   const isMobile = useMediaQuery("(max-width: 640px)");
+  const { activeTab, setActiveTab } = useInventoryTabs();
+  const { selectedEquipment, toggleItemSelection, clearSelection } = useEquipmentSelection();
   
   const {
     searchQuery,
@@ -99,7 +98,7 @@ const Inventory = () => {
     });
     
     setEquipmentData(updatedEquipmentData);
-    setSelectedEquipment([]);
+    clearSelection();
   };
 
   // Handle equipment check-in/check-out
@@ -148,48 +147,6 @@ const Inventory = () => {
     setAdvancedFilters(filter.advancedFilters);
   };
 
-  const toggleItemSelection = (item: Equipment) => {
-    const isSelected = selectedEquipment.some(selected => selected.id === item.id);
-    
-    if (isSelected) {
-      setSelectedEquipment(selectedEquipment.filter(selected => selected.id !== item.id));
-    } else {
-      setSelectedEquipment([...selectedEquipment, item]);
-    }
-  };
-
-  // Custom components to integrate with existing tab system
-  const InventoryView = () => (
-    <>
-      {isMobile ? (
-        <MobileInventoryView
-          equipmentData={filteredEquipment}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          activeCategory={activeCategory}
-          onCategoryChange={setActiveCategory}
-          activeStatus={activeStatus}
-          onStatusChange={setActiveStatus}
-          onClearFilters={handleClearFilters}
-          onAddItem={() => setIsNewItemDialogOpen(true)}
-        />
-      ) : (
-        <InventoryTabContent
-          filteredEquipment={filteredEquipment}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          activeCategory={activeCategory}
-          onCategoryChange={setActiveCategory}
-          activeStatus={activeStatus}
-          onStatusChange={setActiveStatus}
-          advancedFilters={advancedFilters}
-          onAdvancedFilterChange={setAdvancedFilters}
-          onClearFilters={handleClearFilters}
-        />
-      )}
-    </>
-  );
-
   return (
     <NotificationProvider>
       <div className="space-y-6">
@@ -204,43 +161,40 @@ const Inventory = () => {
         
         {showVendorIntegration && <VendorIntegration />}
         
-        {/* Enhanced features integration */}
-        <div className="flex justify-end gap-2 flex-wrap">
-          <SavedFiltersDialog
-            currentSearchQuery={searchQuery}
-            currentCategory={activeCategory}
-            currentStatus={activeStatus}
-            currentAdvancedFilters={advancedFilters}
-            onApplyFilter={handleApplySavedFilter}
-          />
-
-          {!isMobile && filteredEquipment.map(item => (
-            <React.Fragment key={item.id}>
-              <CheckoutDialog 
-                equipment={item} 
-                onCheckout={handleCheckout}
-                onCheckin={handleCheckin}
-              />
-              <QRCodeGenerator equipment={item} />
-              <DocumentAttachment
-                equipment={item}
-                onAddDocument={handleAddDocument}
-              />
-            </React.Fragment>
-          ))}
-        </div>
+        <InventoryFeatureControls 
+          filteredEquipment={filteredEquipment}
+          searchQuery={searchQuery}
+          activeCategory={activeCategory}
+          activeStatus={activeStatus}
+          advancedFilters={advancedFilters}
+          onApplyFilter={handleApplySavedFilter}
+          onCheckout={handleCheckout}
+          onCheckin={handleCheckin}
+          onAddDocument={handleAddDocument}
+          isMobile={isMobile}
+        />
         
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full mb-4">
-            <TabsTrigger value="inventory">Inventory</TabsTrigger>
-            <TabsTrigger value="procurement">Procurement</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="alerts">Alerts & Notifications</TabsTrigger>
-            <TabsTrigger value="audit">Audit Logs</TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as InventoryTabType)}>
+          <InventoryTabList 
+            activeTab={activeTab} 
+            onTabChange={setActiveTab} 
+          />
           
           <TabsContent value="inventory">
-            <InventoryView />
+            <InventoryTabView
+              filteredEquipment={filteredEquipment}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              activeCategory={activeCategory}
+              onCategoryChange={setActiveCategory}
+              activeStatus={activeStatus}
+              onStatusChange={setActiveStatus}
+              advancedFilters={advancedFilters}
+              onAdvancedFilterChange={setAdvancedFilters}
+              onClearFilters={handleClearFilters}
+              onAddItem={() => setIsNewItemDialogOpen(true)}
+              isMobile={isMobile}
+            />
           </TabsContent>
           
           <TabsContent value="procurement">
@@ -264,7 +218,7 @@ const Inventory = () => {
         
         <BatchOperationsBar
           selectedItems={selectedEquipment}
-          onClearSelection={() => setSelectedEquipment([])}
+          onClearSelection={clearSelection}
           onUpdateItems={handleBatchUpdate}
         />
         
