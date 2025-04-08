@@ -1,12 +1,14 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { formatDistanceToNow } from "date-fns";
+import { useNavigate, Link } from "react-router-dom";
+import { formatDistanceToNow, parseISO } from "date-fns";
 import { useNotificationContext } from "@/contexts/NotificationContext";
 import { Bell, AlertCircle, Calendar, FileText, Wrench, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { NotificationType } from "@/components/types/notification";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const NotificationsWidget = () => {
   const { notifications, unreadCount, markAsRead } = useNotificationContext();

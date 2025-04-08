@@ -3,7 +3,11 @@ import { useState, useEffect } from 'react';
 import { Notification, NotificationType } from '@/components/types/notification';
 import { useToast } from '@/hooks/use-toast';
 import { Equipment } from '@/components/equipment/types';
-import { addDays, isPast, isBefore } from 'date-fns';
+import { checkMaintenanceNotifications } from './notifications/maintenanceNotifications';
+import { checkCertificationNotifications } from './notifications/certificationNotifications';
+import { checkInspectionNotifications } from './notifications/inspectionNotifications';
+import { NotificationOptions } from './notifications/notificationTypes';
+import { isDuplicateNotification } from './notifications/notificationUtils';
 
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -27,16 +31,21 @@ export const useNotifications = () => {
   }, [notifications]);
 
   // Function to create a new notification
-  const addNotification = (
-    type: NotificationType,
-    title: string,
-    message: string,
-    priority: 'low' | 'medium' | 'high' | 'critical' = 'medium',
-    equipmentId?: string,
-    equipmentName?: string,
-    actionUrl?: string,
-    showToast: boolean = true
-  ) => {
+  const addNotification = ({
+    type,
+    title,
+    message,
+    priority = 'medium',
+    equipmentId,
+    equipmentName,
+    actionUrl,
+    showToast = true
+  }: NotificationOptions): Notification | null => {
+    // Check for duplicate notifications
+    if (equipmentId && isDuplicateNotification(notifications, equipmentId, type)) {
+      return null;
+    }
+    
     const newNotification: Notification = {
       id: `notification-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       type,
@@ -93,131 +102,27 @@ export const useNotifications = () => {
 
   // Generate notifications for equipment based on maintenance, certification, and inspection status
   const checkEquipmentNotifications = (equipment: Equipment[]) => {
-    const today = new Date();
-    const thirtyDaysFromNow = addDays(today, 30);
-    const sevenDaysFromNow = addDays(today, 7);
-    
-    equipment.forEach(item => {
-      // Check for maintenance due dates
-      if (item.nextMaintenance) {
-        const maintenanceDate = new Date(item.nextMaintenance);
-        
-        // Check if maintenance is overdue
-        if (isPast(maintenanceDate) && !notifications.some(n => 
-          n.equipmentId === item.id && 
-          n.type === 'maintenance_overdue' && 
-          new Date(n.timestamp) > addDays(today, -1) // Don't create duplicate notifications within 24h
-        )) {
-          addNotification(
-            'maintenance_overdue',
-            'Maintenance Overdue',
-            `Maintenance for ${item.name} is overdue. It was scheduled for ${maintenanceDate.toLocaleDateString()}.`,
-            'high',
-            item.id,
-            item.name,
-            `/inventory?equipment=${item.id}`
-          );
-        } 
-        // Check if maintenance is due within 7 days
-        else if (isBefore(maintenanceDate, sevenDaysFromNow) && !isPast(maintenanceDate) && !notifications.some(n => 
-          n.equipmentId === item.id && 
-          n.type === 'maintenance_due' && 
-          new Date(n.timestamp) > addDays(today, -1)
-        )) {
-          addNotification(
-            'maintenance_due',
-            'Maintenance Due Soon',
-            `Maintenance for ${item.name} is due on ${maintenanceDate.toLocaleDateString()}.`,
-            'medium',
-            item.id,
-            item.name,
-            `/inventory?equipment=${item.id}`
-          );
-        }
-      }
-      
-      // Check for certification expiry
-      if (item.certificationRequired && item.certificationExpiry) {
-        const expiryDate = new Date(item.certificationExpiry);
-        
-        // Check if certification is expired
-        if (isPast(expiryDate) && !notifications.some(n => 
-          n.equipmentId === item.id && 
-          n.type === 'certification_expired' && 
-          new Date(n.timestamp) > addDays(today, -1)
-        )) {
-          addNotification(
-            'certification_expired',
-            'Certification Expired',
-            `Certification for ${item.name} has expired on ${expiryDate.toLocaleDateString()}.`,
-            'critical',
-            item.id,
-            item.name,
-            `/inventory?equipment=${item.id}`
-          );
-        } 
-        // Check if certification is expiring within 30 days
-        else if (isBefore(expiryDate, thirtyDaysFromNow) && !isPast(expiryDate) && !notifications.some(n => 
-          n.equipmentId === item.id && 
-          n.type === 'certification_expiring' && 
-          new Date(n.timestamp) > addDays(today, -3)
-        )) {
-          addNotification(
-            'certification_expiring',
-            'Certification Expiring Soon',
-            `Certification for ${item.name} will expire on ${expiryDate.toLocaleDateString()}.`,
-            'high',
-            item.id,
-            item.name,
-            `/inventory?equipment=${item.id}`
-          );
-        }
-      }
-      
-      // Check for inspection due dates
-      if (item.nextInspection) {
-        const inspectionDate = new Date(item.nextInspection);
-        
-        // Check if inspection is overdue
-        if (isPast(inspectionDate) && !notifications.some(n => 
-          n.equipmentId === item.id && 
-          n.type === 'inspection_overdue' && 
-          new Date(n.timestamp) > addDays(today, -1)
-        )) {
-          addNotification(
-            'inspection_overdue',
-            'Inspection Overdue',
-            `Inspection for ${item.name} is overdue. It was scheduled for ${inspectionDate.toLocaleDateString()}.`,
-            'high',
-            item.id,
-            item.name,
-            `/inventory?equipment=${item.id}`
-          );
-        } 
-        // Check if inspection is due within 14 days
-        else if (isBefore(inspectionDate, addDays(today, 14)) && !isPast(inspectionDate) && !notifications.some(n => 
-          n.equipmentId === item.id && 
-          n.type === 'inspection_due' && 
-          new Date(n.timestamp) > addDays(today, -3)
-        )) {
-          addNotification(
-            'inspection_due',
-            'Inspection Due Soon',
-            `Inspection for ${item.name} is due on ${inspectionDate.toLocaleDateString()}.`,
-            'medium',
-            item.id,
-            item.name,
-            `/inventory?equipment=${item.id}`
-          );
-        }
-      }
-    });
+    // Use the extracted utility functions to check each notification type
+    checkMaintenanceNotifications({ equipment, addNotification });
+    checkCertificationNotifications({ equipment, addNotification });
+    checkInspectionNotifications({ equipment, addNotification });
   };
 
   return {
     notifications,
     unreadCount,
-    addNotification,
+    addNotification: (
+      type: NotificationType,
+      title: string,
+      message: string,
+      priority: 'low' | 'medium' | 'high' | 'critical' = 'medium',
+      equipmentId?: string,
+      equipmentName?: string,
+      actionUrl?: string,
+      showToast: boolean = true
+    ) => addNotification({
+      type, title, message, priority, equipmentId, equipmentName, actionUrl, showToast
+    }),
     markAsRead,
     markAllAsRead,
     deleteNotification,
