@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -347,7 +346,7 @@ const MapVisualization: React.FC = () => {
         toast({
           title: "Using Cached Data",
           description: "Network unavailable. Using stored locations.",
-          variant: "secondary"
+          variant: "default"
         });
       } else {
         toast({
@@ -400,7 +399,7 @@ const MapVisualization: React.FC = () => {
     toast({
       title: !offlineMode ? "Offline Mode Enabled" : "Online Mode Enabled",
       description: !offlineMode ? "Now using cached location data." : "Connected to live location updates.",
-      variant: !offlineMode ? "secondary" : "default"
+      variant: !offlineMode ? "default" : "default"
     });
   };
 
