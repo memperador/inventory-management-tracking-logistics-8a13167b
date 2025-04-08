@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { InventoryHeader } from '@/components/inventory/InventoryHeader';
 import { ComplianceSection } from '@/components/inventory/ComplianceSection';
@@ -9,20 +10,12 @@ import { useToast } from '@/hooks/use-toast';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { useInventoryFilters } from '@/components/inventory/hooks/useInventoryFilters';
 import { BatchOperationsBar } from '@/components/inventory/batch/BatchOperationsBar';
-import { ProcurementIntegration } from '@/components/inventory/procurement/ProcurementIntegration';
-import { EnhancedDashboard } from '@/components/inventory/analytics/EnhancedDashboard';
-import { InventoryAlerts } from '@/components/inventory/alerts/InventoryAlerts';
-import { InventoryAuditLogs } from '@/components/inventory/audit/InventoryAuditLogs';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Equipment, Document as EquipmentDocument } from '@/components/equipment/types';
 import { useMediaQuery } from '@/hooks/use-mobile';
-import { useInventoryTabs, InventoryTabType } from '@/components/inventory/hooks/useInventoryTabs';
-import { InventoryTabList } from '@/components/inventory/inventory-tabs/InventoryTabList';
-import { InventoryTabView } from '@/components/inventory/inventory-tabs/InventoryTabView';
+import { useInventoryTabs } from '@/components/inventory/hooks/useInventoryTabs';
 import { InventoryFeatureControls } from '@/components/inventory/inventory-tabs/InventoryFeatureControls';
 import { useEquipmentSelection } from '@/components/inventory/hooks/useEquipmentSelection';
-import { QRCodeGenerator } from '@/components/inventory/qrcode/QRCodeGenerator';
-import GPSIntegration from '@/pages/GPSIntegration';
+import { InventoryTabsContainer } from '@/components/inventory/tabs/InventoryTabsContainer';
 
 const Inventory = () => {
   const [equipmentData, setEquipmentData] = useState<Equipment[]>(initialEquipmentData);
@@ -166,53 +159,23 @@ const Inventory = () => {
           isMobile={isMobile}
         />
         
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as InventoryTabType)}>
-          <InventoryTabList 
-            activeTab={activeTab} 
-            onTabChange={setActiveTab} 
-          />
-          
-          <TabsContent value="inventory">
-            <InventoryTabView
-              filteredEquipment={filteredEquipment}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              activeCategory={activeCategory}
-              onCategoryChange={setActiveCategory}
-              activeStatus={activeStatus}
-              onStatusChange={setActiveStatus}
-              advancedFilters={advancedFilters}
-              onAdvancedFilterChange={setAdvancedFilters}
-              onClearFilters={handleClearFilters}
-              onAddItem={() => setIsNewItemDialogOpen(true)}
-              isMobile={isMobile}
-            />
-          </TabsContent>
-          
-          <TabsContent value="procurement">
-            <ProcurementIntegration equipmentData={equipmentData} />
-          </TabsContent>
-          
-          <TabsContent value="qrcode">
-            <QRCodeGenerator equipmentData={filteredEquipment} />
-          </TabsContent>
-          
-          <TabsContent value="gps">
-            <GPSIntegration />
-          </TabsContent>
-          
-          <TabsContent value="analytics">
-            <EnhancedDashboard equipmentData={equipmentData} />
-          </TabsContent>
-          
-          <TabsContent value="alerts">
-            <InventoryAlerts equipmentData={equipmentData} />
-          </TabsContent>
-          
-          <TabsContent value="audit">
-            <InventoryAuditLogs equipmentData={equipmentData} />
-          </TabsContent>
-        </Tabs>
+        <InventoryTabsContainer
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          filteredEquipment={filteredEquipment}
+          equipmentData={equipmentData}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          activeCategory={activeCategory}
+          onCategoryChange={setActiveCategory}
+          activeStatus={activeStatus}
+          onStatusChange={setActiveStatus}
+          advancedFilters={advancedFilters}
+          onAdvancedFilterChange={setAdvancedFilters}
+          onClearFilters={handleClearFilters}
+          onAddItem={() => setIsNewItemDialogOpen(true)}
+          isMobile={isMobile}
+        />
         
         <ComplianceSection />
         
