@@ -1,4 +1,3 @@
-
 export * from './types';
 export { default as RFITable } from './RFITable';
 export { default as RFIFilters } from './RFIFilters';
@@ -14,6 +13,9 @@ export { default as InformationCard } from './detail/InformationCard';
 export { default as ActionsCard } from './detail/ActionsCard';
 export { default as DetailTabs } from './detail/DetailTabs';
 export { default as RFIAssistant } from './detail/RFIAssistant';
+
+// RFI Assistant components
+export * from './detail/components';
 
 // Form components
 export { default as RequestFormFields } from './form/RequestFormFields';
