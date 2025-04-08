@@ -78,6 +78,7 @@ function App() {
                       <Route path="/workflow" element={<WorkflowPage />} />
                     </Route>
 
+                    {/* Add a catch-all 404 route */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                   <Toaster />

@@ -15,7 +15,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, getStatusColo
   const navigate = useNavigate();
   
   const handleRowClick = () => {
-    navigate(`/project/${project.id}`);
+    navigate(`/projects/${project.id}`);
   };
   
   return (
