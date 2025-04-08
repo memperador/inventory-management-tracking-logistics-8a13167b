@@ -61,10 +61,26 @@ export const useFeatureAccess = () => {
     }
   };
 
+  // Get available AI features for current tier
+  const getAvailableAIFeatures = (): string[] => {
+    if (!currentTenant || !currentTenant.subscription_tier) return [];
+    
+    const tier = currentTenant.subscription_tier as 'basic' | 'standard' | 'premium';
+    const aiFeatures = {
+      'basic': ['basic_ai_assistant', 'inventory_suggestions'],
+      'standard': ['basic_ai_assistant', 'inventory_suggestions', 'tracking_insights', 'route_suggestions'],
+      'premium': ['basic_ai_assistant', 'inventory_suggestions', 'tracking_insights', 'route_suggestions', 
+                  'advanced_analytics', 'predictive_maintenance', 'custom_ai_queries']
+    };
+    
+    return aiFeatures[tier] || [];
+  };
+
   return {
     canAccessFeature,
     hasSubscriptionTier,
     getAccessibleFeatures,
+    getAvailableAIFeatures,
     promptUpgrade,
     currentTier: currentTenant?.subscription_tier as 'basic' | 'standard' | 'premium' | null
   };

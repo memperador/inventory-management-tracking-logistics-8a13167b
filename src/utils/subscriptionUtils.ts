@@ -10,6 +10,7 @@ export const FEATURE_ACCESS_MAP: Record<string, FeatureAccessLevel> = {
   'qr_codes': 'basic',
   'basic_alerts': 'basic',
   'simple_analytics': 'basic',
+  'basic_ai_assistant': 'basic',
   
   // Standard tier features
   'gps_tracking': 'standard',
@@ -17,13 +18,19 @@ export const FEATURE_ACCESS_MAP: Record<string, FeatureAccessLevel> = {
   'advanced_alerts': 'standard',
   'bulk_qr': 'standard',
   'location_history': 'standard',
+  'standard_ai_assistant': 'standard',
+  'tracking_insights': 'standard',
+  'route_suggestions': 'standard',
   
   // Premium tier features
   'advanced_gps': 'premium',
   'geofencing': 'premium',
   'route_optimization': 'premium',
   'premium_analytics': 'premium',
-  'gps_intelligence': 'premium'
+  'gps_intelligence': 'premium',
+  'premium_ai_assistant': 'premium',
+  'predictive_maintenance': 'premium',
+  'custom_ai_queries': 'premium'
 };
 
 // AI assistant features by tier
@@ -46,6 +53,13 @@ export const AI_ASSISTANT_FEATURES: Record<FeatureAccessLevel, string[]> = {
     'Advanced asset utilization analysis',
     'Cross-project resource allocation'
   ]
+};
+
+// Models used by the AI assistant for different tiers
+export const AI_ASSISTANT_MODELS: Record<FeatureAccessLevel, string> = {
+  'basic': 'llama-3.1-sonar-small-128k-online', // 8B parameter model
+  'standard': 'llama-3.1-sonar-small-128k-online', // Same model with enhanced context
+  'premium': 'llama-3.1-sonar-large-128k-online' // 70B parameter model
 };
 
 // Check if user has access to a specific feature
@@ -95,6 +109,10 @@ export const getUpgradePromptForFeature = (
       title: 'Enable Bulk QR Generation',
       description: 'Generate and print multiple QR codes at once for faster inventory processing.'
     },
+    'standard_ai_assistant': {
+      title: 'Upgrade to Standard AI Assistant',
+      description: 'Get enhanced AI capabilities with GPS tracking insights and route suggestions.'
+    },
     
     // Premium tier features
     'advanced_gps': {
@@ -112,6 +130,18 @@ export const getUpgradePromptForFeature = (
     'gps_intelligence': {
       title: 'Access GPS Intelligence',
       description: 'Get advanced insights and recommendations based on location data.'
+    },
+    'premium_ai_assistant': {
+      title: 'Upgrade to Premium AI Assistant',
+      description: 'Access our most powerful AI model with advanced asset management insights, predictive maintenance, and custom analysis.'
+    },
+    'predictive_maintenance': {
+      title: 'Enable Predictive Maintenance',
+      description: 'Let AI predict when your equipment needs maintenance based on usage patterns and historical data.'
+    },
+    'custom_ai_queries': {
+      title: 'Access Custom AI Queries',
+      description: 'Ask complex questions about your assets and get detailed, data-driven responses from our most advanced AI.'
     }
   };
   
