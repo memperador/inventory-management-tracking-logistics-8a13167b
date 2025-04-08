@@ -51,6 +51,9 @@ function App() {
                     <Route path="/unauthorized" element={<Unauthorized />} />
                     <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
 
+                    {/* Add redirect for incorrect "project" (singular) URL to "projects" (plural) */}
+                    <Route path="/project/:projectId" element={<Navigate to={(params) => `/projects/${params.projectId}`} replace />} />
+
                     <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/projects" element={<Projects />} />
