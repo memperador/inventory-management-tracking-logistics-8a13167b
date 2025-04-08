@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -91,7 +90,6 @@ export const SavedFiltersDialog: React.FC<SavedFiltersDialogProps> = ({
     });
   };
 
-  // Generate a description of a saved filter
   const getFilterDescription = (filter: SavedFilter['filter']) => {
     const parts = [];
     

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Equipment } from '@/components/equipment/types';
+import { Equipment, Document } from '@/components/equipment/types';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
@@ -16,12 +16,14 @@ interface CheckoutDialogProps {
   equipment: Equipment;
   onCheckout: (equipment: Equipment, name: string, returnDate: Date) => void;
   onCheckin: (equipment: Equipment) => void;
+  onAddDocument?: (equipment: Equipment, document: Document) => void;
 }
 
 export const CheckoutDialog: React.FC<CheckoutDialogProps> = ({ 
   equipment, 
   onCheckout,
-  onCheckin
+  onCheckin,
+  onAddDocument
 }) => {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");

@@ -35,28 +35,40 @@ export const InventoryFeatureControls: React.FC<InventoryFeatureControlsProps> =
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <FilterBadges
-          searchQuery={searchQuery}
-          activeCategory={activeCategory}
-          activeStatus={activeStatus}
-          advancedFilters={advancedFilters}
+          filters={advancedFilters}
+          onFilterChange={(key, value) => {
+            // Create a new filter object with the updated value
+            const newAdvancedFilters = {
+              ...advancedFilters,
+              [key]: value
+            };
+            // Apply the updated filter
+            onApplyFilter({
+              searchQuery,
+              activeCategory,
+              activeStatus,
+              advancedFilters: newAdvancedFilters
+            });
+          }}
         />
         
         <div className="flex gap-2">
           <SavedFiltersDialog 
-            currentFilters={{
-              searchQuery,
-              activeCategory,
-              activeStatus,
-              advancedFilters
-            }}
+            currentSearchQuery={searchQuery}
+            currentCategory={activeCategory}
+            currentStatus={activeStatus}
+            currentAdvancedFilters={advancedFilters}
             onApplyFilter={onApplyFilter}
           />
-          <CheckoutDialog
-            equipmentList={filteredEquipment.filter(e => !e.isCheckedOut)}
-            onCheckout={onCheckout}
-            onCheckin={onCheckin}
-            onAddDocument={onAddDocument}
-          />
+          
+          {/* If there's at least one non-checked out equipment item, show the checkout dialog */}
+          {filteredEquipment.length > 0 && filteredEquipment.some(e => !e.isCheckedOut) && (
+            <CheckoutDialog
+              equipment={filteredEquipment.find(e => !e.isCheckedOut)!}
+              onCheckout={onCheckout}
+              onCheckin={onCheckin}
+            />
+          )}
         </div>
       </div>
     </div>
