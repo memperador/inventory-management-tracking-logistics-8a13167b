@@ -141,7 +141,7 @@ const OnboardingAssistant: React.FC<OnboardingAssistantProps> = ({ onOpenAIAssis
             disabled={currentStep?.completed && !isLastStep}
             className="flex items-center"
           >
-            {currentStep?.completed ? (Completed) : "Mark as Complete"} 
+            {currentStep?.completed ? "Completed" : "Mark as Complete"} 
             {!isLastStep && <ChevronRight className="h-4 w-4 ml-1" />}
           </Button>
         </div>
