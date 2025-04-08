@@ -19,6 +19,7 @@ import RFIDetail from '@/pages/RFIDetail';
 import Analytics from '@/pages/Analytics';
 import Onboarding from '@/pages/Onboarding';
 import ResetPassword from '@/pages/ResetPassword';
+import TwoFactorAuth from '@/pages/TwoFactorAuth';
 import Users from '@/pages/Users';
 import PaymentPage from '@/pages/PaymentPage';
 import AIAssistant from '@/pages/AIAssistant';
@@ -46,6 +47,7 @@ function App() {
                     <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/auth/reset-password" element={<ResetPassword />} />
+                    <Route path="/auth/two-factor" element={<TwoFactorAuth />} />
                     <Route path="/unauthorized" element={<Unauthorized />} />
                     <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
 

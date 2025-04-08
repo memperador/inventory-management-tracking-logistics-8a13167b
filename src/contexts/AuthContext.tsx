@@ -52,6 +52,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             title: 'Account updated',
             description: 'Your account information has been updated.',
           });
+        } else if (event === 'MFA_CHALLENGE_VERIFIED') {
+          toast({
+            title: 'Two-factor verification complete',
+            description: 'You have been authenticated successfully.',
+          });
         }
       }
     );
@@ -98,8 +103,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      });
+      
       if (error) throw error;
+      
+      // Check if 2FA is required
+      if (data?.session === null && data?.user !== null) {
+        // This indicates that 2FA is required
+        const { data: factorData } = await supabase.auth.mfa.listFactors();
+        
+        if (factorData?.totp.length > 0) {
+          // Store email for 2FA page
+          localStorage.setItem('pendingTwoFactorEmail', email);
+          
+          // Store the factor ID
+          localStorage.setItem('factorId', factorData.totp[0].id);
+          
+          // Redirect to 2FA page
+          window.location.href = '/auth/two-factor';
+          return;
+        }
+      }
+      
       toast({
         title: 'Welcome back!',
         description: 'You have been signed in successfully',
