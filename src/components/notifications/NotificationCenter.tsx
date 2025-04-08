@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Sheet,
@@ -11,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useNotificationContext } from '@/contexts/NotificationContext';
 import { formatDistanceToNow } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Check, CheckCheck, Trash2, Bell, AlertCircle, Calendar, Certificate, Tool, ExternalLink } from 'lucide-react';
+import { Check, CheckCheck, Trash2, Bell, AlertCircle, Calendar, FileText, Wrench, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -54,10 +53,10 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     switch (type) {
       case 'maintenance_due':
       case 'maintenance_overdue':
-        return <Tool className="h-4 w-4" />;
+        return <Wrench className="h-4 w-4" />;
       case 'certification_expiring':
       case 'certification_expired':
-        return <Certificate className="h-4 w-4" />;
+        return <FileText className="h-4 w-4" />;
       case 'inspection_due':
       case 'inspection_overdue':
         return <Calendar className="h-4 w-4" />;
@@ -145,7 +144,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   : 'maintenance_due'
               )}
             >
-              <Tool className="h-3 w-3 mr-1" />
+              <Wrench className="h-3 w-3 mr-1" />
               Maintenance
             </Badge>
             <Badge 
@@ -157,7 +156,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   : 'certification_expired'
               )}
             >
-              <Certificate className="h-3 w-3 mr-1" />
+              <FileText className="h-3 w-3 mr-1" />
               Certification
             </Badge>
             <Badge 

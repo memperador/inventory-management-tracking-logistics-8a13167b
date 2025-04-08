@@ -1,329 +1,41 @@
-import React, { useEffect, useState } from 'react';
+
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CalendarClock, Bell, Check, Wrench, FileText, AlertTriangle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { ComplianceAlert, Equipment } from '@/components/equipment/types';
-import { format, isPast, isAfter, addDays } from 'date-fns';
+import { format } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
-import { useNotificationContext } from '@/contexts/NotificationContext';
+import { Equipment } from '@/components/equipment/types';
+import { useComplianceAlerts } from './hooks/useComplianceAlerts';
+import { AlertItem } from './AlertItem';
+import { EmptyAlerts } from './EmptyAlerts';
 
 interface ComplianceAlertsProps {
   equipmentData: Equipment[];
 }
 
 export const ComplianceAlerts: React.FC<{ equipmentData: Equipment[] }> = ({ equipmentData }) => {
-  const [alerts, setAlerts] = useState<ComplianceAlert[]>([]);
-  const [lastEquipmentUpdate, setLastEquipmentUpdate] = useState<string | null>(null);
   const { toast } = useToast();
-  const { addNotification } = useNotificationContext();
+  const { alerts, lastEquipmentUpdate, acknowledgeAlert, resolveAlert } = useComplianceAlerts(equipmentData);
   
-  useEffect(() => {
-    const savedAlerts = localStorage.getItem('complianceAlerts');
-    if (savedAlerts) {
-      setAlerts(JSON.parse(savedAlerts));
-    }
-    
-    const lastUpdate = localStorage.getItem('lastEquipmentUpdate');
-    if (lastUpdate) {
-      setLastEquipmentUpdate(lastUpdate);
-    }
-  }, []);
-  
-  useEffect(() => {
-    const today = new Date();
-    const thirtyDaysFromNow = addDays(today, 30);
-    const newAlerts: ComplianceAlert[] = [];
-    
-    const currentEquipmentState = JSON.stringify(equipmentData);
-    const previousEquipmentState = localStorage.getItem('equipmentState');
-    
-    if (previousEquipmentState === currentEquipmentState && alerts.length > 0) {
-      return;
-    }
-    
-    localStorage.setItem('equipmentState', currentEquipmentState);
-    localStorage.setItem('lastEquipmentUpdate', new Date().toISOString());
-    setLastEquipmentUpdate(new Date().toISOString());
-    
-    const existingAlertsByKey = new Map();
-    alerts.forEach(alert => {
-      if (alert.status === 'Acknowledged' || alert.status === 'Resolved') {
-        const key = `${alert.alertType}-${alert.equipmentId}-${alert.dueDate}`;
-        existingAlertsByKey.set(key, alert);
-      }
-    });
-    
-    equipmentData.forEach(equipment => {
-      if (equipment.nextMaintenance) {
-        const maintenanceDate = new Date(equipment.nextMaintenance);
-        const alertKey = `Maintenance-${equipment.id}-${equipment.nextMaintenance}`;
-        const existingAlert = existingAlertsByKey.get(alertKey);
-        
-        if (existingAlert) {
-          newAlerts.push(existingAlert);
-        } else if (isPast(maintenanceDate)) {
-          const newAlert = {
-            id: `maint-${equipment.id}-${Date.now()}`,
-            equipmentId: equipment.id,
-            equipmentName: equipment.name,
-            alertType: 'Maintenance' as const,
-            dueDate: equipment.nextMaintenance,
-            priority: 'Critical' as const,
-            status: 'Open' as const,
-            description: 'Maintenance overdue',
-            createdAt: new Date().toISOString()
-          };
-          
-          newAlerts.push(newAlert);
-          
-          addNotification(
-            'maintenance_overdue',
-            'Maintenance Overdue',
-            `Maintenance for ${equipment.name} is overdue. It was scheduled for ${maintenanceDate.toLocaleDateString()}.`,
-            'critical',
-            equipment.id,
-            equipment.name,
-            `/inventory?equipment=${equipment.id}`,
-            false
-          );
-        } else if (isAfter(thirtyDaysFromNow, maintenanceDate)) {
-          const newAlert = {
-            id: `maint-soon-${equipment.id}-${Date.now()}`,
-            equipmentId: equipment.id,
-            equipmentName: equipment.name,
-            alertType: 'Maintenance' as const,
-            dueDate: equipment.nextMaintenance,
-            priority: 'High' as const,
-            status: 'Open' as const,
-            description: 'Maintenance due soon',
-            createdAt: new Date().toISOString()
-          };
-          
-          newAlerts.push(newAlert);
-          
-          if (isAfter(addDays(today, 7), maintenanceDate)) {
-            addNotification(
-              'maintenance_due',
-              'Maintenance Due Soon',
-              `Maintenance for ${equipment.name} is due on ${maintenanceDate.toLocaleDateString()}.`,
-              'high',
-              equipment.id,
-              equipment.name,
-              `/inventory?equipment=${equipment.id}`,
-              false
-            );
-          }
-        }
-      }
-      
-      if (equipment.certificationRequired && equipment.certificationExpiry) {
-        const certExpiryDate = new Date(equipment.certificationExpiry);
-        const alertKey = `Certification-${equipment.id}-${equipment.certificationExpiry}`;
-        const existingAlert = existingAlertsByKey.get(alertKey);
-        
-        if (existingAlert) {
-          newAlerts.push(existingAlert);
-        } else if (isPast(certExpiryDate)) {
-          const newAlert = {
-            id: `cert-${equipment.id}-${Date.now()}`,
-            equipmentId: equipment.id,
-            equipmentName: equipment.name,
-            alertType: 'Certification' as const,
-            dueDate: equipment.certificationExpiry,
-            priority: 'Critical' as const,
-            status: 'Open' as const,
-            description: 'Certification expired',
-            createdAt: new Date().toISOString()
-          };
-          
-          newAlerts.push(newAlert);
-          
-          addNotification(
-            'certification_expired',
-            'Certification Expired',
-            `Certification for ${equipment.name} has expired on ${certExpiryDate.toLocaleDateString()}.`,
-            'critical',
-            equipment.id,
-            equipment.name,
-            `/inventory?equipment=${equipment.id}`,
-            false
-          );
-        } else if (isAfter(thirtyDaysFromNow, certExpiryDate)) {
-          const newAlert = {
-            id: `cert-soon-${equipment.id}-${Date.now()}`,
-            equipmentId: equipment.id,
-            equipmentName: equipment.name,
-            alertType: 'Certification' as const,
-            dueDate: equipment.certificationExpiry,
-            priority: 'High' as const,
-            status: 'Open' as const,
-            description: 'Certification expiring soon',
-            createdAt: new Date().toISOString()
-          };
-          
-          newAlerts.push(newAlert);
-          
-          if (isAfter(addDays(today, 7), certExpiryDate)) {
-            addNotification(
-              'certification_expiring',
-              'Certification Expiring Soon',
-              `Certification for ${equipment.name} will expire on ${certExpiryDate.toLocaleDateString()}.`,
-              'high',
-              equipment.id,
-              equipment.name,
-              `/inventory?equipment=${equipment.id}`,
-              false
-            );
-          }
-        }
-      }
-      
-      if (equipment.nextInspection) {
-        const inspectionDate = new Date(equipment.nextInspection);
-        const alertKey = `Inspection-${equipment.id}-${equipment.nextInspection}`;
-        const existingAlert = existingAlertsByKey.get(alertKey);
-        
-        if (existingAlert) {
-          newAlerts.push(existingAlert);
-        } else if (isPast(inspectionDate)) {
-          const newAlert = {
-            id: `insp-${equipment.id}-${Date.now()}`,
-            equipmentId: equipment.id,
-            equipmentName: equipment.name,
-            alertType: 'Inspection' as const,
-            dueDate: equipment.nextInspection,
-            priority: 'Critical' as const,
-            status: 'Open' as const,
-            description: 'Inspection overdue',
-            createdAt: new Date().toISOString()
-          };
-          
-          newAlerts.push(newAlert);
-          
-          addNotification(
-            'inspection_overdue',
-            'Inspection Overdue',
-            `Inspection for ${equipment.name} is overdue. It was scheduled for ${inspectionDate.toLocaleDateString()}.`,
-            'high',
-            equipment.id,
-            equipment.name,
-            `/inventory?equipment=${equipment.id}`,
-            false
-          );
-        } else if (isAfter(thirtyDaysFromNow, inspectionDate)) {
-          const newAlert = {
-            id: `insp-soon-${equipment.id}-${Date.now()}`,
-            equipmentId: equipment.id,
-            equipmentName: equipment.name,
-            alertType: 'Inspection' as const,
-            dueDate: equipment.nextInspection,
-            priority: 'Medium' as const,
-            status: 'Open' as const,
-            description: 'Inspection due soon',
-            createdAt: new Date().toISOString()
-          };
-          
-          newAlerts.push(newAlert);
-          
-          if (isAfter(addDays(today, 7), inspectionDate)) {
-            addNotification(
-              'inspection_due',
-              'Inspection Due Soon',
-              `Inspection for ${equipment.name} is due on ${inspectionDate.toLocaleDateString()}.`,
-              'medium',
-              equipment.id,
-              equipment.name,
-              `/inventory?equipment=${equipment.id}`,
-              false
-            );
-          }
-        }
-      }
-    });
-    
-    setAlerts(newAlerts);
-    localStorage.setItem('complianceAlerts', JSON.stringify(newAlerts));
-  }, [equipmentData, alerts, addNotification]);
-  
-  const acknowledgeAlert = (alertId: string) => {
-    const updatedAlerts = alerts.map(alert => {
-      if (alert.id === alertId) {
-        return {
-          ...alert,
-          status: 'Acknowledged' as const,
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return alert;
-    });
-    
-    setAlerts(updatedAlerts);
-    localStorage.setItem('complianceAlerts', JSON.stringify(updatedAlerts));
-    
+  const handleAcknowledgeAlert = (alertId: string) => {
+    acknowledgeAlert(alertId);
     toast({
       title: "Alert acknowledged",
       description: "The compliance alert has been acknowledged",
     });
   };
   
-  const resolveAlert = (alertId: string) => {
+  const handleResolveAlert = (alertId: string) => {
     const alertToResolve = alerts.find(a => a.id === alertId);
+    resolveAlert(alertId);
     
-    if (!alertToResolve) return;
-    
-    const updatedAlerts = alerts.map(alert => {
-      if (alert.id === alertId) {
-        return {
-          ...alert,
-          status: 'Resolved' as const,
-          resolvedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return alert;
-    });
-    
-    setAlerts(updatedAlerts);
-    localStorage.setItem('complianceAlerts', JSON.stringify(updatedAlerts));
-    
-    toast({
-      title: "Alert resolved",
-      description: `${alertToResolve.alertType} alert for ${alertToResolve.equipmentName} has been resolved`,
-    });
-    
-    addNotification(
-      'general',
-      `${alertToResolve.alertType} Alert Resolved`,
-      `${alertToResolve.alertType} alert for ${alertToResolve.equipmentName} has been resolved`,
-      'low',
-      alertToResolve.equipmentId,
-      alertToResolve.equipmentName,
-      undefined,
-      false
-    );
-  };
-  
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'Critical': return 'bg-red-500 text-white';
-      case 'High': return 'bg-orange-500 text-white';
-      case 'Medium': return 'bg-yellow-500 text-black';
-      case 'Low': return 'bg-blue-500 text-white';
-      default: return 'bg-gray-500 text-white';
+    if (alertToResolve) {
+      toast({
+        title: "Alert resolved",
+        description: `${alertToResolve.alertType} alert for ${alertToResolve.equipmentName} has been resolved`,
+      });
     }
   };
-  
-  const getAlertIcon = (alertType: string) => {
-    switch (alertType) {
-      case 'Maintenance': return <Wrench className="h-4 w-4" />;
-      case 'Certification': return <FileText className="h-4 w-4" />;
-      case 'Inspection': return <CalendarClock className="h-4 w-4" />;
-      default: return <Bell className="h-4 w-4" />;
-    }
-  };
-  
-  const activeAlerts = alerts.filter(alert => alert.status !== 'Resolved');
   
   return (
     <Card className="mb-6">
@@ -338,62 +50,22 @@ export const ComplianceAlerts: React.FC<{ equipmentData: Equipment[] }> = ({ equ
             </span>
           )}
           <Badge variant="outline" className="ml-2">
-            {activeAlerts.length} Active
+            {alerts.length} Active
           </Badge>
         </div>
       </CardHeader>
       <CardContent>
-        {activeAlerts.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No active alerts at this time.</p>
+        {alerts.length === 0 ? (
+          <EmptyAlerts />
         ) : (
           <div className="space-y-3">
-            {activeAlerts.map(alert => (
-              <div 
-                key={alert.id} 
-                className="flex items-start justify-between border-b pb-3"
-              >
-                <div className="flex items-start space-x-3">
-                  <div className={`p-2 rounded-full ${getPriorityColor(alert.priority)}`}>
-                    {getAlertIcon(alert.alertType)}
-                  </div>
-                  <div>
-                    <h4 className="font-medium">{alert.equipmentName}</h4>
-                    <p className="text-sm text-muted-foreground">{alert.description}</p>
-                    <div className="flex items-center mt-1">
-                      <CalendarClock className="h-3 w-3 mr-1" />
-                      <span className="text-xs">
-                        Due: {format(new Date(alert.dueDate), 'MMM dd, yyyy')}
-                      </span>
-                      <Badge variant="outline" className="ml-2 text-xs">
-                        {alert.alertType}
-                      </Badge>
-                      {alert.status === 'Acknowledged' && (
-                        <Badge variant="outline" className="ml-2 text-xs bg-yellow-50">
-                          Acknowledged
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex space-x-2">
-                  {alert.status === 'Open' && (
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => acknowledgeAlert(alert.id)}
-                    >
-                      Acknowledge
-                    </Button>
-                  )}
-                  <Button 
-                    size="sm" 
-                    onClick={() => resolveAlert(alert.id)}
-                  >
-                    <Check className="h-4 w-4 mr-1" />
-                    Resolve
-                  </Button>
-                </div>
-              </div>
+            {alerts.map(alert => (
+              <AlertItem 
+                key={alert.id}
+                alert={alert}
+                onAcknowledge={handleAcknowledgeAlert}
+                onResolve={handleResolveAlert}
+              />
             ))}
           </div>
         )}

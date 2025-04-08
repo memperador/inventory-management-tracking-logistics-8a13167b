@@ -1,13 +1,12 @@
-
-import React, { useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { useNotificationContext } from '@/contexts/NotificationContext';
-import { format, parseISO } from 'date-fns';
-import { Bell, Calendar, AlertTriangle, Tool, Certificate } from 'lucide-react';
-import { NotificationType } from '@/components/types/notification';
-import { Link } from 'react-router-dom';
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { formatDistanceToNow } from "date-fns";
+import { useNotificationContext } from "@/contexts/NotificationContext";
+import { Bell, AlertCircle, Calendar, FileText, Wrench, ExternalLink } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { NotificationType } from "@/components/types/notification";
 
 export const NotificationsWidget = () => {
   const { notifications, unreadCount, markAsRead } = useNotificationContext();
@@ -20,15 +19,15 @@ export const NotificationsWidget = () => {
     switch (type) {
       case 'maintenance_due':
       case 'maintenance_overdue':
-        return <Tool className="h-4 w-4 text-blue-500" />;
+        return <Wrench className="h-4 w-4 text-blue-500" />;
       case 'certification_expiring':
       case 'certification_expired':
-        return <Certificate className="h-4 w-4 text-purple-500" />;
+        return <FileText className="h-4 w-4 text-purple-500" />;
       case 'inspection_due':
       case 'inspection_overdue':
         return <Calendar className="h-4 w-4 text-green-500" />;
       case 'status_change':
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+        return <AlertCircle className="h-4 w-4 text-yellow-500" />;
       default:
         return <Bell className="h-4 w-4 text-gray-500" />;
     }
@@ -102,7 +101,7 @@ export const NotificationsWidget = () => {
                     <p className="text-sm text-muted-foreground">{notification.message}</p>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-500">
-                        {format(parseISO(notification.timestamp), 'MMM dd, HH:mm')}
+                        {formatDistanceToNow(parseISO(notification.timestamp), { addSuffix: true })}
                       </span>
                       {notification.actionUrl && (
                         <Link 
