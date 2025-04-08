@@ -38,7 +38,11 @@ const Inventory = () => {
   // Get filtered equipment based on all filters
   const filteredEquipment = filterEquipment(equipmentData);
   
-  const { handleImport, handleFileUpload, handleExport, handleExportCSV } = useInventoryImportExport();
+  const { handleImport, handleFileUpload, handleExport: exportFunc, handleExportCSV: exportCSVFunc } = useInventoryImportExport();
+  
+  // Create wrapper functions that don't expect parameters
+  const handleExport = () => exportFunc(filteredEquipment);
+  const handleExportCSV = () => exportCSVFunc(filteredEquipment);
   
   // Check for compliance issues on initial load
   useEffect(() => {
