@@ -50,17 +50,22 @@ function App() {
               <RoleProvider>
                 <NotificationProvider>
                   <Routes>
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    {/* Auth Routes - Accessible without authentication */}
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/auth/reset-password" element={<ResetPassword />} />
                     <Route path="/auth/two-factor" element={<TwoFactorAuth />} />
                     <Route path="/unauthorized" element={<Unauthorized />} />
-                    <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+                    
+                    {/* Root redirect to auth page instead of directly to dashboard */}
+                    <Route path="/" element={<Navigate to="/auth" replace />} />
+                    
+                    <Route path="/onboarding" element={<ProtectedRoute redirectTo="/auth"><Onboarding /></ProtectedRoute>} />
 
                     {/* Add redirect for incorrect "project" (singular) URL to "projects" (plural) */}
                     <Route path="/project/:projectId" element={<ProjectRedirect />} />
 
-                    <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+                    {/* Protected routes that require authentication */}
+                    <Route element={<ProtectedRoute redirectTo="/auth"><AppLayout /></ProtectedRoute>}>
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/projects" element={<Projects />} />
                       <Route path="/projects/:projectId" element={<ProjectDetail />} />
