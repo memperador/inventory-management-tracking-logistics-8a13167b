@@ -3,8 +3,10 @@ import { useEffect } from 'react';
 import PageHeader from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/button';
 import { useNotificationContext } from '@/contexts/NotificationContext';
-import { CheckCheck, Trash2 } from 'lucide-react';
+import { CheckCheck, Trash2, Bell, Settings } from 'lucide-react';
 import NotificationsTabs from '@/components/notifications/NotificationsTabs';
+import NotificationPreferences from '@/components/notifications/NotificationPreferences';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const NotificationsPage = () => {
   const { 
@@ -45,11 +47,30 @@ const NotificationsPage = () => {
         }
       />
 
-      <NotificationsTabs 
-        notifications={notifications}
-        markAsRead={markAsRead}
-        deleteNotification={deleteNotification}
-      />
+      <Tabs defaultValue="list">
+        <TabsList className="grid w-[400px] grid-cols-2">
+          <TabsTrigger value="list" className="flex items-center gap-2">
+            <Bell className="h-4 w-4" />
+            Notifications List
+          </TabsTrigger>
+          <TabsTrigger value="preferences" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Preferences
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="list">
+          <NotificationsTabs 
+            notifications={notifications}
+            markAsRead={markAsRead}
+            deleteNotification={deleteNotification}
+          />
+        </TabsContent>
+        
+        <TabsContent value="preferences">
+          <NotificationPreferences />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

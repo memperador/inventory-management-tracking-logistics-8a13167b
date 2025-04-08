@@ -8,25 +8,15 @@ import { checkCertificationNotifications } from './notifications/certificationNo
 import { checkInspectionNotifications } from './notifications/inspectionNotifications';
 import { NotificationOptions } from './notifications/notificationTypes';
 import { isDuplicateNotification } from './notifications/notificationUtils';
+import { useLocalStorage } from './useLocalStorage';
 
 export const useNotifications = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useLocalStorage<Notification[]>('notifications', []);
   const [unreadCount, setUnreadCount] = useState(0);
   const { toast } = useToast();
   
-  // Load notifications from localStorage on component mount
+  // Set unread count whenever notifications change
   useEffect(() => {
-    const savedNotifications = localStorage.getItem('notifications');
-    if (savedNotifications) {
-      const parsedNotifications = JSON.parse(savedNotifications) as Notification[];
-      setNotifications(parsedNotifications);
-      setUnreadCount(parsedNotifications.filter(n => !n.read).length);
-    }
-  }, []);
-
-  // Save notifications to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('notifications', JSON.stringify(notifications));
     setUnreadCount(notifications.filter(n => !n.read).length);
   }, [notifications]);
 
@@ -111,18 +101,7 @@ export const useNotifications = () => {
   return {
     notifications,
     unreadCount,
-    addNotification: (
-      type: NotificationType,
-      title: string,
-      message: string,
-      priority: 'low' | 'medium' | 'high' | 'critical' = 'medium',
-      equipmentId?: string,
-      equipmentName?: string,
-      actionUrl?: string,
-      showToast: boolean = true
-    ) => addNotification({
-      type, title, message, priority, equipmentId, equipmentName, actionUrl, showToast
-    }),
+    addNotification,
     markAsRead,
     markAllAsRead,
     deleteNotification,

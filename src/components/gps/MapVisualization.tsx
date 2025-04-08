@@ -4,8 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MapPin, Search, Locate, RefreshCw } from 'lucide-react';
+import { MapPin, Search, Locate, RefreshCw, Map as MapIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
+import { fetchGPSData, formatCoordinates } from './GPSUtils';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 // Mock GPS data for equipment
 const MOCK_GPS_DATA = [
@@ -25,15 +29,64 @@ interface EquipmentLocation {
   status: 'active' | 'idle' | 'inactive';
 }
 
+interface Geofence {
+  id: string;
+  name: string;
+  coordinates: [number, number][];
+  color: string;
+}
+
+const DEFAULT_MAP_CENTER: [number, number] = [-122.4194, 37.7749];
+const DEFAULT_ZOOM = 13;
+
+// Sample geofence data
+const SAMPLE_GEOFENCES: Geofence[] = [
+  {
+    id: 'geofence-1',
+    name: 'Construction Site Alpha',
+    coordinates: [
+      [-122.4224, 37.7759],
+      [-122.4224, 37.7739],
+      [-122.4164, 37.7739],
+      [-122.4164, 37.7759],
+      [-122.4224, 37.7759]
+    ],
+    color: '#4338CA'
+  },
+  {
+    id: 'geofence-2',
+    name: 'Storage Yard',
+    coordinates: [
+      [-122.4134, 37.7719],
+      [-122.4134, 37.7699],
+      [-122.4094, 37.7699],
+      [-122.4094, 37.7719],
+      [-122.4134, 37.7719]
+    ],
+    color: '#15803D'
+  }
+];
+
 const MapVisualization: React.FC = () => {
-  const [mapKey, setMapKey] = useState<string>('');
+  const [mapKey, setMapKey] = useLocalStorage<string>('mapbox_key', '');
   const [isMapKeySet, setIsMapKeySet] = useState<boolean>(false);
   const [equipmentLocations, setEquipmentLocations] = useState<EquipmentLocation[]>(MOCK_GPS_DATA);
   const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showGeofences, setShowGeofences] = useState<boolean>(true);
+  const [offlineMode, setOfflineMode] = useState<boolean>(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const popupRef = useRef<mapboxgl.Popup | null>(null);
+  const geofencesRef = useRef<{ [key: string]: mapboxgl.GeoJSONSource }>({});
+
+  useEffect(() => {
+    // Check if mapKey is already set in localStorage
+    if (mapKey && mapKey.trim().length > 0) {
+      setIsMapKeySet(true);
+    }
+  }, [mapKey]);
 
   const filteredEquipment = equipmentLocations.filter(equipment => 
     equipment.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -47,7 +100,6 @@ const MapVisualization: React.FC = () => {
         title: "Map Key Set",
         description: "The map will now be initialized with your key.",
       });
-      // In a real app, you would store this securely, not in state
     } else {
       toast({
         title: "Invalid Map Key",
@@ -58,51 +110,298 @@ const MapVisualization: React.FC = () => {
   };
 
   const initializeMap = () => {
-    // This is a mockup for the UI - in a real implementation,
-    // you would use a mapping library like Mapbox, Leaflet, or Google Maps
-    if (!mapContainerRef.current) return;
+    if (!mapContainerRef.current || !mapKey) return;
 
-    // Mock map initialization for the UI demonstration
-    const mockMap = document.createElement('div');
-    mockMap.className = 'flex flex-col items-center justify-center h-full bg-gray-100 text-gray-700 rounded-lg';
-    mockMap.innerHTML = `
-      <div class="flex items-center justify-center">
-        <MapPin className="h-10 w-10 text-primary mb-2" />
-      </div>
-      <p class="text-center">Map would render here with equipment locations.</p>
-      <p class="text-center text-sm text-muted-foreground mt-2">Using mock data for demonstration.</p>
-    `;
+    // Set Mapbox access token
+    mapboxgl.accessToken = mapKey;
+
+    if (mapRef.current) return; // Map is already initialized
+
+    // Initialize map
+    const map = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: DEFAULT_MAP_CENTER,
+      zoom: DEFAULT_ZOOM,
+      attributionControl: false
+    });
+
+    // Add navigation control
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
     
-    // Clear previous content and append the mock map
-    if (mapContainerRef.current.firstChild) {
-      mapContainerRef.current.removeChild(mapContainerRef.current.firstChild);
-    }
-    mapContainerRef.current.appendChild(mockMap);
+    // Add attribution control
+    map.addControl(new mapboxgl.AttributionControl({
+      compact: true
+    }));
 
-    // In a real implementation, this is where you would:
-    // 1. Initialize the map with the appropriate library
-    // 2. Add markers for each equipment location
-    // 3. Set up event listeners for map interactions
+    // Add scale control
+    map.addControl(new mapboxgl.ScaleControl({
+      maxWidth: 100,
+      unit: 'metric'
+    }), 'bottom-left');
+
+    // Store map reference
+    mapRef.current = map;
+
+    // Initialize popup
+    popupRef.current = new mapboxgl.Popup({
+      closeButton: false,
+      closeOnClick: false
+    });
+
+    // Add markers when map is loaded
+    map.on('load', () => {
+      // Add equipment markers
+      addEquipmentMarkers();
+      
+      // Add geofences if enabled
+      if (showGeofences) {
+        addGeofences();
+      }
+    });
   };
 
-  const refreshLocations = () => {
-    // In a real app, this would fetch the latest GPS data from your backend
-    toast({
-      title: "Locations Refreshed",
-      description: "The latest equipment positions have been loaded.",
+  const addEquipmentMarkers = () => {
+    if (!mapRef.current) return;
+    
+    // Clear existing markers
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+    
+    // Add markers for each equipment
+    equipmentLocations.forEach(equipment => {
+      // Create custom marker element
+      const el = document.createElement('div');
+      el.className = 'flex items-center justify-center';
+      el.style.width = '30px';
+      el.style.height = '30px';
+      
+      // Add appropriate color based on status
+      const color = equipment.status === 'active' ? '#22C55E' : 
+                   equipment.status === 'idle' ? '#EAB308' : '#6B7280';
+      
+      el.innerHTML = `
+        <svg viewBox="0 0 24 24" width="24" height="24">
+          <path 
+            fill="${color}" 
+            d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+          />
+        </svg>
+      `;
+      
+      // Create marker with popup
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([equipment.lng, equipment.lat])
+        .addTo(mapRef.current);
+      
+      // Add hover effect
+      el.addEventListener('mouseenter', () => {
+        if (popupRef.current) {
+          popupRef.current
+            .setLngLat([equipment.lng, equipment.lat])
+            .setHTML(`
+              <div class="p-1">
+                <div class="font-bold">${equipment.name}</div>
+                <div class="text-xs">Status: ${equipment.status}</div>
+                <div class="text-xs">Last update: ${new Date(equipment.lastUpdate).toLocaleString()}</div>
+                <div class="text-xs">${formatCoordinates({latitude: equipment.lat, longitude: equipment.lng})}</div>
+              </div>
+            `)
+            .addTo(mapRef.current!);
+        }
+      });
+      
+      el.addEventListener('mouseleave', () => {
+        if (popupRef.current) {
+          popupRef.current.remove();
+        }
+      });
+      
+      // Add click event to center and select
+      marker.getElement().addEventListener('click', () => {
+        centerMapOnEquipment(equipment.id);
+      });
+      
+      // Store marker reference
+      markersRef.current.push(marker);
     });
+  };
+
+  const addGeofences = () => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+    
+    // Add geofence sources and layers
+    SAMPLE_GEOFENCES.forEach(geofence => {
+      const sourceId = `geofence-source-${geofence.id}`;
+      const layerId = `geofence-layer-${geofence.id}`;
+      
+      // Add source if it doesn't exist
+      if (!map.getSource(sourceId)) {
+        map.addSource(sourceId, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {
+              name: geofence.name,
+              color: geofence.color
+            },
+            geometry: {
+              type: 'Polygon',
+              coordinates: [geofence.coordinates]
+            }
+          }
+        });
+        
+        // Store reference to source
+        geofencesRef.current[sourceId] = map.getSource(sourceId) as mapboxgl.GeoJSONSource;
+        
+        // Add fill layer
+        map.addLayer({
+          id: layerId,
+          type: 'fill',
+          source: sourceId,
+          layout: {},
+          paint: {
+            'fill-color': geofence.color,
+            'fill-opacity': 0.2
+          }
+        });
+        
+        // Add outline layer
+        map.addLayer({
+          id: `${layerId}-outline`,
+          type: 'line',
+          source: sourceId,
+          layout: {},
+          paint: {
+            'line-color': geofence.color,
+            'line-width': 2
+          }
+        });
+      }
+    });
+  };
+
+  const removeGeofences = () => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+    
+    SAMPLE_GEOFENCES.forEach(geofence => {
+      const sourceId = `geofence-source-${geofence.id}`;
+      const layerId = `geofence-layer-${geofence.id}`;
+      
+      // Remove layers if they exist
+      if (map.getLayer(`${layerId}-outline`)) {
+        map.removeLayer(`${layerId}-outline`);
+      }
+      
+      if (map.getLayer(layerId)) {
+        map.removeLayer(layerId);
+      }
+      
+      // Remove source if it exists
+      if (map.getSource(sourceId)) {
+        map.removeSource(sourceId);
+        delete geofencesRef.current[sourceId];
+      }
+    });
+  };
+
+  const refreshLocations = async () => {
+    try {
+      // Simulate network issue if in offline mode
+      if (offlineMode) {
+        throw new Error('Network unavailable');
+      }
+      
+      // In a real app, this would fetch the latest GPS data from your backend
+      const data = await fetchGPSData();
+      
+      // For demo purposes, we'll just add some random movement to our mock data
+      const updatedLocations = equipmentLocations.map(equipment => {
+        return {
+          ...equipment,
+          lat: equipment.lat + (Math.random() - 0.5) * 0.005,
+          lng: equipment.lng + (Math.random() - 0.5) * 0.005,
+          lastUpdate: new Date().toISOString()
+        };
+      });
+      
+      setEquipmentLocations(updatedLocations);
+      
+      // Update markers on the map
+      if (mapRef.current) {
+        addEquipmentMarkers();
+      }
+      
+      toast({
+        title: "Locations Refreshed",
+        description: "The latest equipment positions have been loaded.",
+      });
+    } catch (error) {
+      console.error('Error refreshing locations:', error);
+      
+      // Load from cache in offline mode
+      if (offlineMode) {
+        toast({
+          title: "Using Cached Data",
+          description: "Network unavailable. Using stored locations.",
+          variant: "secondary"
+        });
+      } else {
+        toast({
+          title: "Error Refreshing",
+          description: "Failed to refresh equipment locations.",
+          variant: "destructive"
+        });
+      }
+    }
   };
 
   const centerMapOnEquipment = (equipmentId: string) => {
     const equipment = equipmentLocations.find(eq => eq.id === equipmentId);
-    if (equipment) {
+    if (equipment && mapRef.current) {
       setSelectedEquipment(equipmentId);
-      // In a real implementation, this would pan/zoom the map to the equipment location
+      
+      mapRef.current.flyTo({
+        center: [equipment.lng, equipment.lat],
+        zoom: 15,
+        essential: true
+      });
+      
       toast({
         title: "Map Centered",
         description: `Map centered on ${equipment.name}`,
       });
     }
+  };
+
+  const toggleGeofences = () => {
+    setShowGeofences(!showGeofences);
+    
+    if (!showGeofences) {
+      // Enable geofences
+      addGeofences();
+    } else {
+      // Disable geofences
+      removeGeofences();
+    }
+    
+    toast({
+      title: showGeofences ? "Geofences Hidden" : "Geofences Shown",
+      description: showGeofences ? "Geofences are now hidden from the map." : "Geofences are now visible on the map.",
+    });
+  };
+
+  const toggleOfflineMode = () => {
+    setOfflineMode(!offlineMode);
+    
+    toast({
+      title: !offlineMode ? "Offline Mode Enabled" : "Online Mode Enabled",
+      description: !offlineMode ? "Now using cached location data." : "Connected to live location updates.",
+      variant: !offlineMode ? "secondary" : "default"
+    });
   };
 
   useEffect(() => {
@@ -116,25 +415,33 @@ const MapVisualization: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
           <div className="flex items-center">
-            <MapPin className="mr-2 h-5 w-5 text-primary" />
+            <MapIcon className="mr-2 h-5 w-5 text-primary" />
             Equipment Location Tracker
           </div>
-          <Button size="sm" variant="outline" onClick={refreshLocations}>
-            <RefreshCw className="h-4 w-4 mr-1" />
-            Refresh
-          </Button>
+          <div className="space-x-2 flex">
+            <Button size="sm" variant={offlineMode ? "default" : "outline"} onClick={toggleOfflineMode}>
+              {offlineMode ? "Offline" : "Online"}
+            </Button>
+            <Button size="sm" variant="outline" onClick={toggleGeofences}>
+              {showGeofences ? "Hide Geofences" : "Show Geofences"}
+            </Button>
+            <Button size="sm" variant="outline" onClick={refreshLocations}>
+              <RefreshCw className="h-4 w-4 mr-1" />
+              Refresh
+            </Button>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
         {!isMapKeySet ? (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Please enter your map provider API key to initialize the map visualization.
+              Please enter your Mapbox API key to initialize the map visualization.
             </p>
             <form onSubmit={handleMapKeySubmit} className="flex gap-2">
               <Input
                 type="password"
-                placeholder="Enter Map API Key"
+                placeholder="Enter Mapbox API Key"
                 value={mapKey}
                 onChange={(e) => setMapKey(e.target.value)}
                 className="flex-1"
@@ -143,6 +450,7 @@ const MapVisualization: React.FC = () => {
             </form>
             <div className="text-xs text-muted-foreground">
               In a production environment, this key would be stored securely in your Supabase environment.
+              Get a free Mapbox key at <a href="https://mapbox.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">mapbox.com</a>.
             </div>
           </div>
         ) : (
@@ -164,13 +472,7 @@ const MapVisualization: React.FC = () => {
                 <div 
                   ref={mapContainerRef} 
                   className="h-[400px] border rounded-md overflow-hidden"
-                >
-                  <div className="flex flex-col items-center justify-center h-full bg-gray-100 text-gray-700 rounded-lg">
-                    <MapPin className="h-10 w-10 text-primary mb-2" />
-                    <p className="text-center">Map would render here with equipment locations.</p>
-                    <p className="text-center text-sm text-muted-foreground mt-2">Using mock data for demonstration.</p>
-                  </div>
-                </div>
+                />
               </div>
 
               <div>
