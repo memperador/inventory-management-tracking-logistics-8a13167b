@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { InventoryHeader } from '@/components/inventory/InventoryHeader';
 import { InventoryFilters } from '@/components/inventory/InventoryFilters';
@@ -23,7 +22,7 @@ import { LayoutGrid, LineChart } from 'lucide-react';
 const Inventory = () => {
   // State management
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<ViewMode>('list'); // Changed default to 'list'
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [activeCategory, setActiveCategory] = useState<InventoryCategory | 'All'>('All');
   const [activeStatus, setActiveStatus] = useState<string>('All');
   const [activeTab, setActiveTab] = useState<'list' | 'dashboard'>('list');
@@ -88,8 +87,8 @@ const Inventory = () => {
     }
     
     // Cost range filtering
-    const minCost = advancedFilters.minCost ? parseFloat(advancedFilters.minCost as string) : 0;
-    const maxCost = advancedFilters.maxCost ? parseFloat(advancedFilters.maxCost as string) : Infinity;
+    const minCost = advancedFilters.minCost ? parseFloat(advancedFilters.minCost) : 0;
+    const maxCost = advancedFilters.maxCost ? parseFloat(advancedFilters.maxCost) : Infinity;
     const matchesCost = equipment.cost ? (equipment.cost >= minCost && equipment.cost <= maxCost) : true;
     
     return matchesSearch && 

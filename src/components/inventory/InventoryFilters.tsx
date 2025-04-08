@@ -34,8 +34,8 @@ interface InventoryFiltersProps {
     necCode?: string;
     csiCode?: string;
     maintenanceStatus?: string;
-    minCost?: number;
-    maxCost?: number;
+    minCost?: string; // Changed from number to string
+    maxCost?: string; // Changed from number to string
   };
   onAdvancedFilterChange?: (filters: any) => void;
 }
