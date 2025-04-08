@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { UserRole } from '@/types/roles';
 import { useRole } from '@/hooks/useRoleContext';
@@ -21,12 +20,17 @@ const RoleDisplay: React.FC<RoleDisplayProps> = ({ userId, initialRole }) => {
   
   const updateRoleMutation = useMutation({
     mutationFn: async (newRole: UserRole) => {
-      const { error } = await supabase
-        .from('users')
-        .update({ role: newRole })
-        .eq('id', userId);
+      const validDbRoles = ['admin', 'manager', 'operator', 'viewer'];
       
-      if (error) throw error;
+      if (validDbRoles.includes(newRole)) {
+        const { error } = await supabase
+          .from('users')
+          .update({ role: newRole })
+          .eq('id', userId);
+        
+        if (error) throw error;
+      }
+      
       return newRole;
     },
     onSuccess: (newRole) => {
@@ -35,7 +39,6 @@ const RoleDisplay: React.FC<RoleDisplayProps> = ({ userId, initialRole }) => {
         title: 'Role updated',
         description: `User role updated to ${newRole}`,
       });
-      // Invalidate users query to refresh list
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error) => {
