@@ -58,8 +58,6 @@ export const useFeatureAccess = () => {
         description: upgradeInfo.description,
         action: (
           <Button 
-            variant="default" 
-            size="sm" 
             onClick={() => navigate('/payment')}
           >
             Upgrade
