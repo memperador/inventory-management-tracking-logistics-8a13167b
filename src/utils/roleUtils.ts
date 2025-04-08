@@ -8,17 +8,21 @@ export const getRoleBadgeColor = (role: UserRole): string => {
       return 'bg-inventory-blue-light text-inventory-blue border-inventory-blue';
     case 'manager':
       return 'bg-inventory-green-light text-inventory-green border-inventory-green';
+    case 'editor':
+      return 'bg-amber-100 text-amber-700 border-amber-200';
     case 'operator':
       return 'bg-inventory-yellow-light text-inventory-yellow border-inventory-yellow';
     case 'viewer':
       return 'bg-gray-100 text-gray-700 border-gray-200';
+    case 'superadmin':
+      return 'bg-purple-100 text-purple-700 border-purple-200';
     default:
       return '';
   }
 };
 
 export const getAllRoles = (): UserRole[] => {
-  return ['admin', 'manager', 'operator', 'viewer'];
+  return ['admin', 'manager', 'editor', 'operator', 'viewer'];
 };
 
 // Filter navigation items based on user role and required roles

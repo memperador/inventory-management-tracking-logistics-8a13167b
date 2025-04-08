@@ -9,6 +9,11 @@ export interface Tenant {
     theme: string;
     features: string[];
     logoUrl?: string | null;
+    aiConfig?: {
+      isAiEnabled: boolean;
+      defaultModel?: string;
+      hasApiKey?: boolean;
+    };
     industryCodeSettings?: {
       companyPrefix?: string;
       selectedCodeType?: string;

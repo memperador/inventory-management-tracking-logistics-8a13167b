@@ -8,6 +8,7 @@ interface ChatInputProps {
   input: string;
   tier: string;
   isLoading: boolean;
+  disabled?: boolean;  // Added disabled prop as optional
   onInputChange: (value: string) => void;
   onSendMessage: () => void;
 }
@@ -16,6 +17,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   input,
   tier,
   isLoading,
+  disabled = false,  // Added with default value
   onInputChange,
   onSendMessage
 }) => {
@@ -32,9 +34,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
               onSendMessage();
             }
           }}
-          disabled={isLoading}
+          disabled={isLoading || disabled}
         />
-        <Button onClick={onSendMessage} disabled={isLoading || !input.trim()}>
+        <Button onClick={onSendMessage} disabled={isLoading || disabled || !input.trim()}>
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </Button>
       </div>
