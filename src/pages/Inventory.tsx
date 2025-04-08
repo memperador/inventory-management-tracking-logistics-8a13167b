@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { InventoryHeader } from '@/components/inventory/InventoryHeader';
 import { ComplianceSection } from '@/components/inventory/ComplianceSection';
@@ -26,7 +25,6 @@ import { QRCodeGenerator } from '@/components/inventory/qrcode/QRCodeGenerator';
 import GPSIntegration from '@/pages/GPSIntegration';
 
 const Inventory = () => {
-  // State management
   const [equipmentData, setEquipmentData] = useState<Equipment[]>(initialEquipmentData);
   const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);
   const [showVendorIntegration, setShowVendorIntegration] = useState(false);
@@ -53,16 +51,13 @@ const Inventory = () => {
     });
   });
   
-  // Get filtered equipment based on all filters
   const filteredEquipment = filterEquipment(equipmentData);
   
   const { handleImport, handleFileUpload, handleExport: exportFunc, handleExportCSV: exportCSVFunc } = useInventoryImportExport();
   
-  // Create wrapper functions that don't expect parameters
   const handleExport = () => exportFunc(filteredEquipment);
   const handleExportCSV = () => exportCSVFunc(filteredEquipment);
   
-  // Check for compliance issues on initial load
   useEffect(() => {
     const expiredItems = equipmentData.filter(item => {
       if (item.certificationRequired && item.certificationExpiry) {
@@ -75,7 +70,6 @@ const Inventory = () => {
     });
     
     if (expiredItems.length > 0) {
-      // Show toast only after component has mounted
       const timer = setTimeout(() => {
         toast({
           title: "Compliance Alert",
@@ -88,7 +82,6 @@ const Inventory = () => {
     }
   }, [toast]);
 
-  // Handle batch operations
   const handleBatchUpdate = (updatedItems: Equipment[]) => {
     const updatedEquipmentData = [...equipmentData];
     
@@ -103,7 +96,6 @@ const Inventory = () => {
     clearSelection();
   };
 
-  // Handle equipment check-in/check-out
   const handleCheckout = (equipment: Equipment, name: string, returnDate: Date) => {
     const updatedEquipment = equipmentData.map(item => 
       item.id === equipment.id 
@@ -124,7 +116,6 @@ const Inventory = () => {
     setEquipmentData(updatedEquipment);
   };
 
-  // Handle document attachment
   const handleAddDocument = (equipment: Equipment, document: EquipmentDocument) => {
     const updatedEquipment = equipmentData.map(item => {
       if (item.id === equipment.id) {
@@ -141,7 +132,6 @@ const Inventory = () => {
     setEquipmentData(updatedEquipment);
   };
 
-  // Handle applying saved filter
   const handleApplySavedFilter = (filter: any) => {
     setSearchQuery(filter.searchQuery);
     setActiveCategory(filter.activeCategory);
