@@ -1,6 +1,5 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -21,7 +20,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     // Set up auth state listener
@@ -37,17 +35,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             description: 'You have been successfully signed in.',
           });
           
+          // Use window.location for navigation instead of useNavigate
           if (window.location.pathname === '/auth') {
-            navigate('/');
+            window.location.href = '/';
           }
         } else if (event === 'SIGNED_OUT') {
           toast({
             title: 'Signed out',
             description: 'You have been signed out successfully.',
           });
-          navigate('/auth');
+          window.location.href = '/auth';
         } else if (event === 'PASSWORD_RECOVERY') {
-          navigate('/auth/reset-password');
+          window.location.href = '/auth/reset-password';
         } else if (event === 'USER_UPDATED') {
           toast({
             title: 'Account updated',
@@ -67,7 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, []);
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
