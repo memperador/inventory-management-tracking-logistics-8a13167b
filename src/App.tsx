@@ -1,99 +1,68 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import AppLayout from '@/components/layout/AppLayout';
-import { ThemeProvider } from '@/contexts/ThemeContext';
-import { AuthProvider } from '@/contexts/AuthContext';
-import { TenantProvider } from '@/contexts/TenantContext';
-import { RoleProvider } from '@/contexts/RoleContext';
-import { Toaster } from '@/components/ui/sonner';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
-// Pages
-import Auth from '@/pages/Auth';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from '@/components/ui/toaster';
+import { NotificationProvider } from '@/contexts/NotificationContext';
 import Dashboard from '@/pages/Dashboard';
-import Inventory from '@/pages/Inventory';
+import Auth from '@/pages/Auth';
+import NotFound from '@/pages/NotFound';
+import AppLayout from '@/components/layout/AppLayout';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import Projects from '@/pages/Projects';
 import ProjectDetail from '@/pages/ProjectDetail';
-import Settings from '@/pages/Settings';
-import AIAssistant from '@/pages/AIAssistant';
-import Users from '@/pages/Users';
-import NotFound from '@/pages/NotFound';
-import Unauthorized from '@/pages/Unauthorized';
-import ResetPassword from '@/pages/ResetPassword';
-import Onboarding from '@/pages/Onboarding';
+import Inventory from '@/pages/Inventory';
 import AccountPage from '@/pages/AccountPage';
-import Analytics from '@/pages/Analytics';
+import Settings from '@/pages/Settings';
+import Unauthorized from '@/pages/Unauthorized';
 import GPSIntegration from '@/pages/GPSIntegration';
-import WorkflowPage from '@/pages/WorkflowPage';
-import PaymentPage from '@/pages/PaymentPage';
 import RequestManagement from '@/pages/RequestManagement';
 import RFIDetail from '@/pages/RFIDetail';
-
-// Components
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { StripeProvider } from '@/components/payment/StripeProvider';
-
-// Create a new QueryClient instance
-const queryClient = new QueryClient();
+import Analytics from '@/pages/Analytics';
+import Onboarding from '@/pages/Onboarding';
+import ResetPassword from '@/pages/ResetPassword';
+import Users from '@/pages/Users';
+import PaymentPage from '@/pages/PaymentPage';
+import AIAssistant from '@/pages/AIAssistant';
+import WorkflowPage from '@/pages/WorkflowPage';
+import { RoleProvider } from '@/contexts/RoleContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
 function App() {
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <Router>
-          <AuthProvider>
-            <TenantProvider>
-              <ThemeProvider>
-                <RoleProvider>
-                  <StripeProvider>
-                    <Routes>
-                      <Route path="/login" element={<Auth />} />
-                      <Route path="/signup" element={<Auth />} />
-                      <Route path="/reset-password" element={<ResetPassword />} />
-                      
-                      <Route 
-                        path="/" 
-                        element={
-                          <ProtectedRoute>
-                            <AppLayout />
-                          </ProtectedRoute>
-                        }
-                      >
-                        <Route index element={<Dashboard />} />
-                        <Route path="dashboard" element={<Dashboard />} />
-                        <Route path="inventory" element={<Inventory />} />
-                        <Route path="projects" element={<Projects />} />
-                        <Route path="project/:id" element={<ProjectDetail />} />
-                        <Route path="settings" element={<Settings />} />
-                        <Route path="ai-assistant" element={<AIAssistant />} />
-                        <Route path="users" element={<Users />} />
-                        <Route path="account" element={<AccountPage />} />
-                        <Route path="analytics" element={<Analytics />} />
-                        <Route path="gps" element={<GPSIntegration />} />
-                        <Route path="workflow" element={<WorkflowPage />} />
-                        <Route path="payment" element={<PaymentPage />} />
-                        <Route path="onboarding" element={<Onboarding />} />
-                        <Route path="unauthorized" element={<Unauthorized />} />
-                        
-                        {/* Request Management Routes */}
-                        <Route path="requests" element={<RequestManagement />} />
-                        <Route path="rfi/:id" element={<RFIDetail />} />
-                        <Route path="rfq/:id" element={<RFIDetail />} />
-                        <Route path="rfp/:id" element={<RFIDetail />} />
-                        
-                        <Route path="*" element={<NotFound />} />
-                      </Route>
-                    </Routes>
-                    <Toaster position="top-right" />
-                  </StripeProvider>
-                </RoleProvider>
-              </ThemeProvider>
-            </TenantProvider>
-          </AuthProvider>
-        </Router>
-      </QueryClientProvider>
-    </ErrorBoundary>
+    <ThemeProvider>
+      <RoleProvider>
+        <NotificationProvider>
+          <Router>
+            <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/auth/reset-password" element={<ResetPassword />} />
+              <Route path="/unauthorized" element={<Unauthorized />} />
+              <Route path="/onboarding" element={<ProtectedRoute component={Onboarding} />} />
+
+              <Route element={<ProtectedRoute component={AppLayout} />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/projects/:projectId" element={<ProjectDetail />} />
+                <Route path="/inventory" element={<Inventory />} />
+                <Route path="/account" element={<AccountPage />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/gps" element={<GPSIntegration />} />
+                <Route path="/requests" element={<RequestManagement />} />
+                <Route path="/requests/:requestId" element={<RFIDetail />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/users" element={<Users />} />
+                <Route path="/payment" element={<PaymentPage />} />
+                <Route path="/ai-assistant" element={<AIAssistant />} />
+                <Route path="/workflow" element={<WorkflowPage />} />
+              </Route>
+
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Router>
+          <Toaster />
+        </NotificationProvider>
+      </RoleProvider>
+    </ThemeProvider>
   );
 }
 

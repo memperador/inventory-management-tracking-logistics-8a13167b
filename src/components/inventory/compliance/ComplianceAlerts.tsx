@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,17 +6,18 @@ import { Button } from '@/components/ui/button';
 import { ComplianceAlert, Equipment } from '@/components/equipment/types';
 import { format, isPast, isAfter, addDays } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
+import { useNotificationContext } from '@/contexts/NotificationContext';
 
 interface ComplianceAlertsProps {
   equipmentData: Equipment[];
 }
 
-export const ComplianceAlerts: React.FC<ComplianceAlertsProps> = ({ equipmentData }) => {
+export const ComplianceAlerts: React.FC<{ equipmentData: Equipment[] }> = ({ equipmentData }) => {
   const [alerts, setAlerts] = useState<ComplianceAlert[]>([]);
   const [lastEquipmentUpdate, setLastEquipmentUpdate] = useState<string | null>(null);
   const { toast } = useToast();
+  const { addNotification } = useNotificationContext();
   
-  // Load alerts from localStorage on component mount
   useEffect(() => {
     const savedAlerts = localStorage.getItem('complianceAlerts');
     if (savedAlerts) {
@@ -30,27 +30,22 @@ export const ComplianceAlerts: React.FC<ComplianceAlertsProps> = ({ equipmentDat
     }
   }, []);
   
-  // Generate alerts based on equipment data
   useEffect(() => {
     const today = new Date();
     const thirtyDaysFromNow = addDays(today, 30);
     const newAlerts: ComplianceAlert[] = [];
     
-    // Check if equipment data has changed since last alert generation
     const currentEquipmentState = JSON.stringify(equipmentData);
     const previousEquipmentState = localStorage.getItem('equipmentState');
     
     if (previousEquipmentState === currentEquipmentState && alerts.length > 0) {
-      // Equipment data hasn't changed, so we don't need to regenerate alerts
       return;
     }
     
-    // Store current equipment state for future comparison
     localStorage.setItem('equipmentState', currentEquipmentState);
     localStorage.setItem('lastEquipmentUpdate', new Date().toISOString());
     setLastEquipmentUpdate(new Date().toISOString());
     
-    // Keep acknowledged and resolved alerts
     const existingAlertsByKey = new Map();
     alerts.forEach(alert => {
       if (alert.status === 'Acknowledged' || alert.status === 'Resolved') {
@@ -60,7 +55,6 @@ export const ComplianceAlerts: React.FC<ComplianceAlertsProps> = ({ equipmentDat
     });
     
     equipmentData.forEach(equipment => {
-      // Check for maintenance alerts
       if (equipment.nextMaintenance) {
         const maintenanceDate = new Date(equipment.nextMaintenance);
         const alertKey = `Maintenance-${equipment.id}-${equipment.nextMaintenance}`;
@@ -69,33 +63,60 @@ export const ComplianceAlerts: React.FC<ComplianceAlertsProps> = ({ equipmentDat
         if (existingAlert) {
           newAlerts.push(existingAlert);
         } else if (isPast(maintenanceDate)) {
-          newAlerts.push({
+          const newAlert = {
             id: `maint-${equipment.id}-${Date.now()}`,
             equipmentId: equipment.id,
             equipmentName: equipment.name,
-            alertType: 'Maintenance',
+            alertType: 'Maintenance' as const,
             dueDate: equipment.nextMaintenance,
-            priority: 'Critical',
-            status: 'Open',
+            priority: 'Critical' as const,
+            status: 'Open' as const,
             description: 'Maintenance overdue',
             createdAt: new Date().toISOString()
-          });
+          };
+          
+          newAlerts.push(newAlert);
+          
+          addNotification(
+            'maintenance_overdue',
+            'Maintenance Overdue',
+            `Maintenance for ${equipment.name} is overdue. It was scheduled for ${maintenanceDate.toLocaleDateString()}.`,
+            'critical',
+            equipment.id,
+            equipment.name,
+            `/inventory?equipment=${equipment.id}`,
+            false
+          );
         } else if (isAfter(thirtyDaysFromNow, maintenanceDate)) {
-          newAlerts.push({
+          const newAlert = {
             id: `maint-soon-${equipment.id}-${Date.now()}`,
             equipmentId: equipment.id,
             equipmentName: equipment.name,
-            alertType: 'Maintenance',
+            alertType: 'Maintenance' as const,
             dueDate: equipment.nextMaintenance,
-            priority: 'High',
-            status: 'Open',
+            priority: 'High' as const,
+            status: 'Open' as const,
             description: 'Maintenance due soon',
             createdAt: new Date().toISOString()
-          });
+          };
+          
+          newAlerts.push(newAlert);
+          
+          if (isAfter(addDays(today, 7), maintenanceDate)) {
+            addNotification(
+              'maintenance_due',
+              'Maintenance Due Soon',
+              `Maintenance for ${equipment.name} is due on ${maintenanceDate.toLocaleDateString()}.`,
+              'high',
+              equipment.id,
+              equipment.name,
+              `/inventory?equipment=${equipment.id}`,
+              false
+            );
+          }
         }
       }
       
-      // Check for certification alerts
       if (equipment.certificationRequired && equipment.certificationExpiry) {
         const certExpiryDate = new Date(equipment.certificationExpiry);
         const alertKey = `Certification-${equipment.id}-${equipment.certificationExpiry}`;
@@ -104,33 +125,60 @@ export const ComplianceAlerts: React.FC<ComplianceAlertsProps> = ({ equipmentDat
         if (existingAlert) {
           newAlerts.push(existingAlert);
         } else if (isPast(certExpiryDate)) {
-          newAlerts.push({
+          const newAlert = {
             id: `cert-${equipment.id}-${Date.now()}`,
             equipmentId: equipment.id,
             equipmentName: equipment.name,
-            alertType: 'Certification',
+            alertType: 'Certification' as const,
             dueDate: equipment.certificationExpiry,
-            priority: 'Critical',
-            status: 'Open',
+            priority: 'Critical' as const,
+            status: 'Open' as const,
             description: 'Certification expired',
             createdAt: new Date().toISOString()
-          });
+          };
+          
+          newAlerts.push(newAlert);
+          
+          addNotification(
+            'certification_expired',
+            'Certification Expired',
+            `Certification for ${equipment.name} has expired on ${certExpiryDate.toLocaleDateString()}.`,
+            'critical',
+            equipment.id,
+            equipment.name,
+            `/inventory?equipment=${equipment.id}`,
+            false
+          );
         } else if (isAfter(thirtyDaysFromNow, certExpiryDate)) {
-          newAlerts.push({
+          const newAlert = {
             id: `cert-soon-${equipment.id}-${Date.now()}`,
             equipmentId: equipment.id,
             equipmentName: equipment.name,
-            alertType: 'Certification',
+            alertType: 'Certification' as const,
             dueDate: equipment.certificationExpiry,
-            priority: 'High',
-            status: 'Open',
+            priority: 'High' as const,
+            status: 'Open' as const,
             description: 'Certification expiring soon',
             createdAt: new Date().toISOString()
-          });
+          };
+          
+          newAlerts.push(newAlert);
+          
+          if (isAfter(addDays(today, 7), certExpiryDate)) {
+            addNotification(
+              'certification_expiring',
+              'Certification Expiring Soon',
+              `Certification for ${equipment.name} will expire on ${certExpiryDate.toLocaleDateString()}.`,
+              'high',
+              equipment.id,
+              equipment.name,
+              `/inventory?equipment=${equipment.id}`,
+              false
+            );
+          }
         }
       }
       
-      // Check for inspection alerts
       if (equipment.nextInspection) {
         const inspectionDate = new Date(equipment.nextInspection);
         const alertKey = `Inspection-${equipment.id}-${equipment.nextInspection}`;
@@ -139,37 +187,64 @@ export const ComplianceAlerts: React.FC<ComplianceAlertsProps> = ({ equipmentDat
         if (existingAlert) {
           newAlerts.push(existingAlert);
         } else if (isPast(inspectionDate)) {
-          newAlerts.push({
+          const newAlert = {
             id: `insp-${equipment.id}-${Date.now()}`,
             equipmentId: equipment.id,
             equipmentName: equipment.name,
-            alertType: 'Inspection',
+            alertType: 'Inspection' as const,
             dueDate: equipment.nextInspection,
-            priority: 'Critical',
-            status: 'Open',
+            priority: 'Critical' as const,
+            status: 'Open' as const,
             description: 'Inspection overdue',
             createdAt: new Date().toISOString()
-          });
+          };
+          
+          newAlerts.push(newAlert);
+          
+          addNotification(
+            'inspection_overdue',
+            'Inspection Overdue',
+            `Inspection for ${equipment.name} is overdue. It was scheduled for ${inspectionDate.toLocaleDateString()}.`,
+            'high',
+            equipment.id,
+            equipment.name,
+            `/inventory?equipment=${equipment.id}`,
+            false
+          );
         } else if (isAfter(thirtyDaysFromNow, inspectionDate)) {
-          newAlerts.push({
+          const newAlert = {
             id: `insp-soon-${equipment.id}-${Date.now()}`,
             equipmentId: equipment.id,
             equipmentName: equipment.name,
-            alertType: 'Inspection',
+            alertType: 'Inspection' as const,
             dueDate: equipment.nextInspection,
-            priority: 'Medium',
-            status: 'Open',
+            priority: 'Medium' as const,
+            status: 'Open' as const,
             description: 'Inspection due soon',
             createdAt: new Date().toISOString()
-          });
+          };
+          
+          newAlerts.push(newAlert);
+          
+          if (isAfter(addDays(today, 7), inspectionDate)) {
+            addNotification(
+              'inspection_due',
+              'Inspection Due Soon',
+              `Inspection for ${equipment.name} is due on ${inspectionDate.toLocaleDateString()}.`,
+              'medium',
+              equipment.id,
+              equipment.name,
+              `/inventory?equipment=${equipment.id}`,
+              false
+            );
+          }
         }
       }
     });
     
-    // Update alerts and save to localStorage
     setAlerts(newAlerts);
     localStorage.setItem('complianceAlerts', JSON.stringify(newAlerts));
-  }, [equipmentData]);
+  }, [equipmentData, alerts, addNotification]);
   
   const acknowledgeAlert = (alertId: string) => {
     const updatedAlerts = alerts.map(alert => {
@@ -186,7 +261,6 @@ export const ComplianceAlerts: React.FC<ComplianceAlertsProps> = ({ equipmentDat
     setAlerts(updatedAlerts);
     localStorage.setItem('complianceAlerts', JSON.stringify(updatedAlerts));
     
-    // Show toast notification
     toast({
       title: "Alert acknowledged",
       description: "The compliance alert has been acknowledged",
@@ -213,11 +287,21 @@ export const ComplianceAlerts: React.FC<ComplianceAlertsProps> = ({ equipmentDat
     setAlerts(updatedAlerts);
     localStorage.setItem('complianceAlerts', JSON.stringify(updatedAlerts));
     
-    // Show toast notification with contextual message based on alert type
     toast({
       title: "Alert resolved",
       description: `${alertToResolve.alertType} alert for ${alertToResolve.equipmentName} has been resolved`,
     });
+    
+    addNotification(
+      'general',
+      `${alertToResolve.alertType} Alert Resolved`,
+      `${alertToResolve.alertType} alert for ${alertToResolve.equipmentName} has been resolved`,
+      'low',
+      alertToResolve.equipmentId,
+      alertToResolve.equipmentName,
+      undefined,
+      false
+    );
   };
   
   const getPriorityColor = (priority: string) => {
@@ -239,7 +323,6 @@ export const ComplianceAlerts: React.FC<ComplianceAlertsProps> = ({ equipmentDat
     }
   };
   
-  // Filter out resolved alerts
   const activeAlerts = alerts.filter(alert => alert.status !== 'Resolved');
   
   return (

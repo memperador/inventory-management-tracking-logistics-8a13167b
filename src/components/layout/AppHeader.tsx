@@ -1,14 +1,9 @@
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu, X, Sun, Moon, User, LogOut, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTenant } from '@/hooks/useTenantContext';
 import { useRole } from '@/hooks/useRoleContext';
-import { useTheme } from '@/hooks/useThemeContext';
-import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { EmailVerificationIndicator } from './EmailVerificationIndicator';
+import { MenuIcon, X, User, Settings, LogOut } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,8 +11,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { NotificationBadge } from '@/components/notifications/NotificationBadge';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
+import EmailVerificationIndicator from './EmailVerificationIndicator';
 
 interface AppHeaderProps {
   toggleMenu: () => void;
@@ -26,109 +25,79 @@ interface AppHeaderProps {
 
 export const AppHeader = ({ toggleMenu, isMenuOpen }: AppHeaderProps) => {
   const { user, signOut } = useAuth();
-  const { currentTenant } = useTenant();
   const { userRole } = useRole();
-  const { currentTheme, setTheme } = useTheme();
-  const { toast } = useToast();
-
-  const handleToggleTheme = () => {
-    setTheme(currentTheme === 'dark' ? 'light' : 'dark');
-  };
+  const navigate = useNavigate();
+  const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
 
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast({
-        title: 'Signed out',
-        description: 'You have been signed out successfully',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to sign out',
-        variant: 'destructive',
-      });
+      navigate('/auth');
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
   };
 
+  const userInitials = user?.email
+    ? user.email.substring(0, 2).toUpperCase()
+    : 'U';
+
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
-      <div className="px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-16 fixed top-0 left-0 right-0 z-30">
+      <div className="flex items-center justify-between h-full px-4">
+        <div className="flex items-center">
           <Button
             variant="ghost"
             size="icon"
-            onClick={toggleMenu}
             className="md:hidden"
+            onClick={toggleMenu}
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
           >
-            {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            {isMenuOpen ? <X /> : <MenuIcon />}
           </Button>
-          <div className="flex flex-col">
-            <span className="font-bold text-lg text-gray-900 dark:text-white truncate max-w-[150px] sm:max-w-full">
-              {currentTenant?.name || 'FleetTrack'}
-            </span>
-            {currentTenant && (
-              <span className="text-xs text-gray-500 hidden xs:block">
-                {userRole} Access
-              </span>
-            )}
-          </div>
+          <h1 className="ml-2 text-lg font-medium">FleetTrack</h1>
         </div>
-        
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center space-x-2">
           <EmailVerificationIndicator />
           
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleToggleTheme}
-            className="ml-2"
-            aria-label="Toggle theme"
-          >
-            {currentTheme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-          </Button>
+          <NotificationBadge onClick={() => setNotificationCenterOpen(true)} />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src="" />
-                  <AvatarFallback>
-                    {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
-                  </AvatarFallback>
+                  <AvatarFallback>{userInitials}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 z-50">
+            <DropdownMenuContent align="end">
               <DropdownMenuLabel>
                 <div className="flex flex-col">
-                  <span className="truncate">{user?.email}</span>
+                  <span>{user?.email}</span>
                   <span className="text-xs text-gray-500">{userRole}</span>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to="/account" className="cursor-pointer flex w-full items-center">
-                  <User className="h-4 w-4 mr-2" />
-                  Account
-                </Link>
+              <DropdownMenuItem onClick={() => navigate('/account')}>
+                <User className="mr-2 h-4 w-4" />
+                Account
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/settings" className="cursor-pointer flex w-full items-center">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
-                </Link>
+              <DropdownMenuItem onClick={() => navigate('/settings')}>
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
-                <LogOut className="h-4 w-4 mr-2" />
+              <DropdownMenuItem onClick={handleSignOut}>
+                <LogOut className="mr-2 h-4 w-4" />
                 Sign out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
+      
+      <NotificationCenter isOpen={notificationCenterOpen} onClose={() => setNotificationCenterOpen(false)} />
     </header>
   );
 };

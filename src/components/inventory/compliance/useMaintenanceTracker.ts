@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import { Equipment, ComplianceAlert } from '@/components/equipment/types';
+import { useNotificationContext } from '@/contexts/NotificationContext';
 
 interface MaintenanceUpdate {
   equipmentId: string;
@@ -12,6 +12,7 @@ interface MaintenanceUpdate {
 
 export const useMaintenanceTracker = (equipmentData: Equipment[]) => {
   const [maintenanceUpdates, setMaintenanceUpdates] = useState<MaintenanceUpdate[]>([]);
+  const { addNotification } = useNotificationContext();
 
   // Load maintenance updates from localStorage
   useEffect(() => {
@@ -36,24 +37,52 @@ export const useMaintenanceTracker = (equipmentData: Equipment[]) => {
         if (previousItem) {
           // Check if last maintenance was updated
           if (previousItem.lastMaintenance !== currentItem.lastMaintenance && currentItem.lastMaintenance) {
-            updates.push({
+            const update = {
               equipmentId: currentItem.id,
               equipmentName: currentItem.name,
-              maintenanceType: 'completed',
+              maintenanceType: 'completed' as const,
               date: currentItem.lastMaintenance,
               recordedAt: new Date().toISOString()
-            });
+            };
+            
+            updates.push(update);
+            
+            // Also create notification
+            addNotification(
+              'maintenance_due',
+              'Maintenance Completed',
+              `${currentItem.name} maintenance has been completed`,
+              'medium',
+              currentItem.id,
+              currentItem.name,
+              `/inventory?equipment=${currentItem.id}`,
+              true
+            );
           }
           
           // Check if next maintenance was updated
           if (previousItem.nextMaintenance !== currentItem.nextMaintenance && currentItem.nextMaintenance) {
-            updates.push({
+            const update = {
               equipmentId: currentItem.id,
               equipmentName: currentItem.name,
-              maintenanceType: 'scheduled',
+              maintenanceType: 'scheduled' as const,
               date: currentItem.nextMaintenance,
               recordedAt: new Date().toISOString()
-            });
+            };
+            
+            updates.push(update);
+            
+            // Also create notification
+            addNotification(
+              'maintenance_due',
+              'Maintenance Scheduled',
+              `${currentItem.name} has been scheduled for maintenance on ${new Date(currentItem.nextMaintenance).toLocaleDateString()}`,
+              'low',
+              currentItem.id,
+              currentItem.name,
+              `/inventory?equipment=${currentItem.id}`,
+              true
+            );
           }
         }
         
@@ -78,7 +107,7 @@ export const useMaintenanceTracker = (equipmentData: Equipment[]) => {
     
     // Store current equipment state for future comparison
     localStorage.setItem('previousEquipmentState', JSON.stringify(equipmentData));
-  }, [equipmentData, maintenanceUpdates]);
+  }, [equipmentData, maintenanceUpdates, addNotification]);
 
   // Function to resolve alerts related to equipment that had maintenance completed
   const resolveRelatedAlerts = (equipmentIds: string[]) => {
@@ -96,6 +125,19 @@ export const useMaintenanceTracker = (equipmentData: Equipment[]) => {
         equipmentIds.includes(alert.equipmentId)
       ) {
         alertsUpdated = true;
+        
+        // Create a notification for resolved alert
+        addNotification(
+          'general',
+          'Maintenance Alert Automatically Resolved',
+          `Maintenance alert for ${alert.equipmentName} has been automatically resolved due to completed maintenance`,
+          'low',
+          alert.equipmentId,
+          alert.equipmentName,
+          undefined,
+          false // Don't show a toast for each item
+        );
+        
         return {
           ...alert,
           status: 'Resolved' as const,
