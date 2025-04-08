@@ -7,17 +7,20 @@ import TieredAIAssistant from '@/components/ai/TieredAIAssistant';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useOnboardingState } from '@/components/onboarding/hooks/useOnboardingState';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import OnboardingWorkflow from '@/components/onboarding/OnboardingWorkflow';
 
 const CustomerOnboarding: React.FC = () => {
   const { onboardingState } = useOnboardingState();
   const [aiInput, setAiInput] = useState('');
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<string>('guide');
   
   // Function to be passed to OnboardingAssistant to set AI prompt
   const handleOpenAIAssistant = (prompt?: string) => {
     if (prompt) {
-      setAiInput(prompt);
+      setInput(prompt);
       toast({
         title: "AI Assistant",
         description: "Your question has been sent to the AI Assistant. You can modify it if needed.",
@@ -50,15 +53,43 @@ const CustomerOnboarding: React.FC = () => {
           <Button onClick={() => navigate('/dashboard')}>Go to Dashboard</Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <OnboardingAssistant onOpenAIAssistant={handleOpenAIAssistant} />
-          </div>
-          
-          <div>
-            <TieredAIAssistant initialInput={aiInput} />
-          </div>
-        </div>
+        <>
+          <Tabs 
+            defaultValue="guide" 
+            value={activeTab} 
+            onValueChange={setActiveTab} 
+            className="w-full"
+          >
+            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
+              <TabsTrigger value="guide">Step-by-Step Guide</TabsTrigger>
+              <TabsTrigger value="workflow">Workflow View</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="guide">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <OnboardingAssistant onOpenAIAssistant={handleOpenAIAssistant} />
+                </div>
+                
+                <div>
+                  <TieredAIAssistant initialInput={aiInput} />
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="workflow">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <OnboardingWorkflow />
+                </div>
+                
+                <div>
+                  <TieredAIAssistant initialInput={aiInput} />
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </>
       )}
     </div>
   );

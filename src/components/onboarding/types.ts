@@ -4,6 +4,7 @@ export type OnboardingStep = {
   title: string;
   description: string;
   completed: boolean;
+  status?: 'pending' | 'completed' | 'error';
   aiPrompt?: string; // Prompt to send to AI Assistant when step is active
 };
 
