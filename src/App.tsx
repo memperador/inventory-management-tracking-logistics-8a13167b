@@ -26,46 +26,49 @@ import WorkflowPage from '@/pages/WorkflowPage';
 import { RoleProvider } from '@/contexts/RoleContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { TenantProvider } from '@/contexts/TenantContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 function App() {
   return (
-    <TenantProvider>
-      <ThemeProvider>
-        <RoleProvider>
-          <NotificationProvider>
-            <Router>
-              <Routes>
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/auth/reset-password" element={<ResetPassword />} />
-                <Route path="/unauthorized" element={<Unauthorized />} />
-                <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+    <Router>
+      <AuthProvider>
+        <TenantProvider>
+          <ThemeProvider>
+            <RoleProvider>
+              <NotificationProvider>
+                <Routes>
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/auth/reset-password" element={<ResetPassword />} />
+                  <Route path="/unauthorized" element={<Unauthorized />} />
+                  <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
 
-                <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/projects" element={<Projects />} />
-                  <Route path="/projects/:projectId" element={<ProjectDetail />} />
-                  <Route path="/inventory" element={<Inventory />} />
-                  <Route path="/account" element={<AccountPage />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/gps" element={<GPSIntegration />} />
-                  <Route path="/requests" element={<RequestManagement />} />
-                  <Route path="/requests/:requestId" element={<RFIDetail />} />
-                  <Route path="/analytics" element={<Analytics />} />
-                  <Route path="/users" element={<Users />} />
-                  <Route path="/payment" element={<PaymentPage />} />
-                  <Route path="/ai-assistant" element={<AIAssistant />} />
-                  <Route path="/workflow" element={<WorkflowPage />} />
-                </Route>
+                  <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/projects" element={<Projects />} />
+                    <Route path="/projects/:projectId" element={<ProjectDetail />} />
+                    <Route path="/inventory" element={<Inventory />} />
+                    <Route path="/account" element={<AccountPage />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/gps" element={<GPSIntegration />} />
+                    <Route path="/requests" element={<RequestManagement />} />
+                    <Route path="/requests/:requestId" element={<RFIDetail />} />
+                    <Route path="/analytics" element={<Analytics />} />
+                    <Route path="/users" element={<Users />} />
+                    <Route path="/payment" element={<PaymentPage />} />
+                    <Route path="/ai-assistant" element={<AIAssistant />} />
+                    <Route path="/workflow" element={<WorkflowPage />} />
+                  </Route>
 
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Router>
-            <Toaster />
-          </NotificationProvider>
-        </RoleProvider>
-      </ThemeProvider>
-    </TenantProvider>
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+                <Toaster />
+              </NotificationProvider>
+            </RoleProvider>
+          </ThemeProvider>
+        </TenantProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 
