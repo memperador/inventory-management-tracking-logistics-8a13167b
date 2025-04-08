@@ -4,9 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChecklistItem, ChecklistCategory } from '@/components/gps/types';
 import AddTaskForm from '@/components/gps/AddTaskForm';
 import ChecklistCategoryComponent from '@/components/gps/ChecklistCategory';
+import MapVisualization from '@/components/gps/MapVisualization';
+import GPSIntelligence from '@/components/gps/GPSIntelligence';
 
 const GPSIntegration: React.FC = () => {
   const [categories, setCategories] = useState<ChecklistCategory[]>([
@@ -129,34 +132,52 @@ const GPSIntegration: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">GPS Integration Checklist</h1>
-          <p className="text-gray-500 mt-1">Track your GPS hardware integration progress</p>
+          <h1 className="text-3xl font-bold tracking-tight">GPS Integration</h1>
+          <p className="text-gray-500 mt-1">Track equipment location and manage integration tasks</p>
         </div>
         <Button onClick={saveChecklist} disabled={loading}>
           <Save className="mr-2 h-4 w-4" />
-          {loading ? 'Saving...' : 'Save Checklist'}
+          {loading ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>
       
-      <div className="grid gap-6">
-        <AddTaskForm 
-          categories={categories}
-          onAddItem={addNewItem}
-        />
+      <Tabs defaultValue="map" className="w-full">
+        <TabsList className="grid grid-cols-3 w-[400px]">
+          <TabsTrigger value="map">Map Visualization</TabsTrigger>
+          <TabsTrigger value="checklist">Implementation Checklist</TabsTrigger>
+          <TabsTrigger value="intelligence">AI Intelligence</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="map" className="mt-6">
+          <MapVisualization />
+        </TabsContent>
         
-        {categories.map((category) => (
-          <ChecklistCategoryComponent
-            key={category.name}
-            name={category.name}
-            description={category.description}
-            isOpen={category.isOpen}
-            items={checklistItems.filter(item => item.category === category.name)}
-            onToggle={() => toggleCategory(category.name)}
-            onCheckboxChange={handleCheckboxChange}
-            onDeleteItem={deleteItem}
-          />
-        ))}
-      </div>
+        <TabsContent value="checklist" className="mt-6">
+          <div className="grid gap-6">
+            <AddTaskForm 
+              categories={categories}
+              onAddItem={addNewItem}
+            />
+            
+            {categories.map((category) => (
+              <ChecklistCategoryComponent
+                key={category.name}
+                name={category.name}
+                description={category.description}
+                isOpen={category.isOpen}
+                items={checklistItems.filter(item => item.category === category.name)}
+                onToggle={() => toggleCategory(category.name)}
+                onCheckboxChange={handleCheckboxChange}
+                onDeleteItem={deleteItem}
+              />
+            ))}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="intelligence" className="mt-6">
+          <GPSIntelligence />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
