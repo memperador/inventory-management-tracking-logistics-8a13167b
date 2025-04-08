@@ -1,0 +1,145 @@
+
+import { Tenant } from '@/types/tenant';
+
+export type FeatureAccessLevel = 'basic' | 'standard' | 'premium';
+
+// Features and their required subscription tiers
+export const FEATURE_ACCESS_MAP: Record<string, FeatureAccessLevel> = {
+  // Basic tier features
+  'inventory_management': 'basic',
+  'qr_codes': 'basic',
+  'basic_alerts': 'basic',
+  'simple_analytics': 'basic',
+  
+  // Standard tier features
+  'gps_tracking': 'standard',
+  'audit_logs': 'standard',
+  'advanced_alerts': 'standard',
+  'bulk_qr': 'standard',
+  'location_history': 'standard',
+  
+  // Premium tier features
+  'advanced_gps': 'premium',
+  'geofencing': 'premium',
+  'route_optimization': 'premium',
+  'premium_analytics': 'premium',
+  'gps_intelligence': 'premium'
+};
+
+// AI assistant features by tier
+export const AI_ASSISTANT_FEATURES: Record<FeatureAccessLevel, string[]> = {
+  'basic': [
+    'Inventory management assistance',
+    'Basic stock level recommendations',
+    'Simple maintenance scheduling'
+  ],
+  'standard': [
+    'All basic features',
+    'Equipment location tracking insights',
+    'Maintenance optimization based on usage',
+    'Audit pattern recognition'
+  ],
+  'premium': [
+    'All standard features',
+    'Predictive maintenance AI',
+    'Route optimization recommendations',
+    'Advanced asset utilization analysis',
+    'Cross-project resource allocation'
+  ]
+};
+
+// Check if user has access to a specific feature
+export const hasFeatureAccess = (
+  tenant: Tenant | null, 
+  featureKey: string
+): boolean => {
+  if (!tenant || !tenant.subscription_tier) return false;
+  
+  const requiredTier = FEATURE_ACCESS_MAP[featureKey];
+  if (!requiredTier) return false;
+  
+  const tierHierarchy: Record<FeatureAccessLevel, number> = {
+    'basic': 1,
+    'standard': 2,
+    'premium': 3
+  };
+  
+  const userTierLevel = tierHierarchy[tenant.subscription_tier as FeatureAccessLevel] || 0;
+  const requiredTierLevel = tierHierarchy[requiredTier];
+  
+  return userTierLevel >= requiredTierLevel;
+};
+
+// Function to get upgrade prompt for a feature
+export const getUpgradePromptForFeature = (
+  featureKey: string
+): { title: string; description: string; requiredTier: FeatureAccessLevel } | null => {
+  const requiredTier = FEATURE_ACCESS_MAP[featureKey];
+  if (!requiredTier) return null;
+  
+  const promptMap: Record<string, { title: string; description: string }> = {
+    // Standard tier features
+    'gps_tracking': {
+      title: 'Upgrade to Standard for GPS Tracking',
+      description: 'Track equipment location in real-time and view movement history.'
+    },
+    'audit_logs': {
+      title: 'Unlock Detailed Audit Logs',
+      description: 'See who changed what and when with comprehensive audit trails.'
+    },
+    'advanced_alerts': {
+      title: 'Get Advanced Alert Features',
+      description: 'Set up custom triggers and notification rules for your equipment.'
+    },
+    'bulk_qr': {
+      title: 'Enable Bulk QR Generation',
+      description: 'Generate and print multiple QR codes at once for faster inventory processing.'
+    },
+    
+    // Premium tier features
+    'advanced_gps': {
+      title: 'Upgrade to Premium for Advanced GPS',
+      description: 'Get detailed GPS analytics, custom reporting, and historical tracking.'
+    },
+    'geofencing': {
+      title: 'Add Geofencing Capabilities',
+      description: 'Set up virtual boundaries and get alerts when equipment crosses them.'
+    },
+    'route_optimization': {
+      title: 'Enable Route Optimization',
+      description: 'Let AI find the most efficient routes for your equipment transportation.'
+    },
+    'gps_intelligence': {
+      title: 'Access GPS Intelligence',
+      description: 'Get advanced insights and recommendations based on location data.'
+    }
+  };
+  
+  const prompt = promptMap[featureKey];
+  if (!prompt) return null;
+  
+  return {
+    ...prompt,
+    requiredTier
+  };
+};
+
+// Get all features available for a specific subscription tier
+export const getAvailableFeaturesForTier = (tier: FeatureAccessLevel | null): string[] => {
+  if (!tier) return [];
+  
+  const tierHierarchy: Record<FeatureAccessLevel, number> = {
+    'basic': 1,
+    'standard': 2,
+    'premium': 3
+  };
+  
+  const userTierLevel = tierHierarchy[tier] || 0;
+  
+  return Object.entries(FEATURE_ACCESS_MAP)
+    .filter(([_, requiredTier]) => {
+      const requiredTierLevel = tierHierarchy[requiredTier];
+      return userTierLevel >= requiredTierLevel;
+    })
+    .map(([featureKey, _]) => featureKey);
+};

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { InventoryHeader } from '@/components/inventory/InventoryHeader';
 import { ComplianceSection } from '@/components/inventory/ComplianceSection';
@@ -16,6 +15,8 @@ import { useInventoryTabs } from '@/components/inventory/hooks/useInventoryTabs'
 import { InventoryFeatureControls } from '@/components/inventory/inventory-tabs/InventoryFeatureControls';
 import { useEquipmentSelection } from '@/components/inventory/hooks/useEquipmentSelection';
 import { InventoryTabsContainer } from '@/components/inventory/tabs/InventoryTabsContainer';
+import { UpgradeBanner } from '@/components/subscription/UpgradeBanner';
+import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 
 const Inventory = () => {
   const [equipmentData, setEquipmentData] = useState<Equipment[]>(initialEquipmentData);
@@ -50,6 +51,9 @@ const Inventory = () => {
   
   const handleExport = () => exportFunc(filteredEquipment);
   const handleExportCSV = () => exportCSVFunc(filteredEquipment);
+  
+  const { hasSubscriptionTier } = useFeatureAccess();
+  const showUpgradeBanner = !hasSubscriptionTier('premium');
   
   useEffect(() => {
     const expiredItems = equipmentData.filter(item => {
@@ -135,6 +139,8 @@ const Inventory = () => {
   return (
     <NotificationProvider>
       <div className="space-y-6">
+        {showUpgradeBanner && <UpgradeBanner />}
+        
         <InventoryHeader 
           onImport={handleImport}
           onExport={handleExport}
