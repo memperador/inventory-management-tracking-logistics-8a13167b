@@ -48,11 +48,9 @@ const TwoFactorAuth = () => {
         throw new Error('No authentication factor found');
       }
       
-      const { data, error } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
-        type: 'totp',
+      const { data, error } = await supabase.auth.mfa.verifyOTP({
         factorId,
+        code: otp,
       });
       
       if (error) throw error;
