@@ -27,7 +27,7 @@ export function useMediaQuery(query: string): boolean {
   return matches;
 }
 
-// Add the useIsMobile hook that's being imported elsewhere
+// Export the useIsMobile hook that's being imported elsewhere
 export function useIsMobile(): boolean {
   return useMediaQuery('(max-width: 768px)');
 }

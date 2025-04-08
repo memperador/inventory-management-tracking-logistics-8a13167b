@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Equipment } from '@/components/equipment/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
