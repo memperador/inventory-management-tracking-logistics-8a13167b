@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { MapPin, Calendar, AlertTriangle, FileText } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DocumentDialog } from '@/components/equipment/DocumentDialog';
+import { EquipmentIdInfo } from './EquipmentIdInfo';
 import { Equipment } from './types';
 import { useTenant } from '@/hooks/useTenantContext';
 import { COMPANY_TYPE_TO_CODE_MAP } from '@/types/tenant';
@@ -32,10 +32,8 @@ const getStatusColor = (status: Equipment['status']) => {
 export const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment }) => {
   const { currentTenant } = useTenant();
   
-  // Determine which code to display based on company type
   const getCodeDisplay = () => {
     if (!currentTenant || !currentTenant.company_type) {
-      // If no company type, default to showing CSI code, falling back to NEC
       return equipment.csi_code ? (
         <div className="flex items-center">
           <FileText className="h-4 w-4 text-inventory-blue mr-2" />
@@ -49,10 +47,8 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment }) => {
       ) : null;
     }
     
-    // Get the code type based on company type
     const codeType = COMPANY_TYPE_TO_CODE_MAP[currentTenant.company_type];
     
-    // Show the appropriate code
     if (codeType === 'CSI' && equipment.csi_code) {
       return (
         <div className="flex items-center">
@@ -68,7 +64,6 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment }) => {
         </div>
       );
     } else if (equipment.csi_code) {
-      // Fallback to CSI code
       return (
         <div className="flex items-center">
           <FileText className="h-4 w-4 text-inventory-blue mr-2" />
@@ -76,7 +71,6 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment }) => {
         </div>
       );
     } else if (equipment.nec_code) {
-      // Fallback to NEC code
       return (
         <div className="flex items-center">
           <FileText className="h-4 w-4 text-inventory-blue mr-2" />
@@ -148,7 +142,7 @@ export const EquipmentCard: React.FC<EquipmentCardProps> = ({ equipment }) => {
       </CardContent>
       <CardFooter className="bg-gray-50 px-6 py-3 border-t">
         <div className="flex justify-between items-center w-full text-sm">
-          <span className="font-medium">{equipment.id}</span>
+          <EquipmentIdInfo id={equipment.id} />
           <span className="text-gray-500">GPS: {equipment.gpsTag}</span>
         </div>
       </CardFooter>
