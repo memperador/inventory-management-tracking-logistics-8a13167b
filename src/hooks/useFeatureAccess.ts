@@ -57,9 +57,7 @@ export const useFeatureAccess = () => {
         title: upgradeInfo.title,
         description: upgradeInfo.description,
         action: (
-          <Button 
-            onClick={() => navigate('/payment')}
-          >
+          <Button onClick={() => navigate('/payment')}>
             Upgrade
           </Button>
         )
