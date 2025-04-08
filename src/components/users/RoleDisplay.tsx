@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { UserRole } from '@/types/roles';
 import { useRole } from '@/hooks/useRoleContext';
@@ -13,6 +14,9 @@ interface RoleDisplayProps {
   initialRole: UserRole;
 }
 
+// Type representing the roles supported by the database
+type DbRole = 'admin' | 'manager' | 'operator' | 'viewer';
+
 const RoleDisplay: React.FC<RoleDisplayProps> = ({ userId, initialRole }) => {
   const [role, setRole] = useState<UserRole>(initialRole);
   const { isAdmin } = useRole();
@@ -20,12 +24,12 @@ const RoleDisplay: React.FC<RoleDisplayProps> = ({ userId, initialRole }) => {
   
   const updateRoleMutation = useMutation({
     mutationFn: async (newRole: UserRole) => {
-      const validDbRoles = ['admin', 'manager', 'operator', 'viewer'];
+      const validDbRoles: DbRole[] = ['admin', 'manager', 'operator', 'viewer'];
       
-      if (validDbRoles.includes(newRole)) {
+      if (validDbRoles.includes(newRole as DbRole)) {
         const { error } = await supabase
           .from('users')
-          .update({ role: newRole })
+          .update({ role: newRole as DbRole })
           .eq('id', userId);
         
         if (error) throw error;
