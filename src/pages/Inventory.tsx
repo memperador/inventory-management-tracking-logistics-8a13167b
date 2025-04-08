@@ -19,7 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 const Inventory = () => {
   // State management
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('list'); // Changed default to 'list'
   const [activeCategory, setActiveCategory] = useState<InventoryCategory | 'All'>('All');
   const [activeStatus, setActiveStatus] = useState<string>('All');
   const [isNewItemDialogOpen, setIsNewItemDialogOpen] = useState(false);

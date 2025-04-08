@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { UserRole } from '@/types/roles';
 import { useRole } from '@/hooks/useRoleContext';
 import {
@@ -10,6 +10,8 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { SidebarNavItem } from './SidebarNavItem';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 export interface NavItem {
   name?: string;
@@ -26,6 +28,7 @@ interface SidebarNavGroupProps {
   currentPath: string;
   showSeparator?: boolean;
   closeSidebar?: () => void;
+  defaultOpen?: boolean;
 }
 
 export const SidebarNavGroup = ({ 
@@ -33,9 +36,11 @@ export const SidebarNavGroup = ({
   items, 
   currentPath,
   showSeparator = false,
-  closeSidebar 
+  closeSidebar,
+  defaultOpen = true
 }: SidebarNavGroupProps) => {
   const { hasPermission } = useRole();
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   
   // Filter menu items based on user role, supporting both roles and requiredRoles properties
   const filteredItems = items.filter(item => {
@@ -55,26 +60,41 @@ export const SidebarNavGroup = ({
   if (filteredItems.length === 0) {
     return null;
   }
+
+  // Check if any item in the group is active
+  const hasActiveItem = filteredItems.some(item => 
+    currentPath === item.href || 
+    (currentPath !== '/' && item.href !== '/' && currentPath.startsWith(item.href))
+  );
   
   return (
     <>
       {showSeparator && <SidebarSeparator />}
       <SidebarGroup>
-        <SidebarGroupLabel>{title}</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {filteredItems.map((item) => (
-              <SidebarNavItem
-                key={item.name || item.title}
-                name={item.name}
-                title={item.title}
-                href={item.href}
-                icon={item.icon}
-                closeSidebar={closeSidebar}
-              />
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
+        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+          <CollapsibleTrigger asChild>
+            <SidebarGroupLabel className="flex justify-between items-center hover:bg-accent hover:text-accent-foreground rounded-md cursor-pointer">
+              <span>{title}</span>
+              {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </SidebarGroupLabel>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {filteredItems.map((item) => (
+                  <SidebarNavItem
+                    key={item.name || item.title}
+                    name={item.name}
+                    title={item.title}
+                    href={item.href}
+                    icon={item.icon}
+                    closeSidebar={closeSidebar}
+                  />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </CollapsibleContent>
+        </Collapsible>
       </SidebarGroup>
     </>
   );
