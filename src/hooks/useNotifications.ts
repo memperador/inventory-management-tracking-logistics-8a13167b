@@ -49,7 +49,7 @@ export const useNotifications = () => {
       priority
     };
     
-    setNotifications(prev => [newNotification, ...prev].slice(0, 100)); // Keep only the latest 100 notifications
+    setNotifications((prev: Notification[]) => [newNotification, ...prev].slice(0, 100)); // Keep only the latest 100 notifications
     
     if (showToast) {
       toast({
@@ -64,7 +64,7 @@ export const useNotifications = () => {
 
   // Function to mark notification as read
   const markAsRead = (id: string) => {
-    setNotifications(prev => 
+    setNotifications((prev: Notification[]) => 
       prev.map(notification => 
         notification.id === id 
           ? { ...notification, read: true } 
@@ -75,14 +75,14 @@ export const useNotifications = () => {
 
   // Function to mark all notifications as read
   const markAllAsRead = () => {
-    setNotifications(prev => 
+    setNotifications((prev: Notification[]) => 
       prev.map(notification => ({ ...notification, read: true }))
     );
   };
 
   // Function to delete a notification
   const deleteNotification = (id: string) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
+    setNotifications((prev: Notification[]) => prev.filter(notification => notification.id !== id));
   };
 
   // Function to clear all notifications
