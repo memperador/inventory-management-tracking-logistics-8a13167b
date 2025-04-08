@@ -12,11 +12,12 @@ export interface Message {
 
 interface UseTieredAIChatProps {
   tier: 'basic' | 'standard' | 'premium';
+  initialInput?: string;
 }
 
-export const useTieredAIChat = ({ tier }: UseTieredAIChatProps) => {
+export const useTieredAIChat = ({ tier, initialInput = '' }: UseTieredAIChatProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(initialInput);
   const [isLoading, setIsLoading] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [isKeySet, setIsKeySet] = useState(false);
@@ -42,6 +43,13 @@ export const useTieredAIChat = ({ tier }: UseTieredAIChatProps) => {
       }
     ]);
   }, [tier]);
+
+  // Set input from props when it changes
+  useEffect(() => {
+    if (initialInput) {
+      setInput(initialInput);
+    }
+  }, [initialInput]);
 
   const handleSetApiKey = () => {
     if (!apiKey.trim()) {

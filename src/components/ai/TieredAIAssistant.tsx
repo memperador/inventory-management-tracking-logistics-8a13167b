@@ -11,7 +11,11 @@ import ApiKeyInput from './components/ApiKeyInput';
 import MessageList from './components/MessageList';
 import ChatInput from './components/ChatInput';
 
-const TieredAIAssistant: React.FC = () => {
+interface TieredAIAssistantProps {
+  initialInput?: string;
+}
+
+const TieredAIAssistant: React.FC<TieredAIAssistantProps> = ({ initialInput = '' }) => {
   const { currentTenant } = useTenant();
   const { hasSubscriptionTier } = useFeatureAccess();
   
@@ -28,7 +32,7 @@ const TieredAIAssistant: React.FC = () => {
     isKeySet,
     handleSetApiKey,
     handleSendMessage
-  } = useTieredAIChat({ tier });
+  } = useTieredAIChat({ tier, initialInput });
 
   return (
     <Card className="w-full flex flex-col h-[600px]">
