@@ -22,7 +22,7 @@ export const getRoleBadgeColor = (role: UserRole): string => {
 };
 
 export const getAllRoles = (): UserRole[] => {
-  return ['admin', 'manager', 'editor', 'operator', 'viewer'];
+  return ['admin', 'manager', 'editor', 'operator', 'viewer', 'superadmin'];
 };
 
 // Filter navigation items based on user role and required roles
