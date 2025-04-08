@@ -1,159 +1,98 @@
-import { UserRole } from '@/types/roles';
+
+import { NavItem } from './SidebarNavGroup';
 import { 
   LayoutDashboard, 
-  Boxes, 
-  FolderKanban, 
+  Package2, 
+  FileCog, 
+  Settings, 
+  Warehouse, 
+  User, 
+  Map, 
+  MessageSquareText, 
   BarChart3, 
   Users, 
-  Settings, 
-  Bell, 
-  HelpCircle, 
-  MessageSquare, 
-  FileText, 
   CreditCard, 
-  MapPin, 
-  Calendar, 
-  Wrench,
-  Truck,
-  PackageOpen,
-  GitBranch,
-  FileCode2,
-  Bot,
-  ClipboardCheck,
-  ClipboardList
+  Bot, 
+  Workflow, 
+  Bell
 } from 'lucide-react';
 
-export const dashboardNavigation = [
+export const mainNavItems: NavItem[] = [
   {
-    name: 'Dashboard',
+    title: 'Dashboard',
     href: '/dashboard',
-    icon: LayoutDashboard
+    icon: LayoutDashboard,
   },
   {
-    name: 'Inventory',
-    href: '/inventory',
-    icon: Boxes
-  },
-  {
-    name: 'Projects',
+    title: 'Projects',
     href: '/projects',
-    icon: FolderKanban
+    icon: Package2,
   },
   {
-    name: 'Analytics',
-    href: '/analytics',
-    icon: BarChart3
-  }
+    title: 'Inventory',
+    href: '/inventory',
+    icon: Warehouse,
+  },
 ];
 
-export const managementNavigation = [
+export const managementNavItems: NavItem[] = [
   {
-    name: 'Users',
+    title: 'Request Management',
+    href: '/requests',
+    icon: MessageSquareText,
+    roles: ['admin', 'manager', 'approver']
+  },
+  {
+    title: 'GPS Integration',
+    href: '/gps',
+    icon: Map,
+    roles: ['admin', 'manager']
+  },
+  {
+    title: 'Analytics',
+    href: '/analytics',
+    icon: BarChart3,
+    roles: ['admin', 'manager']
+  },
+  {
+    title: 'Notifications',
+    href: '/notifications',
+    icon: Bell,
+  },
+];
+
+export const systemNavItems: NavItem[] = [
+  {
+    title: 'User Management',
     href: '/users',
     icon: Users,
-    requiredRoles: ['admin' as UserRole]
+    roles: ['admin']
   },
   {
-    name: 'Reports',
-    href: '/reports',
-    icon: FileText,
-    requiredRoles: ['manager' as UserRole, 'admin' as UserRole]
-  },
-  {
-    name: 'Billing',
-    href: '/billing',
-    icon: CreditCard,
-    requiredRoles: ['manager' as UserRole, 'admin' as UserRole]
-  }
-];
-
-export const operationsNavigation = [
-  {
-    name: 'GPS Integration',
-    href: '/gps-integration',
-    icon: MapPin,
-    requiredRoles: ['operator' as UserRole, 'manager' as UserRole, 'admin' as UserRole]
-  },
-  {
-    name: 'Scheduling',
-    href: '/scheduling',
-    icon: Calendar,
-    requiredRoles: ['operator' as UserRole, 'manager' as UserRole, 'admin' as UserRole]
-  },
-  {
-    name: 'Maintenance',
-    href: '/maintenance',
-    icon: Wrench,
-    requiredRoles: ['operator' as UserRole, 'manager' as UserRole, 'admin' as UserRole]
-  },
-  {
-    name: 'Fleet',
-    href: '/fleet',
-    icon: Truck,
-    requiredRoles: ['operator' as UserRole, 'manager' as UserRole, 'admin' as UserRole]
-  },
-  {
-    name: 'Materials',
-    href: '/materials',
-    icon: PackageOpen,
-    requiredRoles: ['operator' as UserRole, 'manager' as UserRole, 'admin' as UserRole]
-  },
-  {
-    name: 'Workflow',
-    href: '/workflow',
-    icon: GitBranch,
-    requiredRoles: ['operator' as UserRole, 'manager' as UserRole, 'admin' as UserRole]
-  },
-  {
-    name: 'Request Management',
-    href: '/requests',
-    icon: ClipboardList,
-    requiredRoles: ['operator' as UserRole, 'manager' as UserRole, 'admin' as UserRole]
-  }
-];
-
-export const supportNavigation = [
-  {
-    name: 'Settings',
-    href: '/settings',
-    icon: Settings
-  },
-  {
-    name: 'Notifications',
-    href: '/notifications',
-    icon: Bell
-  },
-  {
-    name: 'AI Assistant',
+    title: 'AI Assistant',
     href: '/ai-assistant',
-    icon: Bot
+    icon: Bot,
   },
   {
-    name: 'Support',
-    href: '/support',
-    icon: HelpCircle
+    title: 'Workflow',
+    href: '/workflow',
+    icon: Workflow,
+    roles: ['admin', 'manager']
   },
   {
-    name: 'Chat',
-    href: '/chat',
-    icon: MessageSquare
+    title: 'Payment',
+    href: '/payment',
+    icon: CreditCard,
+    roles: ['admin']
   },
   {
-    name: 'Documentation',
-    href: '/documentation',
-    icon: FileCode2
-  }
-];
-
-export const accountNavigation = [
-  {
-    name: 'Profile',
+    title: 'Account',
     href: '/account',
-    icon: Users
+    icon: User,
   },
   {
-    name: 'Payments',
-    href: '/payments',
-    icon: CreditCard
-  }
+    title: 'Settings',
+    href: '/settings',
+    icon: Settings,
+  },
 ];

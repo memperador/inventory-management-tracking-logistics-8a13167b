@@ -23,6 +23,7 @@ import Users from '@/pages/Users';
 import PaymentPage from '@/pages/PaymentPage';
 import AIAssistant from '@/pages/AIAssistant';
 import WorkflowPage from '@/pages/WorkflowPage';
+import Notifications from '@/pages/Notifications';
 import { RoleProvider } from '@/contexts/RoleContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { TenantProvider } from '@/contexts/TenantContext';
@@ -56,6 +57,7 @@ function App() {
                       <Route path="/account" element={<AccountPage />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/gps" element={<GPSIntegration />} />
+                      <Route path="/notifications" element={<Notifications />} />
                       <Route path="/requests" element={<RequestManagement />} />
                       <Route path="/requests/:requestId" element={<RFIDetail />} />
                       <Route path="/analytics" element={<Analytics />} />
