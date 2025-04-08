@@ -11,7 +11,7 @@ import RoleDropdown from './RoleDropdown';
 
 interface RoleDisplayProps {
   userId: string;
-  initialRole: UserRole;  // Explicitly use the full UserRole type
+  initialRole: UserRole;
 }
 
 const RoleDisplay: React.FC<RoleDisplayProps> = ({ userId, initialRole }) => {
@@ -20,7 +20,7 @@ const RoleDisplay: React.FC<RoleDisplayProps> = ({ userId, initialRole }) => {
   const queryClient = useQueryClient();
   
   const updateRoleMutation = useMutation({
-    mutationFn: async (newRole: UserRole) => {  // Ensure newRole is UserRole
+    mutationFn: async (newRole: UserRole) => {
       const { error } = await supabase
         .from('users')
         .update({ role: newRole })
@@ -47,7 +47,7 @@ const RoleDisplay: React.FC<RoleDisplayProps> = ({ userId, initialRole }) => {
     }
   });
 
-  const handleRoleChange = (newRole: UserRole) => {  // Ensure newRole is UserRole
+  const handleRoleChange = (newRole: UserRole) => {
     if (newRole !== role) {
       updateRoleMutation.mutate(newRole);
     }
