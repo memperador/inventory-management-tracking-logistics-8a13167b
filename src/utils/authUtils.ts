@@ -29,6 +29,10 @@ export const signUp = async (email: string, password: string, firstName: string,
       try {
         const confirmationUrl = `${domain}/auth?email_confirmed=true`;
         
+        console.log("Calling custom verification email function");
+        console.log("Email:", email);
+        console.log("Confirmation URL:", confirmationUrl);
+        
         // Call our custom Edge Function to send the branded email
         const response = await fetch(`https://wscoyigjjcevriqqyxwo.supabase.co/functions/v1/custom-verification-email`, {
           method: 'POST',
@@ -42,20 +46,38 @@ export const signUp = async (email: string, password: string, firstName: string,
           }),
         });
 
+        const responseText = await response.text();
+        console.log("Response status:", response.status);
+        console.log("Response text:", responseText);
+
         if (!response.ok) {
-          console.error('Failed to send custom verification email:', await response.text());
+          console.error('Failed to send custom verification email:', responseText);
+          toast({
+            title: 'Verification Email Issue',
+            description: 'There was a problem sending the verification email. Please try again or contact support.',
+            variant: 'destructive',
+          });
         } else {
           console.log('Custom verification email sent successfully');
+          toast({
+            title: 'Account created',
+            description: 'Please check your email and spam folder for the verification link',
+          });
         }
       } catch (emailError) {
         console.error('Error sending custom verification email:', emailError);
+        toast({
+          title: 'Verification Email Error',
+          description: 'Failed to send verification email. Please try again later.',
+          variant: 'destructive',
+        });
       }
+    } else {
+      toast({
+        title: 'Account created',
+        description: 'Please check your email and spam folder for the verification link',
+      });
     }
-
-    toast({
-      title: 'Account created',
-      description: 'Please check your email and spam folder for the verification link',
-    });
   } catch (error: any) {
     toast({
       title: 'Error',
