@@ -40,12 +40,22 @@ const EmailVerificationStatus = () => {
     setResendingEmail(true);
     try {
       console.log(`Attempting to resend verification email to ${user.email}`);
+      
+      // Capture the site URL dynamically
+      const domain = window.location.origin;
+      
       const { data, error } = await supabase.auth.resend({
         type: 'signup',
         email: user.email,
+        options: {
+          emailRedirectTo: `${domain}/auth`
+        }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase resend error:", error);
+        throw error;
+      }
       
       // Store the time when we sent the email in both state and localStorage
       const now = new Date();
@@ -67,7 +77,7 @@ const EmailVerificationStatus = () => {
       console.error("Failed to resend verification email:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to send verification email",
+        description: error.message || "Failed to send verification email. Please try again.",
         variant: "destructive",
       });
     } finally {
