@@ -83,10 +83,10 @@ export function useAuthVerification() {
       }
       
       // Check for email_confirmed parameter from our verification link
-      if (params.emailConfirmed === 'true') {
+      if (params.emailConfirmed === "true") {
         setRedirectAttempted(true); // Mark that we've attempted a redirect
         await handleSuccessfulVerification(
-          params.newUser === 'true', 
+          params.newUser === "true", 
           setEmailVerified, 
           navigate, 
           setProcessingRedirect
