@@ -4,12 +4,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PlansTab from '@/components/payment/plans/PlansTab';
 import AddOnServices from '@/components/payment/AddOnServices';
 import { Zap } from 'lucide-react';
+import BetaBanner from '@/components/common/BetaBanner';
 
 const PaymentPage = () => {
   const [activeTab, setActiveTab] = useState('plans');
 
   return (
     <div className="container mx-auto py-8">
+      <BetaBanner />
+      
       <h1 className="text-3xl font-bold mb-6 flex items-center">
         <Zap className="mr-2 h-6 w-6 text-primary" />
         Choose Your Service Plan
