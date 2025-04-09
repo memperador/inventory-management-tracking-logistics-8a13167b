@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           });
         } 
         
-        // Handle email confirmation separately to avoid TypeScript error
+        // Handle email confirmation separately
         // Check URL params for email confirmation status
         const url = new URL(window.location.href);
         const emailConfirmed = url.searchParams.get('email_confirmed') === 'true';
@@ -94,7 +94,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
-      // Determine the domain for site URL
+      // Get the current domain for site URL
       const domain = window.location.origin;
       
       const { error } = await supabase.auth.signUp({
@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
       toast({
         title: 'Account created',
-        description: 'Please check your email for verification',
+        description: 'Please check your email and spam folder for the verification link',
       });
     } catch (error: any) {
       toast({

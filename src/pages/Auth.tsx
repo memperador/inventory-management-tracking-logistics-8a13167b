@@ -27,6 +27,12 @@ const Auth = () => {
   // Handle redirect if user is already logged in
   useEffect(() => {
     if (user) {
+      // Don't redirect if we're showing email verification status
+      if (user.email && !user.email_confirmed_at && !searchParams.get('returnTo')) {
+        // Stay on auth page to show verification status
+        return;
+      }
+      
       const returnTo = searchParams.get('returnTo');
       if (returnTo) {
         navigate(decodeURIComponent(returnTo), { replace: true });
@@ -42,12 +48,24 @@ const Auth = () => {
       // Check for error messages from email verification
       const errorMessage = searchParams.get('error_description') || searchParams.get('error');
       if (errorMessage) {
-        setAuthError(decodeURIComponent(errorMessage));
-        toast({
-          title: "Verification Error",
-          description: decodeURIComponent(errorMessage),
-          variant: "destructive"
-        });
+        const decodedMessage = decodeURIComponent(errorMessage);
+        setAuthError(decodedMessage);
+        
+        // Show more user-friendly message for expired link
+        if (decodedMessage.includes('expired')) {
+          toast({
+            title: "Verification Link Expired",
+            description: "Your verification link has expired. Please request a new link.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Verification Error",
+            description: decodedMessage,
+            variant: "destructive"
+          });
+        }
+        
         navigate('/auth', { replace: true });
         return;
       }
@@ -90,7 +108,7 @@ const Auth = () => {
       
       toast({
         title: "Verification Email Sent",
-        description: `We've sent a verification email to ${email}`,
+        description: `We've sent a verification email to ${email}. Please check your inbox and spam folder.`,
       });
     } catch (error: any) {
       toast({
@@ -118,11 +136,16 @@ const Auth = () => {
               <AlertDescription>
                 {authError}
                 <p className="mt-2 text-sm">
-                  Please check your Supabase URL configuration in the dashboard.
+                  {authError.includes('expired') ? 
+                    "Please request a new verification link below." : 
+                    "Please check your Supabase URL configuration in the dashboard."}
                 </p>
               </AlertDescription>
             </Alert>
           )}
+          
+          {/* Show email verification status for logged in users with unverified emails */}
+          {user && !user.email_confirmed_at && <EmailVerificationStatus />}
           
           {verificationSent && (
             <Alert className="mb-4 bg-yellow-50 border-yellow-200">
@@ -143,23 +166,25 @@ const Auth = () => {
             </Alert>
           )}
           
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="login">
-              <LoginForm onForgotPassword={() => setResetPasswordDialogOpen(true)} />
-            </TabsContent>
-            
-            <TabsContent value="signup">
-              <SignupForm onSignupComplete={(email) => {
-                setVerificationEmail(email);
-                setVerificationSent(true);
-              }} />
-            </TabsContent>
-          </Tabs>
+          {(!user || user.email_confirmed_at) && (
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Sign In</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="login">
+                <LoginForm onForgotPassword={() => setResetPasswordDialogOpen(true)} />
+              </TabsContent>
+              
+              <TabsContent value="signup">
+                <SignupForm onSignupComplete={(email) => {
+                  setVerificationEmail(email);
+                  setVerificationSent(true);
+                }} />
+              </TabsContent>
+            </Tabs>
+          )}
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-xs text-gray-500">
