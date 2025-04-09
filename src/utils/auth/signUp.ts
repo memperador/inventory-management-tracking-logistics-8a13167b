@@ -17,18 +17,23 @@ export const signUp = async (email: string, password: string, firstName: string,
           first_name: firstName,
           last_name: lastName
         },
+        // Use the full URL to /auth route and include a query parameter 
         emailRedirectTo: `${domain}/auth?email_confirmed=true`,
       },
     });
 
     if (error) throw error;
     console.log("User signup successful:", data);
+    console.log("Signup complete for " + email + ", showing verification notice");
 
     // Show success toast
     toast({
       title: 'Account created',
       description: 'Please check your email and spam folder for the verification link',
     });
+    
+    // Return data so we can track the email for verification status
+    return { email, data };
     
   } catch (error: any) {
     toast({

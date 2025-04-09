@@ -24,6 +24,7 @@ export function useAuthVerification() {
         else if (domain.includes('yahoo')) setEmailProvider('Yahoo');
         else if (domain.includes('proton')) setEmailProvider('ProtonMail');
         else if (domain.includes('aol')) setEmailProvider('AOL');
+        else if (domain.includes('munetworks.io')) setEmailProvider('MUNetworks');
         else setEmailProvider(null);
       }
     }
@@ -74,6 +75,7 @@ export function useAuthVerification() {
         return;
       }
       
+      // Handle SPA verification (access_token in hash fragment)
       if (hashParams.has('access_token') && hashParams.get('type') === 'signup') {
         console.log("Found access_token in hash, handling SPA verification");
         try {
@@ -134,10 +136,17 @@ export function useAuthVerification() {
           variant: "default"
         });
         
-        // After showing the success message, redirect to dashboard
-        setTimeout(() => {
-          navigate('/dashboard', { replace: true });
-        }, 1500);
+        // Fetch the current auth status to ensure we have the latest session
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          console.log("Session found after verification, redirecting to dashboard");
+          // After showing the success message, redirect to dashboard
+          setTimeout(() => {
+            navigate('/dashboard', { replace: true });
+          }, 1500);
+        } else {
+          console.log("No session found after verification, staying on auth page");
+        }
         return;
       }
       

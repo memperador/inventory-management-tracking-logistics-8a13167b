@@ -64,14 +64,16 @@ file_size_limit = "50MiB"
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "https://muq.munetworks.io"
+site_url = "https://4b7508c2-a648-4c8c-8ba9-1e5a3acd8a3d.lovableproject.com"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 additional_redirect_urls = [
-  "https://muq.munetworks.io",
-  "https://muq.munetworks.io/auth",
+  "https://4b7508c2-a648-4c8c-8ba9-1e5a3acd8a3d.lovableproject.com",
+  "https://4b7508c2-a648-4c8c-8ba9-1e5a3acd8a3d.lovableproject.com/auth",
   "http://localhost:3000",
   "http://127.0.0.1:3000",
-  "https://wscoyigjjcevriqqyxwo.supabase.co"
+  "https://wscoyigjjcevriqqyxwo.supabase.co",
+  "https://muq.munetworks.io",
+  "https://muq.munetworks.io/auth"
 ]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
