@@ -5,8 +5,10 @@ import { toast } from '@/hooks/use-toast';
 export const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
   try {
     // Get the absolute URL of the current origin
-    const domain = window.location.origin;
-    console.log("Current domain for verification:", domain);
+    // Use muq.munetworks.io for production, but fallback to current origin for local development
+    const isProd = window.location.hostname === "muq.munetworks.io";
+    const domain = isProd ? "https://muq.munetworks.io" : window.location.origin;
+    console.log("Using domain for verification:", domain);
     
     // Create the user account with Supabase with proper redirect URL
     const { data, error } = await supabase.auth.signUp({

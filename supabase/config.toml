@@ -64,7 +64,7 @@ file_size_limit = "50MiB"
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "https://4b7508c2-a648-4c8c-8ba9-1e5a3acd8a3d.lovableproject.com"
+site_url = "https://muq.munetworks.io"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 additional_redirect_urls = [
   "https://4b7508c2-a648-4c8c-8ba9-1e5a3acd8a3d.lovableproject.com",

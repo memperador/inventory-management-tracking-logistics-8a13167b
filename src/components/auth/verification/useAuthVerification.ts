@@ -34,6 +34,7 @@ export function useAuthVerification() {
     const handleAuthRedirects = async () => {
       console.log("Handling auth redirects...");
       console.log("Current URL:", window.location.href);
+      console.log("Is muq.munetworks.io:", window.location.hostname === "muq.munetworks.io");
       
       // Check if we have an error in the URL
       const errorCode = searchParams.get('error_code');
