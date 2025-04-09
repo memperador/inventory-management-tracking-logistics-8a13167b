@@ -90,17 +90,17 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
               const now = new Date();
               
               // Safe access to tenantData properties with null checks
-              const trialEndsAtStr = tenantData 
+              const trialEndsAtStr = tenantData !== null 
                 ? (tenantData && typeof tenantData === 'object' && 'trial_ends_at' in tenantData 
-                  ? tenantData.trial_ends_at as string 
+                  ? String(tenantData.trial_ends_at) 
                   : null) 
                 : null;
               
               const trialEndsAt = trialEndsAtStr ? new Date(trialEndsAtStr) : null;
               
-              const hasActiveSubscription = tenantData
+              const hasActiveSubscription = tenantData !== null
                 ? (tenantData && typeof tenantData === 'object' && 'subscription_status' in tenantData 
-                  ? tenantData.subscription_status === 'active'
+                  ? String(tenantData.subscription_status) === 'active'
                   : false)
                 : false;
               
