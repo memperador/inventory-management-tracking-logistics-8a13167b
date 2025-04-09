@@ -33,8 +33,7 @@ export const signUp = async (email: string, password: string, firstName: string,
         console.log("Sending custom verification email to:", email);
         console.log("Using domain:", domain);
         
-        // Build the function URL with the correct project domain
-        // First, determine if we're running on localhost
+        // Use our SMTP-based verification email function
         const functionUrl = "https://wscoyigjjcevriqqyxwo.supabase.co/functions/v1/custom-verification-email";
         console.log("Using function URL:", functionUrl);
         

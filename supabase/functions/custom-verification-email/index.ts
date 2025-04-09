@@ -1,18 +1,20 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { Resend } from "npm:resend@1.0.0";
+import { SMTPClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-
-// Initialize Resend with your API key
-const resendApiKey = Deno.env.get("RESEND_API_KEY");
-console.log(`Resend API key exists: ${!!resendApiKey}`);
-
-const resend = new Resend(resendApiKey);
 
 // Initialize Supabase client with service role key for email verification
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Get SMTP configuration from environment variables
+const smtpHost = Deno.env.get("SMTP_HOST") || "";
+const smtpPort = Number(Deno.env.get("SMTP_PORT") || "587");
+const smtpUser = Deno.env.get("SMTP_USER") || "";
+const smtpPass = Deno.env.get("SMTP_PASSWORD") || "";
+const smtpFromEmail = Deno.env.get("SMTP_FROM_EMAIL") || "no-reply@munetworks.io";
+const smtpFromName = Deno.env.get("SMTP_FROM_NAME") || "Inventory Track Pro";
 
 // Setup CORS headers
 const corsHeaders = {
@@ -65,7 +67,6 @@ serve(async (req) => {
     
     // Generate a verification link using the Supabase Admin API
     try {
-      // Determine the correct redirect URL based on the domain
       // Use absolute URL format to prevent incorrect domain concatenation
       const redirectTo = `${cleanDomain}/auth?email_confirmed=true`;
       console.log(`Using redirect URL: ${redirectTo}`);
@@ -97,11 +98,28 @@ serve(async (req) => {
       const tokenHash = urlObj.searchParams.get('token_hash') || 'unknown';
       console.log(`Token hash in URL: ${tokenHash.substring(0, 10)}...`);
 
-      // Send email via Resend
-      const { data: emailData, error: emailError } = await resend.emails.send({
-        from: "Inventory Track Pro <no-reply@resend.dev>", 
-        to: email,
+      // Initialize SMTP client
+      const client = new SMTPClient({
+        connection: {
+          hostname: smtpHost,
+          port: smtpPort,
+          tls: true,
+          auth: {
+            username: smtpUser,
+            password: smtpPass,
+          },
+        }
+      });
+
+      // Send email via SMTP
+      const emailResponse = await client.send({
+        from: {
+          address: smtpFromEmail,
+          name: smtpFromName
+        },
+        to: { address: email },
         subject: "Verify your email address",
+        content: "text/html",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
             <h2 style="color: #333; margin-bottom: 20px;">Verify Your Email Address</h2>
@@ -115,27 +133,20 @@ serve(async (req) => {
         `,
       });
 
-      if (emailError) {
-        console.error("Resend API error:", emailError);
-        return new Response(
-          JSON.stringify({ error: emailError.message }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-
-      console.log("Email sent successfully:", emailData);
+      console.log("Email sent successfully via SMTP");
+      
+      // Close the SMTP connection
+      await client.close();
+      
       return new Response(
-        JSON.stringify({ success: true, messageId: emailData?.id }),
+        JSON.stringify({ success: true, messageId: "email-sent-via-smtp" }),
         {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
     } catch (linkError) {
-      console.error("Error creating verification link:", linkError);
+      console.error("Error creating verification link or sending email:", linkError);
       return new Response(
         JSON.stringify({ error: linkError.message }),
         {
