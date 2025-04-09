@@ -25,6 +25,7 @@ const Auth = () => {
   const [authError, setAuthError] = useState<string | null>(null);
   const [isResendingVerification, setIsResendingVerification] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const { user } = useAuth();
   const [emailProvider, setEmailProvider] = useState<string | null>(null);
   
@@ -45,6 +46,52 @@ const Auth = () => {
   
   useEffect(() => {
     const handleAuthRedirects = async () => {
+      // Check for verification token in URL
+      const token = searchParams.get('token');
+      const type = searchParams.get('type');
+      
+      if (token && type === 'signup') {
+        try {
+          setIsVerifying(true);
+          console.log("Verifying email with token...");
+          
+          // Call Supabase to verify the token
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: 'signup',
+          });
+          
+          if (error) {
+            console.error("Email verification failed:", error);
+            setAuthError(`Verification failed: ${error.message}`);
+            toast({
+              title: "Verification Failed",
+              description: error.message,
+              variant: "destructive"
+            });
+          } else {
+            console.log("Email verified successfully");
+            setEmailVerified(true);
+            toast({
+              title: "Email Verified",
+              description: "Your email has been successfully verified!",
+              variant: "default"
+            });
+            
+            // After showing the success message, redirect to dashboard
+            setTimeout(() => {
+              navigate('/dashboard', { replace: true });
+            }, 3000);
+          }
+        } catch (error: any) {
+          console.error("Error during email verification:", error);
+          setAuthError(`Verification error: ${error.message}`);
+        } finally {
+          setIsVerifying(false);
+        }
+        return;
+      }
+      
       // Check for email_confirmed parameter - this comes from our custom verification URL
       const emailConfirmedParam = searchParams.get('email_confirmed');
       if (emailConfirmedParam === 'true') {
@@ -87,10 +134,10 @@ const Auth = () => {
       }
       
       // Handle password recovery flow
-      const token = searchParams.get('token') || searchParams.get('access_token');
-      const type = searchParams.get('type');
+      const recoveryToken = searchParams.get('access_token');
+      const recoveryType = searchParams.get('type');
       
-      if (token && type === 'recovery') {
+      if ((recoveryToken || token) && (recoveryType === 'recovery' || type === 'recovery')) {
         navigate('/auth/reset-password', { replace: true });
       }
     };
@@ -118,7 +165,9 @@ const Auth = () => {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center">Inventory Track Pro</CardTitle>
           <CardDescription className="text-center">
-            Enter your credentials to access your account
+            {isVerifying 
+              ? "Verifying your email..." 
+              : "Enter your credentials to access your account"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -137,7 +186,7 @@ const Auth = () => {
             />
           )}
           
-          {(!user || user.email_confirmed_at) && !emailVerified && (
+          {(!user || user.email_confirmed_at) && !emailVerified && !isVerifying && (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Sign In</TabsTrigger>
@@ -156,6 +205,15 @@ const Auth = () => {
                 }} />
               </TabsContent>
             </Tabs>
+          )}
+          
+          {isVerifying && (
+            <div className="flex justify-center py-6">
+              <div className="flex flex-col items-center gap-2">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600"></div>
+                <p className="text-sm text-gray-600">Verifying your email address...</p>
+              </div>
+            </div>
           )}
           
           <AuthFooter />

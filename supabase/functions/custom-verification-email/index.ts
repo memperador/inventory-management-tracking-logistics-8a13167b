@@ -41,57 +41,54 @@ serve(async (req) => {
       );
     }
 
-    // Extract domain to prevent incorrect domain in links
-    let verificationUrl = confirmation_url;
+    // Extract token from the original confirmation URL
+    let token = "";
     try {
-      // Get deployment URL from request headers or environment
-      const requestOrigin = req.headers.get('origin');
-      console.log(`Request origin: ${requestOrigin || 'not available'}`);
-      
-      // Create a proper verification URL that points to production/deployed URL
-      const urlObj = new URL(confirmation_url);
-      
-      // Fix localhost URLs
-      if (urlObj.hostname.includes('localhost') || urlObj.hostname === '127.0.0.1') {
-        console.log("Converting localhost URL to deployed URL");
-        
-        // If we have a request origin, use it
-        if (requestOrigin) {
-          const deployedUrl = new URL(requestOrigin);
-          urlObj.protocol = deployedUrl.protocol;
-          urlObj.host = deployedUrl.host;
-          verificationUrl = urlObj.toString();
-        } else {
-          // Fallback to fixed URL if no origin available
-          // Replace with your deployed domain
-          const deployedDomain = req.headers.get('referer') || 
-            req.headers.get('host') || 
-            'https://wscoyigjjcevriqqyxwo.supabase.co';
-            
-          try {
-            const deployedUrl = new URL(deployedDomain);
-            urlObj.protocol = deployedUrl.protocol;
-            urlObj.host = deployedUrl.host;
-          } catch (e) {
-            console.log("Could not parse as URL, using as hostname");
-            urlObj.protocol = 'https:';
-            urlObj.host = deployedDomain;
-          }
-          
-          // Ensure path includes /auth with email_confirmed parameter
-          if (!urlObj.pathname.includes('/auth')) {
-            urlObj.pathname = '/auth';
-          }
-          
-          urlObj.searchParams.set('email_confirmed', 'true');
-          verificationUrl = urlObj.toString();
+      const originalUrl = new URL(confirmation_url);
+      token = originalUrl.searchParams.get("token") || "";
+      console.log(`Extracted token: ${token.substring(0, 10)}...`);
+    } catch (e) {
+      console.error("Error extracting token:", e);
+    }
+
+    // Determine the correct domain to use
+    let domain = req.headers.get('origin');
+    const host = req.headers.get('host');
+    const referer = req.headers.get('referer');
+    
+    console.log(`Request headers - Origin: ${domain}, Host: ${host}, Referer: ${referer}`);
+    
+    if (!domain) {
+      // Try to extract domain from referer
+      if (referer) {
+        try {
+          const refererUrl = new URL(referer);
+          domain = `${refererUrl.protocol}//${refererUrl.host}`;
+          console.log(`Extracted domain from referer: ${domain}`);
+        } catch (e) {
+          console.error("Error extracting domain from referer:", e);
         }
       }
       
-      console.log(`Fixed verification URL: ${verificationUrl}`);
-    } catch (urlError) {
-      console.error("Error processing URL:", urlError);
+      // If still no domain, fallback to host
+      if (!domain && host) {
+        domain = `https://${host}`;
+        console.log(`Using host as domain: ${domain}`);
+      }
     }
+    
+    // Final fallback to a fixed URL if all else fails
+    if (!domain || domain.includes('supabase')) {
+      domain = "https://inventory-track-pro-e54f.lovable.dev";
+      console.log(`Using fallback domain: ${domain}`);
+    }
+
+    // Construct the verification URL with the token
+    const verificationUrl = token 
+      ? `${domain}/auth?token=${token}&type=signup`
+      : `${domain}/auth?email_confirmed=true`;
+      
+    console.log(`Final verification URL: ${verificationUrl}`);
 
     // Send email via Resend
     try {

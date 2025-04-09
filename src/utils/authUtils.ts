@@ -1,4 +1,3 @@
-
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -29,18 +28,25 @@ export const signUp = async (email: string, password: string, firstName: string,
     // 2. If signup was successful, send our custom branded verification email
     if (data?.user) {
       try {
-        // Create a proper confirmation URL that includes the correct domain
-        const confirmationUrl = `${domain}/auth?email_confirmed=true`;
+        // Get the actual token from the user's verification token
+        let token = "";
+        if (data.session?.access_token) {
+          token = data.session.access_token;
+        }
+        
+        // Create a proper confirmation URL that includes the correct token
+        const confirmationUrl = `${domain}/auth?token=${token}&type=signup`;
         console.log("Sending custom verification email with URL:", confirmationUrl);
         
         // Call our custom edge function 
-        const functionUrl = 'https://wscoyigjjcevriqqyxwo.supabase.co/functions/v1/custom-verification-email';
+        const functionUrl = `${domain}/functions/v1/custom-verification-email`;
         
         const response = await fetch(functionUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${data.session?.access_token || ''}`,
+            'Origin': domain,
           },
           body: JSON.stringify({
             email,
