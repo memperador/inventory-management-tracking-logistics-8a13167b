@@ -24,6 +24,7 @@ const Auth = () => {
   const [verificationEmail, setVerificationEmail] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
   const [isResendingVerification, setIsResendingVerification] = useState(false);
+  const [manualResendDebug, setManualResendDebug] = useState<string | null>(null);
   const { user } = useAuth();
   const [emailProvider, setEmailProvider] = useState<string | null>(null);
   
@@ -125,11 +126,40 @@ const Auth = () => {
   const resendVerificationEmail = async (email: string) => {
     try {
       setIsResendingVerification(true);
+      setManualResendDebug("Starting verification email resend process...");
       console.log(`Manually resending verification email to ${email}`);
       
       // Capture origin for redirect
       const domain = window.location.origin;
       console.log(`Using redirect URL: ${domain}/auth`);
+      
+      // Force session refresh before sending
+      try {
+        setManualResendDebug(prev => prev + "\nRefreshing session...");
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          console.warn("Error getting current session:", sessionError);
+        } else {
+          console.log("Current session:", sessionData.session ? "Active" : "No active session");
+        }
+        
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          setManualResendDebug(prev => prev + `\nSession refresh failed: ${refreshError.message}`);
+          console.warn("Session refresh warning:", refreshError);
+        } else {
+          setManualResendDebug(prev => prev + "\nSession refreshed successfully");
+          console.log("Session refreshed successfully");
+        }
+      } catch (refreshErr: any) {
+        setManualResendDebug(prev => prev + `\nSession refresh error: ${refreshErr.message || "Unknown"}`);
+        console.warn("Error refreshing session:", refreshErr);
+      }
+      
+      // Add a small delay to ensure the session refresh has completed
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setManualResendDebug(prev => prev + `\nSending verification email to: ${email}`);
       
       const { data, error } = await supabase.auth.resend({
         type: 'signup',
@@ -141,6 +171,7 @@ const Auth = () => {
       
       if (error) {
         console.error("Failed to resend verification email:", error);
+        setManualResendDebug(prev => prev + `\nError: ${error.message}`);
         
         // Store delivery result
         setLastDeliveryResult({
@@ -153,6 +184,7 @@ const Auth = () => {
         throw error;
       }
       
+      setManualResendDebug(prev => prev + "\nAPI response received successfully");
       console.log("Verification email resend response:", data);
       
       // Store the time when we sent the email in localStorage
@@ -172,12 +204,16 @@ const Auth = () => {
         message: "Verification email sent successfully"
       });
       
+      setManualResendDebug(prev => prev + `\nEmail sent at: ${now.toLocaleTimeString()}`);
+      
       toast({
         title: "Verification Email Sent",
         description: `We've sent a verification email to ${email}. Please check your inbox and spam folder.`,
       });
     } catch (error: any) {
       console.error("Error sending verification email:", error);
+      setManualResendDebug(prev => prev + `\nFinal error: ${error.message || "Unknown error"}`);
+      
       toast({
         title: "Error",
         description: error.message || "Failed to send verification email",
@@ -243,9 +279,9 @@ const Auth = () => {
                       <ul className="list-disc pl-5 space-y-1">
                         <li>Check both inbox and spam/junk folders</li>
                         <li>Add <strong>noreply@mail.app.supabase.io</strong> to your contacts</li>
-                        <li>
-                          Email delivery can take up to 5-10 minutes with some providers
-                        </li>
+                        <li>Email delivery can take up to 5-10 minutes with some providers</li>
+                        <li>Try refreshing your email inbox</li>
+                        <li>Check for full inbox (some providers block incoming emails when inbox is full)</li>
                         {emailProvider && (
                           <li>
                             {emailProvider === 'Gmail' && "Gmail users: Check the 'Promotions' or 'Updates' tabs"}
@@ -260,6 +296,13 @@ const Auth = () => {
                   </div>
                 )}
                 
+                {manualResendDebug && (
+                  <div className="mt-3 p-2 bg-yellow-100 rounded text-xs border border-yellow-300 whitespace-pre-line">
+                    <p className="font-medium">Debug log:</p>
+                    <p className="overflow-auto max-h-24">{manualResendDebug}</p>
+                  </div>
+                )}
+                
                 {lastDeliveryResult && lastDeliveryResult.email === verificationEmail && (
                   <div className="mt-3 p-2 bg-yellow-100 rounded text-xs border border-yellow-300">
                     <p className="font-medium">Last email delivery attempt:</p>
@@ -270,6 +313,32 @@ const Auth = () => {
                     )}
                   </div>
                 )}
+                
+                <div className="mt-4 flex flex-col">
+                  <p className="text-xs text-yellow-700 font-medium">Having trouble? Try these options:</p>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs h-7"
+                      onClick={() => window.location.reload()}
+                    >
+                      Refresh page
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs h-7"
+                      onClick={() => {
+                        localStorage.removeItem(`lastVerificationSent_${verificationEmail}`);
+                        localStorage.removeItem(`verificationSendCount_${verificationEmail}`);
+                        window.location.reload();
+                      }}
+                    >
+                      Reset resend counter
+                    </Button>
+                  </div>
+                </div>
               </AlertDescription>
             </Alert>
           )}
@@ -302,7 +371,7 @@ const Auth = () => {
               Having trouble with email verification?
             </h4>
             <p className="text-xs text-gray-500 mt-1">
-              If you're not receiving verification emails despite multiple attempts, there may be an issue with your Supabase email settings or your email provider's filters.
+              If you're not receiving verification emails despite multiple attempts, there may be an issue with your email provider's filters or Supabase email settings.
             </p>
             <div className="flex space-x-2 mt-2">
               <Button 
