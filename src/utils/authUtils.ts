@@ -1,10 +1,11 @@
+
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 export const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
   try {
-    // Get the domain for the redirect URL - handle both production and development environments
+    // Get the absolute URL of the current origin
     const domain = window.location.origin;
     console.log("Current domain for verification:", domain);
     
@@ -30,21 +31,20 @@ export const signUp = async (email: string, password: string, firstName: string,
         // Get the user ID for verification
         const userId = data.user.id;
         
-        // Call our edge function for sending the custom email
+        // Build the absolute function URL
         const functionUrl = `${domain}/functions/v1/custom-verification-email`;
+        console.log("Calling function URL:", functionUrl);
         
         const response = await fetch(functionUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${data.session?.access_token || ''}`,
-            'Origin': domain,
-            'x-client-domain': domain,
           },
           body: JSON.stringify({
             email,
             user_id: userId,
-            domain: domain,
+            domain,
           }),
         });
 

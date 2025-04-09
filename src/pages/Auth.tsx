@@ -65,7 +65,7 @@ const Auth = () => {
       }
       
       // Check for verification token in URL (legacy flow)
-      const token = searchParams.get('token');
+      const token = searchParams.get('token_hash') || searchParams.get('token');
       const type = searchParams.get('type');
       
       if (token && type === 'signup') {

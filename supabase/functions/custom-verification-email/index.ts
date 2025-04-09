@@ -48,13 +48,16 @@ serve(async (req) => {
       );
     }
 
+    // Ensure domain doesn't have trailing slash
+    const cleanDomain = domain.endsWith('/') ? domain.slice(0, -1) : domain;
+    
     // Generate a verification link using the Supabase Admin API
     try {
       const { data, error } = await supabase.auth.admin.generateLink({
         type: 'signup',
         email,
         options: {
-          redirectTo: `${domain}/auth?email_confirmed=true`,
+          redirectTo: `${cleanDomain}/auth?email_confirmed=true`,
         }
       });
 
