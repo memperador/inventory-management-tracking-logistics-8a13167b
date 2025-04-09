@@ -1,4 +1,3 @@
-
 export interface Tenant {
   id: string;
   name: string;
@@ -6,6 +5,7 @@ export interface Tenant {
   subscription_status?: string;
   company_type?: 'construction' | 'electrical' | 'plumbing' | 'hvac' | 'mechanical' | 'general';
   trial_ends_at?: string | null;
+  subscription_expires_at?: string | null;
   settings: {
     theme: string;
     features: string[];

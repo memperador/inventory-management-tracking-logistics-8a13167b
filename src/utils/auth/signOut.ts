@@ -8,6 +8,8 @@ export const signOut = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     const needsSubscription = user?.user_metadata?.needs_subscription === true;
     const isTrialing = user?.user_metadata?.subscription_status === 'trialing';
+    const trialEndsAt = user?.user_metadata?.trial_ends_at;
+    const subscriptionTier = user?.user_metadata?.subscription_tier;
     
     // Sign the user out
     const { error } = await supabase.auth.signOut();
@@ -18,10 +20,16 @@ export const signOut = async () => {
       description: 'You have been signed out successfully',
     });
     
-    // If the user is on trial or needs subscription, store this in localStorage
-    // so we can redirect them appropriately on next login
-    if (needsSubscription || isTrialing) {
-      localStorage.setItem('redirect_to_subscription', 'true');
+    // Store subscription information for next login
+    if (needsSubscription || isTrialing || subscriptionTier) {
+      const redirectInfo = {
+        redirect_to_subscription: needsSubscription === true,
+        subscription_status: isTrialing ? 'trialing' : (subscriptionTier ? 'active' : undefined),
+        trial_ends_at: trialEndsAt || undefined,
+        subscription_tier: subscriptionTier || undefined
+      };
+      
+      localStorage.setItem('subscription_info', JSON.stringify(redirectInfo));
     }
   } catch (error: any) {
     toast({
