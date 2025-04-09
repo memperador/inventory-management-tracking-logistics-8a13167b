@@ -1,128 +1,97 @@
-
+// If we're accessing the returned email from signUp, we need to update SignupForm.tsx 
+// to accommodate the new return type
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Loader2 } from 'lucide-react';
+import { Label } from '@/components/ui/label';
 
-const signupSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  firstName: z.string().min(1, { message: "First name is required" }),
-  lastName: z.string().min(1, { message: "Last name is required" }),
-});
-
-type SignupFormValues = z.infer<typeof signupSchema>;
-
-interface SignupFormProps {
-  onSignupComplete?: (email: string) => void;
-}
-
-const SignupForm: React.FC<SignupFormProps> = ({ onSignupComplete }) => {
+const SignupForm = ({ 
+  setVerificationSent, 
+  setVerificationEmail 
+}: { 
+  setVerificationSent?: (value: boolean) => void;
+  setVerificationEmail?: (value: string) => void;
+}) => {
   const { signUp } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const form = useForm<SignupFormValues>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      firstName: "",
-      lastName: "",
-    },
-  });
-  
-  const onSubmit = async (data: SignupFormValues) => {
-    setIsLoading(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
     try {
-      await signUp(data.email, data.password, data.firstName, data.lastName);
-      if (onSignupComplete) {
-        onSignupComplete(data.email);
+      const result = await signUp(email, password, firstName, lastName);
+      
+      // If we have verification handlers, update them with the email
+      if (setVerificationSent && setVerificationEmail) {
+        setVerificationSent(true);
+        setVerificationEmail(result.email);
       }
     } catch (error) {
-      console.error("Signup failed", error);
+      console.error("Signup error:", error);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
-  
+
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="firstName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>First Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="John" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="lastName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Last Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Doe" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input placeholder="name@example.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+    <form onSubmit={handleSignUp} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="firstName">First Name</Label>
+        <Input
+          id="firstName"
+          placeholder="Enter your first name"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+          required
         />
-        
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="lastName">Last Name</Label>
+        <Input
+          id="lastName"
+          placeholder="Enter your last name"
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+          required
         />
-        
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Please wait
-            </>
-          ) : (
-            "Create Account"
-          )}
-        </Button>
-      </form>
-    </Form>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          type="email"
+          placeholder="Enter your email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="password">Password</Label>
+        <Input
+          id="password"
+          type="password"
+          placeholder="Enter your password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={6}
+        />
+      </div>
+      
+      <Button type="submit" className="w-full" disabled={loading}>
+        {loading ? 'Signing up...' : 'Sign up'}
+      </Button>
+    </form>
   );
 };
 
