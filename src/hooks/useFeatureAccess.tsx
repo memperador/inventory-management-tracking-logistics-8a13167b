@@ -4,7 +4,8 @@ import {
   hasFeatureAccess, 
   getUpgradePromptForFeature, 
   getAvailableFeaturesForTier,
-  getSubscriptionTierLimits
+  getSubscriptionTierLimits,
+  FeatureAccessLevel
 } from '@/utils/subscriptionUtils';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -68,7 +69,7 @@ export const useFeatureAccess = () => {
   };
 
   // Check if specific tier is active
-  const hasSubscriptionTier = (tier: 'basic' | 'standard' | 'premium' | 'enterprise'): boolean => {
+  const hasSubscriptionTier = (tier: FeatureAccessLevel): boolean => {
     if (!currentTenant || !currentTenant.subscription_tier) return false;
     
     const tierHierarchy = {
