@@ -14,7 +14,7 @@ const EmailVerificationStatus = () => {
   if (!user) return null;
 
   // Check if email is verified
-  const isEmailVerified = user.email_confirmed_at || user.email_confirmed_at !== null;
+  const isEmailVerified = user.email_confirmed_at !== null;
 
   const handleResendVerification = async () => {
     if (!user.email) return;
@@ -29,8 +29,8 @@ const EmailVerificationStatus = () => {
       if (error) throw error;
       
       toast({
-        title: "Verification email sent",
-        description: `We've sent a new verification email to ${user.email}`,
+        title: "Verification Email Sent",
+        description: `We've sent a new verification email to ${user.email}. Please check your inbox.`,
       });
     } catch (error: any) {
       toast({
@@ -59,7 +59,7 @@ const EmailVerificationStatus = () => {
       <Mail className="h-4 w-4 text-yellow-600" />
       <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-2">
         <span className="text-yellow-800">
-          Please verify your email address to access all features.
+          Please verify your email address. Check your inbox and click the verification link.
         </span>
         <Button 
           variant="outline" 
