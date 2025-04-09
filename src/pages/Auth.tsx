@@ -53,7 +53,7 @@ const Auth = () => {
       if (token && type === 'signup') {
         try {
           setIsVerifying(true);
-          console.log("Verifying email with token...");
+          console.log("Verifying email with token:", token.substring(0, 10) + "...");
           
           // Call Supabase to verify the token
           const { error } = await supabase.auth.verifyOtp({

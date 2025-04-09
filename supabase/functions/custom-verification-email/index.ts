@@ -51,36 +51,61 @@ serve(async (req) => {
       console.error("Error extracting token:", e);
     }
 
-    // Determine the correct domain to use
-    let domain = req.headers.get('origin');
+    // Get the current domain from request headers or fallback to a specific one
+    const origin = req.headers.get('origin');
     const host = req.headers.get('host');
     const referer = req.headers.get('referer');
     
-    console.log(`Request headers - Origin: ${domain}, Host: ${host}, Referer: ${referer}`);
+    console.log(`Request headers - Origin: ${origin}, Host: ${host}, Referer: ${referer}`);
     
-    if (!domain) {
-      // Try to extract domain from referer
-      if (referer) {
-        try {
-          const refererUrl = new URL(referer);
-          domain = `${refererUrl.protocol}//${refererUrl.host}`;
-          console.log(`Extracted domain from referer: ${domain}`);
-        } catch (e) {
-          console.error("Error extracting domain from referer:", e);
-        }
-      }
-      
-      // If still no domain, fallback to host
-      if (!domain && host) {
-        domain = `https://${host}`;
-        console.log(`Using host as domain: ${domain}`);
+    // First try to use origin header since that's most reliable
+    let domain = origin;
+    
+    // If no origin, try to extract from referer
+    if (!domain && referer) {
+      try {
+        const refererUrl = new URL(referer);
+        domain = `${refererUrl.protocol}//${refererUrl.host}`;
+        console.log(`Extracted domain from referer: ${domain}`);
+      } catch (e) {
+        console.error("Error extracting domain from referer:", e);
       }
     }
     
-    // Final fallback to a fixed URL if all else fails
+    // If still no domain, use host header
+    if (!domain && host) {
+      // Check if it already has a protocol
+      if (host.startsWith('http')) {
+        domain = host;
+      } else {
+        domain = `https://${host}`;
+      }
+      console.log(`Using host as domain: ${domain}`);
+    }
+    
+    // Final fallback to the current URL if it's available
+    if (!domain) {
+      try {
+        const currentUrl = new URL(req.url);
+        domain = `${currentUrl.protocol}//${currentUrl.host}`;
+        console.log(`Using current URL as domain: ${domain}`);
+      } catch (e) {
+        console.error("Error extracting domain from request URL:", e);
+      }
+    }
+    
+    // Ultimate fallback
     if (!domain || domain.includes('supabase')) {
-      domain = "https://inventory-track-pro-e54f.lovable.dev";
-      console.log(`Using fallback domain: ${domain}`);
+      // Replace with a domain that's guaranteed to work for your project
+      const lovableDomain = req.headers.get('x-client-domain');
+      if (lovableDomain) {
+        domain = lovableDomain;
+        console.log(`Using x-client-domain header: ${domain}`);
+      } else {
+        // Use a known working domain as the absolute fallback
+        domain = "https://inventory-track-pro-e54f.lovable.dev";
+        console.log(`Using fallback domain: ${domain}`);
+      }
     }
 
     // Construct the verification URL with the token

@@ -1,3 +1,4 @@
+
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -34,11 +35,11 @@ export const signUp = async (email: string, password: string, firstName: string,
           token = data.session.access_token;
         }
         
-        // Create a proper confirmation URL that includes the correct token
+        // Create a confirmation URL using our current domain and the token
         const confirmationUrl = `${domain}/auth?token=${token}&type=signup`;
         console.log("Sending custom verification email with URL:", confirmationUrl);
         
-        // Call our custom edge function 
+        // Call our edge function for sending the custom email
         const functionUrl = `${domain}/functions/v1/custom-verification-email`;
         
         const response = await fetch(functionUrl, {
@@ -47,6 +48,7 @@ export const signUp = async (email: string, password: string, firstName: string,
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${data.session?.access_token || ''}`,
             'Origin': domain,
+            'x-client-domain': domain,
           },
           body: JSON.stringify({
             email,
