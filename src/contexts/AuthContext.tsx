@@ -88,17 +88,17 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
               
               // Determine if subscription is active or in trial period
               const now = new Date();
-              const trialEndsAtStr = tenantData && 
-                typeof tenantData === 'object' && 
-                'trial_ends_at' in tenantData ? 
-                tenantData.trial_ends_at as string : null;
+              
+              // Safe access to tenantData properties with null checks
+              const trialEndsAtStr = tenantData ? 
+                (typeof tenantData === 'object' && 'trial_ends_at' in tenantData ? 
+                tenantData.trial_ends_at as string : null) : null;
               
               const trialEndsAt = trialEndsAtStr ? new Date(trialEndsAtStr) : null;
               
-              const hasActiveSubscription = tenantData && 
-                typeof tenantData === 'object' && 
-                'subscription_status' in tenantData && 
-                tenantData.subscription_status === 'active';
+              const hasActiveSubscription = tenantData ? 
+                (typeof tenantData === 'object' && 'subscription_status' in tenantData && 
+                tenantData.subscription_status === 'active') : false;
               
               const inTrialPeriod = trialEndsAt && trialEndsAt > now;
               
