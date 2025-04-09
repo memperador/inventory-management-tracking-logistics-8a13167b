@@ -61,7 +61,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             title: 'Two-factor verification complete',
             description: 'You have been authenticated successfully.',
           });
-        } else if (event === 'EMAIL_CONFIRMED') {
+        } 
+        
+        // Handle email confirmation separately to avoid TypeScript error
+        // Check URL params for email confirmation status
+        const url = new URL(window.location.href);
+        const emailConfirmed = url.searchParams.get('email_confirmed') === 'true';
+        
+        if (emailConfirmed) {
           toast({
             title: 'Email confirmed!',
             description: 'Your email has been verified successfully.',
