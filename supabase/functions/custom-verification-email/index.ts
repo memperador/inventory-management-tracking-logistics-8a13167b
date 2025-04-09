@@ -48,7 +48,7 @@ serve(async (req) => {
       );
     }
 
-    // Process the domain to ensure it's formatted correctly
+    // Process the provided domain to ensure it's formatted correctly
     // Strip any trailing slashes
     let cleanDomain = domain;
     if (cleanDomain.endsWith('/')) {
@@ -66,11 +66,15 @@ serve(async (req) => {
     
     // Generate a verification link using the Supabase Admin API
     try {
+      // Determine the correct redirect URL based on the domain
+      const redirectTo = `${cleanDomain}/auth?email_confirmed=true`;
+      console.log(`Using redirect URL: ${redirectTo}`);
+      
       const { data, error } = await supabase.auth.admin.generateLink({
         type: 'signup',
         email,
         options: {
-          redirectTo: `${cleanDomain}/auth?email_confirmed=true`,
+          redirectTo,
         }
       });
 

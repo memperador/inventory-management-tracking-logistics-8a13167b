@@ -17,6 +17,7 @@ export const signUp = async (email: string, password: string, firstName: string,
           first_name: firstName,
           last_name: lastName
         },
+        emailRedirectTo: `${domain}/auth?email_confirmed=true`,
       },
     });
 
@@ -40,10 +41,10 @@ export const signUp = async (email: string, password: string, firstName: string,
           functionUrl = `http://localhost:54321/functions/v1/custom-verification-email`;
           console.log("Using local development function URL:", functionUrl);
         } else {
-          // For production, use the full function URL with the project ID
-          functionUrl = `${domain}/functions/v1/custom-verification-email`;
+          // For production, use the full function URL with the Supabase project ID
+          functionUrl = `https://wscoyigjjcevriqqyxwo.supabase.co/functions/v1/custom-verification-email`;
+          console.log("Using production function URL:", functionUrl);
         }
-        console.log("Calling function URL:", functionUrl);
         
         const response = await fetch(functionUrl, {
           method: 'POST',

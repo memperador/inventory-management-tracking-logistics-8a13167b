@@ -43,34 +43,40 @@ export function useAuthVerification() {
         try {
           setIsVerifying(true);
           const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
           
           // Create a session with the access token
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken!,
-            refresh_token: hashParams.get('refresh_token')!,
-          });
-          
-          if (error) {
-            console.error("Error setting session:", error);
-            setAuthError(`Verification failed: ${error.message}`);
-            toast({
-              title: "Verification Failed",
-              description: error.message,
-              variant: "destructive"
-            });
-          } else {
-            console.log("Session created successfully:", data);
-            setEmailVerified(true);
-            toast({
-              title: "Email Verified",
-              description: "Your email has been successfully verified!",
-              variant: "default"
+          if (accessToken && refreshToken) {
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
             });
             
-            // After showing the success message, redirect to dashboard
-            setTimeout(() => {
-              navigate('/dashboard', { replace: true });
-            }, 1500);
+            if (error) {
+              console.error("Error setting session:", error);
+              setAuthError(`Verification failed: ${error.message}`);
+              toast({
+                title: "Verification Failed",
+                description: error.message,
+                variant: "destructive"
+              });
+            } else {
+              console.log("Session created successfully:", data);
+              setEmailVerified(true);
+              toast({
+                title: "Email Verified",
+                description: "Your email has been successfully verified!",
+                variant: "default"
+              });
+              
+              // After showing the success message, redirect to dashboard
+              setTimeout(() => {
+                navigate('/dashboard', { replace: true });
+              }, 1500);
+            }
+          } else {
+            console.error("Missing tokens in hash parameters");
+            setAuthError("Verification failed: Missing authentication tokens");
           }
         } catch (error: any) {
           console.error("Error during SPA verification:", error);
