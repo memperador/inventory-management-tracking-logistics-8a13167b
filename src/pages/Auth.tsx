@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuthContext';
 import AuthCard from '@/components/auth/AuthCard';
-import { useAuthVerification } from '@/components/auth/verification/useAuthVerification';
+import { useAuthVerification } from '@/hooks/useAuthVerification';
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -29,45 +29,7 @@ const Auth = () => {
   const isLoading = authLoading || verificationLoading;
   
   useEffect(() => {
-    // Don't attempt navigation while still loading or if we've already processed a navigation
-    if (isLoading || navigationProcessed) {
-      return;
-    }
-    
-    // If user is authenticated and email is confirmed or we need to show verification UI
-    if (user) {
-      // If email not confirmed and no returnTo parameter, stay on auth page for email verification
-      if (user.email && !user.email_confirmed_at && !searchParams.get('returnTo')) {
-        console.log("User authenticated but email not confirmed, staying on auth page");
-        return;
-      }
-      
-      // Set flag to prevent multiple navigation attempts
-      setNavigationProcessed(true);
-      
-      // Check if this user needs subscription
-      const needsSubscription = user.user_metadata?.needs_subscription === true;
-      const returnTo = searchParams.get('returnTo');
-      
-      // Priority order: 
-      // 1. If needs subscription -> payment page
-      // 2. If returnTo parameter exists -> go to that URL
-      // 3. Otherwise -> dashboard
-      if (needsSubscription) {
-        console.log("User needs subscription, navigating to payment page");
-        window.location.href = '/payment';
-      } else if (returnTo) {
-        console.log(`Navigating to returnTo URL: ${returnTo}`);
-        window.location.href = decodeURIComponent(returnTo);
-      } else {
-        console.log("Navigating to dashboard");
-        window.location.href = '/dashboard';
-      }
-    }
-  }, [user, navigate, searchParams, navigationProcessed, isLoading]);
-  
-  // Reset navigation flag if user changes
-  useEffect(() => {
+    // Only an empty effect to handle cleanup
     return () => {
       setNavigationProcessed(false);
     };

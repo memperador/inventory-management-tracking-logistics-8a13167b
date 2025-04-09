@@ -10,9 +10,11 @@ interface TenantContextType {
   currentTenant: Tenant | null;
   setTenantId: (tenantId: string | null) => void;
   loading: boolean;
+  error: Error | null;
   updateTenantSettings: (settings: Partial<Tenant['settings']>) => Promise<void>;
   updateCompanyType: (companyType: Tenant['company_type']) => Promise<void>;
   createTenant: (name: string) => Promise<string | null>;
+  hasActiveSubscription: () => boolean;
 }
 
 export const TenantContext = createContext<TenantContextType | undefined>(undefined);
@@ -21,6 +23,7 @@ export const TenantProvider = ({ children, userId }: { children: ReactNode, user
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   // Fetch tenant ID when user ID changes
   useEffect(() => {
@@ -36,6 +39,7 @@ export const TenantProvider = ({ children, userId }: { children: ReactNode, user
 
           if (error) {
             console.error("Error fetching tenant ID:", error);
+            setError(new Error(error.message));
             toast({
               title: 'Error',
               description: 'Failed to fetch tenant information.',
@@ -47,8 +51,9 @@ export const TenantProvider = ({ children, userId }: { children: ReactNode, user
             // Fetch tenant details
             fetchTenantDetails(data.tenant_id);
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error("Unexpected error fetching tenant ID:", error);
+          setError(new Error(error.message));
           toast({
             title: 'Error',
             description: 'An unexpected error occurred while fetching tenant information.',
@@ -72,9 +77,22 @@ export const TenantProvider = ({ children, userId }: { children: ReactNode, user
     try {
       const tenantData = await fetchTenant(id);
       setCurrentTenant(tenantData);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching tenant details:", error);
+      setError(new Error(error.message));
     }
+  };
+  
+  // Check if subscription is active or in trial period
+  const hasActiveSubscription = (): boolean => {
+    if (!currentTenant) return false;
+    
+    const now = new Date();
+    const trialEndsAt = currentTenant.trial_ends_at ? new Date(currentTenant.trial_ends_at) : null;
+    const isActive = currentTenant.subscription_status === 'active';
+    const inTrial = trialEndsAt && trialEndsAt > now;
+    
+    return isActive || inTrial;
   };
   
   // Create a new tenant
@@ -96,8 +114,9 @@ export const TenantProvider = ({ children, userId }: { children: ReactNode, user
       }
       
       return data.id;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating tenant:", error);
+      setError(new Error(error.message));
       toast({
         title: 'Error',
         description: 'Failed to create tenant.',
@@ -125,8 +144,9 @@ export const TenantProvider = ({ children, userId }: { children: ReactNode, user
         }
       });
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating tenant settings:", error);
+      setError(new Error(error.message));
       throw error;
     }
   };
@@ -146,8 +166,9 @@ export const TenantProvider = ({ children, userId }: { children: ReactNode, user
         company_type: companyType
       });
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating company type:", error);
+      setError(new Error(error.message));
       throw error;
     }
   };
@@ -158,11 +179,21 @@ export const TenantProvider = ({ children, userId }: { children: ReactNode, user
       currentTenant,
       setTenantId,
       loading,
+      error,
       updateTenantSettings: handleUpdateTenantSettings,
       updateCompanyType: handleUpdateCompanyType,
-      createTenant
+      createTenant,
+      hasActiveSubscription
     }}>
       {children}
     </TenantContext.Provider>
   );
+};
+
+export const useTenant = () => {
+  const context = React.useContext(TenantContext);
+  if (context === undefined) {
+    throw new Error('useTenant must be used within a TenantProvider');
+  }
+  return context;
 };

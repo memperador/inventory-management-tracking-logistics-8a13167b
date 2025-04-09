@@ -45,25 +45,66 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
         
         // Handle navigation based on auth events
         if (event === 'SIGNED_IN') {
-          console.log('User signed in, may redirect if needed');
+          console.log('User signed in, checking tenant and subscription status');
           
           // Use setTimeout to ensure state updates complete before navigation
-          setTimeout(() => {
-            const needsSubscription = currentSession?.user?.user_metadata?.needs_subscription === true;
+          setTimeout(async () => {
+            if (!currentSession?.user) return;
             
-            if (window.location.pathname === '/auth') {
+            try {
+              // Check if user has an associated tenant
+              const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('tenant_id')
+                .eq('id', currentSession.user.id)
+                .single();
+                
+              if (userError && userError.code !== 'PGRST116') {
+                console.error('Error checking user tenant:', userError);
+                return;
+              }
+              
+              // If no tenant is associated, redirect to onboarding
+              if (!userData?.tenant_id) {
+                console.log('No tenant associated, redirecting to onboarding');
+                window.location.href = '/onboarding';
+                return;
+              }
+              
+              // Check tenant subscription status
+              const { data: tenantData, error: tenantError } = await supabase
+                .from('tenants')
+                .select('subscription_status, subscription_tier, trial_ends_at')
+                .eq('id', userData.tenant_id)
+                .single();
+                
+              if (tenantError) {
+                console.error('Error checking tenant subscription:', tenantError);
+                return;
+              }
+              
+              const needsSubscription = currentSession.user.user_metadata?.needs_subscription === true;
               const returnTo = new URLSearchParams(window.location.search).get('returnTo');
               
-              if (needsSubscription) {
+              // Determine if subscription is active or in trial period
+              const now = new Date();
+              const trialEndsAt = tenantData.trial_ends_at ? new Date(tenantData.trial_ends_at) : null;
+              const hasActiveSubscription = tenantData.subscription_status === 'active';
+              const inTrialPeriod = trialEndsAt && trialEndsAt > now;
+              
+              // Redirect logic
+              if (needsSubscription || (!hasActiveSubscription && !inTrialPeriod)) {
                 console.log('User needs subscription, redirecting to payment page');
                 window.location.href = '/payment';
               } else if (returnTo) {
-                console.log(`Redirecting to: ${returnTo}`);
+                console.log(`Redirecting to returnTo URL: ${returnTo}`);
                 window.location.href = decodeURIComponent(returnTo);
-              } else {
+              } else if (window.location.pathname === '/auth') {
                 console.log('Redirecting to dashboard');
                 window.location.href = '/dashboard';
               }
+            } catch (error) {
+              console.error('Error during post-login checks:', error);
             }
           }, 0);
         } else if (event === 'SIGNED_OUT') {

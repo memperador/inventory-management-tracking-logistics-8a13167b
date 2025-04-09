@@ -2,6 +2,7 @@
 import React, { ReactNode, useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuthContext';
+import { useTenant } from '@/hooks/useTenantContext';
 import { UserRole } from '@/types/roles';
 import { useRole } from '@/hooks/useRoleContext';
 
@@ -19,13 +20,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children
 }) => {
   const { user, loading } = useAuth();
+  const { currentTenant, loading: tenantLoading } = useTenant();
   const { hasPermission, isRoleLoading } = useRole();
   const location = useLocation();
   
   // Log the authentication status and current path for debugging
   useEffect(() => {
-    if (loading) {
-      console.log("Auth loading, waiting...");
+    if (loading || tenantLoading) {
+      console.log("Auth or tenant data loading, waiting...");
     } else if (!user) {
       console.log("Unauthorized access attempt to:", location.pathname, "- Redirecting to auth");
     } else {
@@ -37,9 +39,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         console.log("User needs subscription, redirecting to payment page");
       }
     }
-  }, [user, loading, location.pathname]);
+  }, [user, loading, location.pathname, tenantLoading]);
   
-  if (loading || isRoleLoading) {
+  if (loading || isRoleLoading || tenantLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-100">
         <div className="flex flex-col items-center gap-4">
@@ -60,7 +62,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   
   // Check if the user needs to subscribe first
   const needsSubscription = user.user_metadata?.needs_subscription === true;
-  if (needsSubscription && location.pathname !== '/payment') {
+  const noActiveSubscription = currentTenant && 
+                              currentTenant.subscription_status !== 'active' && 
+                              (!currentTenant.trial_ends_at || new Date(currentTenant.trial_ends_at) < new Date());
+                              
+  if ((needsSubscription || noActiveSubscription) && location.pathname !== '/payment') {
     console.log("Redirecting user to payment page to select a plan");
     return <Navigate to="/payment" replace />;
   }

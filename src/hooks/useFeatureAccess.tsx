@@ -1,3 +1,4 @@
+
 import { useTenant } from '@/hooks/useTenantContext';
 import { useRole } from '@/hooks/useRoleContext';
 import { 
@@ -16,6 +17,18 @@ export const useFeatureAccess = () => {
   const { userRole } = useRole();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Check if subscription is active or in trial period
+  const hasActiveSubscription = (): boolean => {
+    if (!currentTenant) return false;
+    
+    const now = new Date();
+    const trialEndsAt = currentTenant.trial_ends_at ? new Date(currentTenant.trial_ends_at) : null;
+    const isActive = currentTenant.subscription_status === 'active';
+    const inTrial = trialEndsAt && trialEndsAt > now;
+    
+    return isActive || inTrial;
+  };
 
   // Check if user has access to a feature
   const canAccessFeature = (featureKey: string): boolean => {
@@ -159,6 +172,7 @@ export const useFeatureAccess = () => {
     getSubscriptionLimits,
     isUnderAssetLimit,
     isUnderUserLimit,
+    hasActiveSubscription,
     currentTier: currentTenant?.subscription_tier as 'basic' | 'standard' | 'premium' | 'enterprise' | null,
     isTrialMode: currentTenant?.subscription_status === 'trialing'
   };
