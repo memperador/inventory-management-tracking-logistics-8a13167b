@@ -7,7 +7,8 @@ export const signUp = async (email: string, password: string, firstName: string,
   try {
     const domain = window.location.origin;
     
-    const { error } = await supabase.auth.signUp({
+    // Regular signup with Supabase
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -20,6 +21,37 @@ export const signUp = async (email: string, password: string, firstName: string,
     });
 
     if (error) throw error;
+
+    // If signup was successful and we have a confirmation URL
+    if (data?.user && !data.user.email_confirmed_at) {
+      // Get the confirmation URL from Supabase response (not directly accessible)
+      // Instead, we'll now trigger our custom email function
+      try {
+        const confirmationUrl = `${domain}/auth?email_confirmed=true`;
+        
+        // Call our custom Edge Function to send the branded email
+        const response = await fetch(`https://wscoyigjjcevriqqyxwo.supabase.co/functions/v1/custom-verification-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${data.session?.access_token || ''}`,
+          },
+          body: JSON.stringify({
+            email,
+            confirmation_url: confirmationUrl,
+          }),
+        });
+
+        if (!response.ok) {
+          console.error('Failed to send custom verification email:', await response.text());
+        } else {
+          console.log('Custom verification email sent successfully');
+        }
+      } catch (emailError) {
+        console.error('Error sending custom verification email:', emailError);
+      }
+    }
+
     toast({
       title: 'Account created',
       description: 'Please check your email and spam folder for the verification link',
