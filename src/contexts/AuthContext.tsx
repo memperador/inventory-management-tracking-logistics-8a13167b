@@ -1,15 +1,16 @@
+
 import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { signUp, signIn, signOut, resetPassword, refreshSession as refreshSessionUtil } from '@/utils/auth';
-import { useNavigate } from 'react-router-dom';
+import { TenantContext } from '@/contexts/TenantContext';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ email: string; data: any }>;
+  signUp: (email: string, password: string, firstName: string, lastName: string, companyName: string) => Promise<{ email: string; data: any }>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -104,6 +105,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  const handleSignUp = async (
+    email: string, 
+    password: string, 
+    firstName: string, 
+    lastName: string, 
+    companyName: string
+  ) => {
+    return await signUp(email, password, firstName, lastName, companyName);
+  };
+
   const refreshSessionWrapper = async () => {
     try {
       const data = await refreshSessionUtil();
@@ -120,7 +131,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     session,
     loading,
-    signUp,
+    signUp: handleSignUp,
     signIn,
     signOut,
     resetPassword,

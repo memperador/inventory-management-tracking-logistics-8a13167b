@@ -21,6 +21,7 @@ const SignupForm = ({
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -28,7 +29,7 @@ const SignupForm = ({
     setLoading(true);
     
     try {
-      const result = await signUp(email, password, firstName, lastName);
+      const result = await signUp(email, password, firstName, lastName, companyName);
       
       // If we have verification handlers, update them with the email
       if (setVerificationSent && setVerificationEmail) {
@@ -67,6 +68,17 @@ const SignupForm = ({
           placeholder="Enter your last name"
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
+          required
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="companyName">Company Name</Label>
+        <Input
+          id="companyName"
+          placeholder="Enter your company name"
+          value={companyName}
+          onChange={(e) => setCompanyName(e.target.value)}
           required
         />
       </div>

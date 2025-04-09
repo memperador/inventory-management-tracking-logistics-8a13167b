@@ -13,6 +13,7 @@ interface TenantContextType {
   loading: boolean;
   updateTenantSettings: (settings: Partial<Tenant['settings']>) => Promise<void>;
   updateCompanyType: (companyType: Tenant['company_type']) => Promise<void>;
+  createTenant: (name: string) => Promise<string | null>;
 }
 
 export const TenantContext = createContext<TenantContextType | undefined>(undefined);
@@ -78,6 +79,36 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
+  // Create a new tenant
+  const createTenant = async (name: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('tenants')
+        .insert({
+          name,
+          created_at: new Date().toISOString()
+        })
+        .select('id')
+        .single();
+      
+      if (error) throw error;
+      
+      if (!data || !data.id) {
+        throw new Error("No tenant ID returned after creation");
+      }
+      
+      return data.id;
+    } catch (error) {
+      console.error("Error creating tenant:", error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create tenant.',
+        variant: 'destructive',
+      });
+      return null;
+    }
+  };
+  
   // Update tenant settings
   const handleUpdateTenantSettings = async (settings: Partial<Tenant['settings']>) => {
     if (!tenantId || !currentTenant) {
@@ -130,9 +161,11 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
       setTenantId,
       loading,
       updateTenantSettings: handleUpdateTenantSettings,
-      updateCompanyType: handleUpdateCompanyType
+      updateCompanyType: handleUpdateCompanyType,
+      createTenant
     }}>
       {children}
     </TenantContext.Provider>
   );
 };
+

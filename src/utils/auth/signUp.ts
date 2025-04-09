@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
-export const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
+export const signUp = async (email: string, password: string, firstName: string, lastName: string, companyName: string = '') => {
   try {
     // Get the absolute URL of the current origin
     // Use muq.munetworks.io for production, but fallback to current origin for local development
@@ -18,6 +18,7 @@ export const signUp = async (email: string, password: string, firstName: string,
         data: {
           first_name: firstName,
           last_name: lastName,
+          company_name: companyName, // Add company name to user metadata
           needs_subscription: true // Add flag to indicate subscription needed
         },
         // Use the full URL to /auth route with a query parameter to indicate verification
