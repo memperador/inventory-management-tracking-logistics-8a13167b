@@ -9,12 +9,18 @@ export interface FeatureAccessMap {
 
 // AI assistant features by tier interface
 export interface AIAssistantFeaturesMap {
-  [key in FeatureAccessLevel]: string[];
+  basic: string[];
+  standard: string[];
+  premium: string[];
+  enterprise: string[];
 }
 
 // AI assistant models by tier interface
 export interface AIAssistantModelsMap {
-  [key in FeatureAccessLevel]: string;
+  basic: string;
+  standard: string;
+  premium: string;
+  enterprise: string;
 }
 
 // Subscription tier limits interface
@@ -24,7 +30,10 @@ export interface SubscriptionTierLimit {
 }
 
 export interface SubscriptionTierLimitsMap {
-  [key in FeatureAccessLevel]: SubscriptionTierLimit;
+  basic: SubscriptionTierLimit;
+  standard: SubscriptionTierLimit;
+  premium: SubscriptionTierLimit;
+  enterprise: SubscriptionTierLimit;
 }
 
 // Upgrade prompt interface
