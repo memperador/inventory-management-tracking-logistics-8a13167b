@@ -5,6 +5,7 @@ export interface Tenant {
   subscription_tier?: string;
   subscription_status?: string;
   company_type?: 'construction' | 'electrical' | 'plumbing' | 'hvac' | 'mechanical' | 'general';
+  trial_ends_at?: string | null;
   settings: {
     theme: string;
     features: string[];

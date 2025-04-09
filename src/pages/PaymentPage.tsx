@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import AddOnServices from '@/components/payment/AddOnServices';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useAuth } from '@/hooks/useAuthContext';
 
 const serviceTiers = [
   {
@@ -114,7 +115,7 @@ const PaymentPage = () => {
   const [activeTab, setActiveTab] = useState('plans');
   const { currentTenant, updateCompanyType } = useTenant();
   const { toast } = useToast();
-  const { user } = useTenant();
+  const { user } = useAuth();
 
   const handleTierChange = (tierId: string) => {
     setSelectedTier(tierId);
@@ -123,6 +124,8 @@ const PaymentPage = () => {
       setPaymentAmount(tier.price);
     }
   };
+
+  const selectedTierData = serviceTiers.find(tier => tier.id === selectedTier) || serviceTiers[1]; // Default to Standard
 
   const handleSuccess = (paymentIntent: any) => {
     console.log('Payment succeeded:', paymentIntent);
@@ -151,7 +154,7 @@ const PaymentPage = () => {
   };
 
   const isUpgrade = !!currentTenant?.subscription_tier;
-  const isNewSignup = !!user?.user_metadata?.needs_subscription;
+  const isNewSignup = user?.user_metadata?.needs_subscription === true;
 
   return (
     <div className="container mx-auto py-8">
