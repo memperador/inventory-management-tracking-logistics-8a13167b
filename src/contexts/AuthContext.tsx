@@ -90,21 +90,19 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
               const now = new Date();
               
               // Safe access to tenantData properties with null checks
-              const trialEndsAtStr = tenantData !== null 
-                ? (tenantData && typeof tenantData === 'object' && 'trial_ends_at' in tenantData 
-                  ? String(tenantData.trial_ends_at) 
-                  : null) 
-                : null;
+              const trialEndsAtStr = tenantData ? 
+                (tenantData && 'trial_ends_at' in tenantData ? 
+                  String(tenantData.trial_ends_at) : 
+                  null) : 
+                null;
               
               const trialEndsAt = trialEndsAtStr ? new Date(trialEndsAtStr) : null;
               
-              const hasActiveSubscription = tenantData !== null
-                ? (tenantData && typeof tenantData === 'object' && 'subscription_status' in tenantData 
-                  ? String(tenantData.subscription_status) === 'active'
-                  : false)
-                : false;
-              
-              const inTrialPeriod = trialEndsAt && trialEndsAt > now;
+              const hasActiveSubscription = tenantData ? 
+                (tenantData && 'subscription_status' in tenantData ? 
+                  String(tenantData.subscription_status) === 'active' : 
+                  false) : 
+                false;
               
               // Redirect logic
               if (needsSubscription || (!hasActiveSubscription && !inTrialPeriod)) {
@@ -201,3 +199,4 @@ export const useAuth = () => {
   }
   return context;
 };
+
