@@ -14,6 +14,7 @@ export function useAuthVerification() {
   const [emailVerified, setEmailVerified] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [emailProvider, setEmailProvider] = useState<string | null>(null);
+  const [processingRedirect, setProcessingRedirect] = useState(false);
   
   useEffect(() => {
     if (verificationEmail) {
@@ -32,6 +33,10 @@ export function useAuthVerification() {
 
   useEffect(() => {
     const handleAuthRedirects = async () => {
+      // Prevent multiple calls to this handler
+      if (processingRedirect) return;
+      setProcessingRedirect(true);
+      
       console.log("Handling auth redirects...");
       console.log("Current URL:", window.location.href);
       
@@ -50,6 +55,7 @@ export function useAuthVerification() {
             variant: "destructive"
           });
         }
+        setProcessingRedirect(false);
         return;
       }
       
@@ -64,6 +70,7 @@ export function useAuthVerification() {
         
         console.error("Hash auth error:", hashErrorDesc);
         setAuthError(hashErrorDesc || "Authentication error occurred. Please try again.");
+        setProcessingRedirect(false);
         return;
       }
       
@@ -95,18 +102,22 @@ export function useAuthVerification() {
               
               // Check if this is a new user needing subscription
               const needsSubscription = data.user?.user_metadata?.needs_subscription === true;
+              
+              // Store this information in localStorage to handle page reloads
               if (needsSubscription) {
-                // Add a slight delay before navigation to prevent multiple redirects
-                setTimeout(() => {
+                localStorage.setItem('redirect_to_subscription', 'true');
+              }
+              
+              // Add a slight delay before navigation to prevent multiple redirects
+              setTimeout(() => {
+                if (needsSubscription) {
                   // Use replace to avoid adding to history stack
                   navigate('/payment', { replace: true });
-                }, 500);
-              } else {
-                // Regular flow
-                setTimeout(() => {
+                } else {
+                  // Regular flow
                   navigate('/dashboard', { replace: true });
-                }, 500);
-              }
+                }
+              }, 800);
             }
           } else {
             setAuthError("Verification failed: Missing authentication tokens");
@@ -116,6 +127,7 @@ export function useAuthVerification() {
           setAuthError(`Verification error: ${error.message}`);
         } finally {
           setIsVerifying(false);
+          setProcessingRedirect(false);
         }
         return;
       }
@@ -136,20 +148,23 @@ export function useAuthVerification() {
           // Check if this is a new user that needs subscription
           if (newUser === 'true') {
             console.log("New user detected, redirecting to payment page");
+            localStorage.setItem('redirect_to_subscription', 'true');
+            
             // Add a slight delay to prevent multiple redirects
             setTimeout(() => {
               // Use replace to avoid adding to history stack
               navigate('/payment', { replace: true });
-            }, 500);
+            }, 800);
           } else {
             // After showing the success message, redirect to dashboard
             setTimeout(() => {
               navigate('/dashboard', { replace: true });
-            }, 500);
+            }, 800);
           }
         } else {
           console.log("No session found after verification, staying on auth page");
         }
+        setProcessingRedirect(false);
         return;
       }
       
@@ -182,13 +197,14 @@ export function useAuthVerification() {
             // Add a slight delay before navigation
             setTimeout(() => {
               navigate('/payment', { replace: true });
-            }, 500);
+            }, 800);
           }
         } catch (error: any) {
           console.error("Error during email verification:", error);
           setAuthError(`Verification error: ${error.message}`);
         } finally {
           setIsVerifying(false);
+          setProcessingRedirect(false);
         }
         return;
       }
@@ -199,11 +215,15 @@ export function useAuthVerification() {
       
       if ((recoveryToken || token) && (recoveryType === 'recovery' || type === 'recovery')) {
         navigate('/auth/reset-password', { replace: true });
+        setProcessingRedirect(false);
+        return;
       }
+      
+      setProcessingRedirect(false);
     };
     
     handleAuthRedirects();
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, processingRedirect]);
   
   return {
     verificationSent,

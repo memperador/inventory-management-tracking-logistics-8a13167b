@@ -1,6 +1,5 @@
 
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Tenant } from '@/types/tenant';
@@ -18,22 +17,21 @@ interface TenantContextType {
 
 export const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
-export const TenantProvider = ({ children }: { children: ReactNode }) => {
-  const { user } = useAuth();
+export const TenantProvider = ({ children, userId }: { children: ReactNode, userId: string | null }) => {
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch tenant ID when user changes
+  // Fetch tenant ID when user ID changes
   useEffect(() => {
     const fetchTenantId = async () => {
-      if (user) {
+      if (userId) {
         try {
-          // Query the users table instead of user_tenants
+          // Query the users table
           const { data, error } = await supabase
             .from('users')
             .select('tenant_id')
-            .eq('id', user.id)
+            .eq('id', userId)
             .single();
 
           if (error) {
@@ -65,7 +63,7 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
     };
 
     fetchTenantId();
-  }, [user]);
+  }, [userId]);
   
   // Fetch tenant details when tenant ID changes
   const fetchTenantDetails = async (id: string) => {
@@ -168,4 +166,3 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
     </TenantContext.Provider>
   );
 };
-

@@ -4,7 +4,6 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { signUp, signIn, signOut, resetPassword, refreshSession as refreshSessionUtil } from '@/utils/auth';
-import { TenantContext } from '@/contexts/TenantContext';
 
 interface AuthContextType {
   user: User | null;
@@ -19,11 +18,18 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  
+interface AuthProviderProps {
+  children: ReactNode;
+  onUserChange?: (userId: string | null) => void;
+}
+
+export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Track if we've already processed a redirect
+  const [redirected, setRedirected] = useState(false);
   
   useEffect(() => {
     // To prevent multiple redirections, track if we've already processed a session
@@ -33,7 +39,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       async (event, session) => {
         console.log('Auth state changed:', event);
         setSession(session);
-        setUser(session?.user ?? null);
+        const newUser = session?.user ?? null;
+        setUser(newUser);
+        
+        // Call the onUserChange callback with the user ID
+        if (onUserChange) {
+          onUserChange(newUser?.id || null);
+        }
         
         if (event === 'SIGNED_IN') {
           toast({
@@ -45,21 +57,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const needsSubscription = session?.user?.user_metadata?.needs_subscription === true;
           const redirectToSubscription = localStorage.getItem('redirect_to_subscription') === 'true';
           
-          if ((needsSubscription || redirectToSubscription) && !initialSessionProcessed) {
+          // Only redirect if we haven't already processed a redirect and we're actually on the auth page
+          if ((needsSubscription || redirectToSubscription) && !redirected && !initialSessionProcessed && window.location.pathname === '/auth') {
             initialSessionProcessed = true;
+            setRedirected(true);
             localStorage.removeItem('redirect_to_subscription'); // Clear the flag
-            window.location.href = '/payment';
+            
+            // Use a delay to prevent race conditions
+            setTimeout(() => {
+              window.location.href = '/payment';
+            }, 500);
             return;
           }
           
-          if (!initialSessionProcessed) {
+          if (!redirected && !initialSessionProcessed && window.location.pathname === '/auth') {
             initialSessionProcessed = true;
+            setRedirected(true);
             const returnTo = new URLSearchParams(window.location.search).get('returnTo');
-            if (returnTo) {
-              window.location.href = decodeURIComponent(returnTo);
-            } else if (window.location.pathname === '/auth') {
-              window.location.href = '/dashboard';
-            }
+            
+            // Use a delay to prevent race conditions
+            setTimeout(() => {
+              if (returnTo) {
+                window.location.href = decodeURIComponent(returnTo);
+              } else {
+                window.location.href = '/dashboard';
+              }
+            }, 500);
           }
         } else if (event === 'SIGNED_OUT') {
           toast({
@@ -67,6 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             description: 'You have been signed out successfully.',
           });
           initialSessionProcessed = false;
+          setRedirected(false);
           window.location.href = '/auth';
         } else if (event === 'PASSWORD_RECOVERY') {
           window.location.href = '/auth/reset-password';
@@ -88,14 +112,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check:', session ? 'Authenticated' : 'Not authenticated');
       setSession(session);
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      
+      // Call the onUserChange callback with the user ID
+      if (onUserChange) {
+        onUserChange(currentUser?.id || null);
+      }
+      
       setLoading(false);
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [onUserChange]);
 
   const handleSignUp = async (
     email: string, 
@@ -113,6 +144,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       setSession(data.session);
       setUser(data.session?.user ?? null);
+      
+      // Call the onUserChange callback with the user ID
+      if (onUserChange && data.session?.user) {
+        onUserChange(data.session.user.id);
+      }
     } catch (error) {
       console.error("Failed to refresh session:", error);
       throw error;

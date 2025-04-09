@@ -32,6 +32,7 @@ import { TenantProvider } from '@/contexts/TenantContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import { useState } from 'react';
 
 const queryClient = new QueryClient();
 
@@ -45,11 +46,14 @@ const RootRedirect = () => {
 };
 
 function App() {
+  // Using state to hold user ID to pass to TenantProvider
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <AuthProvider>
-          <TenantProvider>
+        <AuthProvider onUserChange={(userId) => setCurrentUserId(userId)}>
+          <TenantProvider userId={currentUserId}>
             <ThemeProvider>
               <RoleProvider>
                 <NotificationProvider>
