@@ -22,8 +22,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   
   // Log the authentication status and current path for debugging
   useEffect(() => {
-    if (!user && !loading) {
-      console.log("Unauthorized access attempt to:", location.pathname);
+    if (loading) {
+      console.log("Auth loading, waiting...");
+    } else if (!user) {
+      console.log("Unauthorized access attempt to:", location.pathname, "- Redirecting to auth");
+    } else {
+      console.log("User authenticated, allowing access to:", location.pathname);
     }
   }, [user, loading, location.pathname]);
   

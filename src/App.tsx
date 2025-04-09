@@ -40,6 +40,12 @@ const ProjectRedirect = () => {
   return <Navigate to={`/projects/${projectId}`} replace />;
 };
 
+// Helper component to decide where to redirect from the root route
+const RootRedirect = () => {
+  // We'll just redirect to auth for now to ensure visitors see the login/signup first
+  return <Navigate to="/auth" replace />;
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -57,8 +63,8 @@ function App() {
                     <Route path="/unauthorized" element={<Unauthorized />} />
                     <Route path="/login" element={<Navigate to="/auth" replace />} />
                     
-                    {/* Root redirects to dashboard if authenticated, otherwise to auth page */}
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    {/* Root route redirects to auth page for fresh visitors */}
+                    <Route path="/" element={<RootRedirect />} />
                     <Route path="/404" element={<NotFound />} />
                     
                     <Route path="/onboarding" element={<ProtectedRoute redirectTo="/auth"><Onboarding /></ProtectedRoute>} />
