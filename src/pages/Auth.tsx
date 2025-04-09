@@ -55,13 +55,13 @@ const Auth = () => {
       // 3. Otherwise -> dashboard
       if (needsSubscription) {
         console.log("User needs subscription, navigating to payment page");
-        navigate('/payment', { replace: true });
+        window.location.href = '/payment';
       } else if (returnTo) {
         console.log(`Navigating to returnTo URL: ${returnTo}`);
-        navigate(decodeURIComponent(returnTo), { replace: true });
+        window.location.href = decodeURIComponent(returnTo);
       } else {
         console.log("Navigating to dashboard");
-        navigate('/dashboard', { replace: true });
+        window.location.href = '/dashboard';
       }
     }
   }, [user, navigate, searchParams, navigationProcessed, isLoading]);

@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,15 +28,14 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Keep track of whether a navigation has been processed
-  const [navigationInProgress, setNavigationInProgress] = useState(false);
-  
   useEffect(() => {
+    // First set up the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (event, currentSession) => {
         console.log('Auth state changed:', event);
-        setSession(session);
-        const newUser = session?.user ?? null;
+        
+        setSession(currentSession);
+        const newUser = currentSession?.user ?? null;
         setUser(newUser);
         
         // Call the onUserChange callback with the user ID
@@ -43,33 +43,34 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
           onUserChange(newUser?.id || null);
         }
         
-        // Handle navigation only for signed in events and only if not already navigating
-        if (event === 'SIGNED_IN' && !navigationInProgress && window.location.pathname === '/auth') {
-          setNavigationInProgress(true);
-          console.log('Processing sign-in redirect...');
+        // Handle navigation based on auth events
+        if (event === 'SIGNED_IN') {
+          console.log('User signed in, may redirect if needed');
           
           // Use setTimeout to ensure state updates complete before navigation
           setTimeout(() => {
-            const needsSubscription = session?.user?.user_metadata?.needs_subscription === true;
-            const returnTo = new URLSearchParams(window.location.search).get('returnTo');
+            const needsSubscription = currentSession?.user?.user_metadata?.needs_subscription === true;
             
-            if (needsSubscription) {
-              console.log('Redirecting to payment page...');
-              window.location.href = '/payment';
-            } else if (returnTo) {
-              console.log(`Redirecting to: ${returnTo}`);
-              window.location.href = decodeURIComponent(returnTo);
-            } else {
-              console.log('Redirecting to dashboard...');
-              window.location.href = '/dashboard';
+            if (window.location.pathname === '/auth') {
+              const returnTo = new URLSearchParams(window.location.search).get('returnTo');
+              
+              if (needsSubscription) {
+                console.log('User needs subscription, redirecting to payment page');
+                window.location.href = '/payment';
+              } else if (returnTo) {
+                console.log(`Redirecting to: ${returnTo}`);
+                window.location.href = decodeURIComponent(returnTo);
+              } else {
+                console.log('Redirecting to dashboard');
+                window.location.href = '/dashboard';
+              }
             }
-          }, 100);
+          }, 0);
         } else if (event === 'SIGNED_OUT') {
           toast({
             title: 'Signed out',
             description: 'You have been signed out successfully.',
           });
-          setNavigationInProgress(false);
           window.location.href = '/auth';
         } else if (event === 'PASSWORD_RECOVERY') {
           window.location.href = '/auth/reset-password';
@@ -77,11 +78,11 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
       }
     );
 
-    // Get the initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session ? 'Authenticated' : 'Not authenticated');
-      setSession(session);
-      const currentUser = session?.user ?? null;
+    // Then get the initial session
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      console.log('Initial session check:', initialSession ? 'Authenticated' : 'Not authenticated');
+      setSession(initialSession);
+      const currentUser = initialSession?.user ?? null;
       setUser(currentUser);
       
       // Call the onUserChange callback with the user ID

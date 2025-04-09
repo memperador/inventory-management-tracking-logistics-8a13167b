@@ -18,12 +18,14 @@ export async function handleSpaVerification(
   if (!accessToken || !refreshToken) {
     setAuthError("Verification failed: Missing authentication tokens");
     setProcessingRedirect(false);
+    setIsVerifying(false);
     return;
   }
   
   try {
     setIsVerifying(true);
     
+    console.log("Setting session with tokens");
     const { data, error } = await supabase.auth.setSession({
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -52,15 +54,12 @@ export async function handleSpaVerification(
     
     // Use replace to avoid adding to history stack
     if (needsSubscription) {
-      // Store this information to handle page reloads
       console.log("User needs subscription, navigating to payment page");
-      navigate('/payment', { replace: true });
-      setProcessingRedirect(false);
+      // Use direct URL update for more reliable redirect
+      window.location.href = '/payment';
     } else {
-      // Regular flow - navigate to dashboard with replace
       console.log("User verified, navigating to dashboard");
-      navigate('/dashboard', { replace: true });
-      setProcessingRedirect(false);
+      window.location.href = '/dashboard';
     }
   } catch (error: any) {
     console.error("Error during SPA verification:", error);
@@ -84,6 +83,7 @@ export async function handleEmailVerification(
 ) {
   if (!token || type !== 'signup') {
     setProcessingRedirect(false);
+    setIsVerifying(false);
     return;
   }
   
@@ -105,19 +105,19 @@ export async function handleEmailVerification(
         variant: "destructive"
       });
       setProcessingRedirect(false);
+      setIsVerifying(false);
     } else {
       console.log("Email verified successfully");
       setEmailVerified(true);
       
       console.log("Navigating to payment after email verification");
-      navigate('/payment', { replace: true });
-      setProcessingRedirect(false);
+      // Use direct URL update for more reliable redirect
+      window.location.href = '/payment';
     }
   } catch (error: any) {
     console.error("Error during email verification:", error);
     setAuthError(`Verification error: ${error.message}`);
     setProcessingRedirect(false);
-  } finally {
     setIsVerifying(false);
   }
 }
@@ -140,16 +140,15 @@ export async function handleSuccessfulVerification(
     console.log("Session found after verification");
     
     // Check if this is a new user that needs subscription
-    if (newUser) {
-      console.log("New user detected, navigating to payment page");
-      console.log("Navigating to payment page directly");
-      navigate('/payment', { replace: true });
-      setProcessingRedirect(false);
+    const needsSubscription = data.session.user.user_metadata?.needs_subscription === true;
+    
+    if (needsSubscription || newUser) {
+      console.log("User needs subscription, navigating to payment page");
+      // Use direct URL update for more reliable redirect
+      window.location.href = '/payment';
     } else {
-      // After showing the success message, redirect to dashboard with replace
       console.log("Navigating to dashboard directly");
-      navigate('/dashboard', { replace: true });
-      setProcessingRedirect(false);
+      window.location.href = '/dashboard';
     }
   } else {
     console.log("No session found after verification, staying on auth page");

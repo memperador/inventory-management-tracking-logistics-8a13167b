@@ -34,6 +34,7 @@ import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import { useState } from 'react';
 
+// Create a new query client
 const queryClient = new QueryClient();
 
 const ProjectRedirect = () => {
@@ -42,7 +43,13 @@ const ProjectRedirect = () => {
 };
 
 const RootRedirect = () => {
-  return <Navigate to="/auth" replace />;
+  // Check if user is already logged in
+  const hasSession = localStorage.getItem('supabase.auth.token') !== null;
+  
+  // If session exists, redirect to dashboard, otherwise to auth
+  return hasSession ? 
+    <Navigate to="/dashboard" replace /> : 
+    <Navigate to="/auth" replace />;
 };
 
 function App() {
@@ -67,6 +74,7 @@ function App() {
                     <Route path="/404" element={<NotFound />} />
                     <Route path="/onboarding" element={<ProtectedRoute redirectTo="/auth"><Onboarding /></ProtectedRoute>} />
                     <Route path="/project/:projectId" element={<ProjectRedirect />} />
+                    <Route path="/payment" element={<PaymentPage />} />
                     <Route element={<ProtectedRoute redirectTo="/auth"><AppLayout /></ProtectedRoute>}>
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/projects" element={<Projects />} />
@@ -80,7 +88,6 @@ function App() {
                       <Route path="/requests/:requestId" element={<RFIDetail />} />
                       <Route path="/analytics" element={<Analytics />} />
                       <Route path="/users" element={<Users />} />
-                      <Route path="/payment" element={<PaymentPage />} />
                       <Route path="/ai-assistant" element={<AIAssistant />} />
                       <Route path="/workflow" element={<WorkflowPage />} />
                     </Route>
