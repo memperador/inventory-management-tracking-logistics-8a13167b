@@ -1,6 +1,6 @@
 
-import React, { ReactNode } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import React, { ReactNode, useEffect } from 'react';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/types/roles';
 import { useRole } from '@/hooks/useRoleContext';
@@ -18,6 +18,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { user, loading } = useAuth();
   const { hasPermission, isRoleLoading } = useRole();
+  const location = useLocation();
+  
+  // Log the authentication status and current path for debugging
+  useEffect(() => {
+    if (!user && !loading) {
+      console.log("Unauthorized access attempt to:", location.pathname);
+    }
+  }, [user, loading, location.pathname]);
   
   if (loading || isRoleLoading) {
     return (
@@ -30,9 +38,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // If user is not authenticated, redirect to login
+  // If user is not authenticated, redirect to login with the return URL
   if (!user) {
-    return <Navigate to={redirectTo} replace />;
+    const currentPath = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`${redirectTo}?returnTo=${currentPath}`} replace />;
   }
   
   // If no specific roles are required, just being authenticated is enough

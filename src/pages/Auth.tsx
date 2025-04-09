@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { AlertCircle, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Auth = () => {
   const [activeTab, setActiveTab] = useState("login");
@@ -21,6 +22,19 @@ const Auth = () => {
   const [verificationSent, setVerificationSent] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
+  const { user } = useAuth();
+  
+  // Handle redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      const returnTo = searchParams.get('returnTo');
+      if (returnTo) {
+        navigate(decodeURIComponent(returnTo), { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [user, navigate, searchParams]);
   
   // Handle email confirmation or password recovery flows
   useEffect(() => {
@@ -45,7 +59,7 @@ const Auth = () => {
           title: "Email Verified",
           description: "Your email has been verified successfully!",
         });
-        navigate('/', { replace: true });
+        navigate('/dashboard', { replace: true });
         return;
       }
       
@@ -91,7 +105,7 @@ const Auth = () => {
     <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">FleetTrack</CardTitle>
+          <CardTitle className="text-2xl text-center">Inventory Track Pro</CardTitle>
           <CardDescription className="text-center">
             Enter your credentials to access your account
           </CardDescription>

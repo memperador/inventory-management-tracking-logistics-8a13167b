@@ -55,9 +55,11 @@ function App() {
                     <Route path="/auth/reset-password" element={<ResetPassword />} />
                     <Route path="/auth/two-factor" element={<TwoFactorAuth />} />
                     <Route path="/unauthorized" element={<Unauthorized />} />
+                    <Route path="/login" element={<Navigate to="/auth" replace />} />
                     
-                    {/* Root redirect to auth page instead of directly to dashboard */}
+                    {/* Root and default 404 redirects to auth page */}
                     <Route path="/" element={<Navigate to="/auth" replace />} />
+                    <Route path="/404" element={<NotFound />} />
                     
                     <Route path="/onboarding" element={<ProtectedRoute redirectTo="/auth"><Onboarding /></ProtectedRoute>} />
 

@@ -4,10 +4,12 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const NotFound = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     console.error(
@@ -15,6 +17,14 @@ const NotFound = () => {
       location.pathname
     );
   }, [location.pathname]);
+
+  const handleLoginClick = () => {
+    navigate("/auth");
+  };
+
+  const handleDashboardClick = () => {
+    navigate(user ? "/dashboard" : "/auth");
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
@@ -28,9 +38,14 @@ const NotFound = () => {
           The page you're looking for doesn't exist or has been moved.
         </p>
         <div className="flex flex-col space-y-2">
-          <Button onClick={() => navigate("/dashboard")} className="w-full">
-            Return to Dashboard
+          <Button onClick={handleDashboardClick} className="w-full">
+            {user ? "Return to Dashboard" : "Go to Login"}
           </Button>
+          {location.pathname !== '/auth' && (
+            <Button onClick={handleLoginClick} variant="outline" className="w-full">
+              Sign In / Sign Up
+            </Button>
+          )}
           <Button onClick={() => navigate(-1)} variant="outline" className="w-full">
             Go Back
           </Button>
