@@ -34,7 +34,6 @@ export function useAuthVerification() {
     const handleAuthRedirects = async () => {
       console.log("Handling auth redirects...");
       console.log("Current URL:", window.location.href);
-      console.log("Is muq.munetworks.io:", window.location.hostname === "muq.munetworks.io");
       
       // Check if we have an error in the URL
       const errorCode = searchParams.get('error_code');
@@ -54,7 +53,7 @@ export function useAuthVerification() {
         return;
       }
       
-      // Check if we're receiving parameters through hash fragment (SPA authentication)
+      // Handle hash fragment for SPA authentication
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       console.log("Hash parameters:", Object.fromEntries(hashParams));
       
@@ -65,14 +64,6 @@ export function useAuthVerification() {
         
         console.error("Hash auth error:", hashErrorDesc);
         setAuthError(hashErrorDesc || "Authentication error occurred. Please try again.");
-        
-        if (hashErrorCode === 'otp_expired' || hashParams.get('error') === 'access_denied') {
-          toast({
-            title: "Verification Failed",
-            description: "Your verification link has expired. Please request a new verification email.",
-            variant: "destructive"
-          });
-        }
         return;
       }
       
@@ -84,7 +75,6 @@ export function useAuthVerification() {
           const accessToken = hashParams.get('access_token');
           const refreshToken = hashParams.get('refresh_token');
           
-          // Create a session with the access token
           if (accessToken && refreshToken) {
             const { data, error } = await supabase.auth.setSession({
               access_token: accessToken,
@@ -102,32 +92,23 @@ export function useAuthVerification() {
             } else {
               console.log("Session created successfully:", data);
               setEmailVerified(true);
-              toast({
-                title: "Email Verified",
-                description: "Your email has been successfully verified!",
-                variant: "default"
-              });
               
               // Check if this is a new user needing subscription
               const needsSubscription = data.user?.user_metadata?.needs_subscription === true;
               if (needsSubscription) {
-                toast({
-                  title: "Welcome! Please Select a Plan",
-                  description: "Choose a subscription plan to continue.",
-                  variant: "default"
-                });
+                // Add a slight delay before navigation to prevent multiple redirects
                 setTimeout(() => {
+                  // Use replace to avoid adding to history stack
                   navigate('/payment', { replace: true });
-                }, 1500);
+                }, 500);
               } else {
                 // Regular flow
                 setTimeout(() => {
                   navigate('/dashboard', { replace: true });
-                }, 1500);
+                }, 500);
               }
             }
           } else {
-            console.error("Missing tokens in hash parameters");
             setAuthError("Verification failed: Missing authentication tokens");
           }
         } catch (error: any) {
@@ -142,14 +123,10 @@ export function useAuthVerification() {
       // Check for email_confirmed parameter from our verification link
       const emailConfirmed = searchParams.get('email_confirmed');
       const newUser = searchParams.get('new_user');
+      
       if (emailConfirmed === 'true') {
         console.log("Email verification success detected via URL parameter");
         setEmailVerified(true);
-        toast({
-          title: "Email Verified",
-          description: "Your email has been successfully verified!",
-          variant: "default"
-        });
         
         // Fetch the current auth status to ensure we have the latest session
         const { data } = await supabase.auth.getSession();
@@ -159,20 +136,16 @@ export function useAuthVerification() {
           // Check if this is a new user that needs subscription
           if (newUser === 'true') {
             console.log("New user detected, redirecting to payment page");
-            toast({
-              title: "Welcome! Please Select a Plan",
-              description: "Choose a subscription plan to continue.",
-              variant: "default"
-            });
+            // Add a slight delay to prevent multiple redirects
             setTimeout(() => {
+              // Use replace to avoid adding to history stack
               navigate('/payment', { replace: true });
-            }, 1500);
+            }, 500);
           } else {
-            console.log("Existing user, redirecting to dashboard");
             // After showing the success message, redirect to dashboard
             setTimeout(() => {
               navigate('/dashboard', { replace: true });
-            }, 1500);
+            }, 500);
           }
         } else {
           console.log("No session found after verification, staying on auth page");
@@ -189,7 +162,6 @@ export function useAuthVerification() {
           setIsVerifying(true);
           console.log("Verifying email with token:", token.substring(0, 10) + "...");
           
-          // Call Supabase to verify the token
           const { error } = await supabase.auth.verifyOtp({
             token_hash: token,
             type: 'signup',
@@ -206,21 +178,11 @@ export function useAuthVerification() {
           } else {
             console.log("Email verified successfully");
             setEmailVerified(true);
-            toast({
-              title: "Email Verified",
-              description: "Your email has been successfully verified!",
-              variant: "default"
-            });
             
-            // After showing the success message, redirect to payment page for new users
-            toast({
-              title: "Welcome! Please Select a Plan",
-              description: "Choose a subscription plan to continue.",
-              variant: "default"
-            });
+            // Add a slight delay before navigation
             setTimeout(() => {
               navigate('/payment', { replace: true });
-            }, 1500);
+            }, 500);
           }
         } catch (error: any) {
           console.error("Error during email verification:", error);

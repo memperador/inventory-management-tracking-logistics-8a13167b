@@ -26,6 +26,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
+    // To prevent multiple redirections, track if we've already processed a session
+    let initialSessionProcessed = false;
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event);
@@ -42,23 +45,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const needsSubscription = session?.user?.user_metadata?.needs_subscription === true;
           const redirectToSubscription = localStorage.getItem('redirect_to_subscription') === 'true';
           
-          if (needsSubscription || redirectToSubscription) {
+          if ((needsSubscription || redirectToSubscription) && !initialSessionProcessed) {
+            initialSessionProcessed = true;
             localStorage.removeItem('redirect_to_subscription'); // Clear the flag
             window.location.href = '/payment';
             return;
           }
           
-          const returnTo = new URLSearchParams(window.location.search).get('returnTo');
-          if (returnTo) {
-            window.location.href = decodeURIComponent(returnTo);
-          } else if (window.location.pathname === '/auth') {
-            window.location.href = '/dashboard';
+          if (!initialSessionProcessed) {
+            initialSessionProcessed = true;
+            const returnTo = new URLSearchParams(window.location.search).get('returnTo');
+            if (returnTo) {
+              window.location.href = decodeURIComponent(returnTo);
+            } else if (window.location.pathname === '/auth') {
+              window.location.href = '/dashboard';
+            }
           }
         } else if (event === 'SIGNED_OUT') {
           toast({
             title: 'Signed out',
             description: 'You have been signed out successfully.',
           });
+          initialSessionProcessed = false;
           window.location.href = '/auth';
         } else if (event === 'PASSWORD_RECOVERY') {
           window.location.href = '/auth/reset-password';
@@ -72,27 +80,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             title: 'Two-factor verification complete',
             description: 'You have been authenticated successfully.',
           });
-        } 
-        
-        const url = new URL(window.location.href);
-        const emailConfirmed = url.searchParams.get('email_confirmed') === 'true';
-        const newUser = url.searchParams.get('new_user') === 'true';
-        
-        if (emailConfirmed) {
-          toast({
-            title: 'Email confirmed!',
-            description: 'Your email has been verified successfully.',
-          });
-          
-          if (newUser) {
-            window.location.href = '/payment';
-          } else {
-            window.location.href = '/dashboard';
-          }
         }
       }
     );
 
+    // Get the initial session just once
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check:', session ? 'Authenticated' : 'Not authenticated');
       setSession(session);
