@@ -1,12 +1,18 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { Resend } from "npm:resend@1.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
 // Initialize Resend with your API key
 const resendApiKey = Deno.env.get("RESEND_API_KEY");
-console.log(`Resend API key exists: ${!!resendApiKey}`); // Log if key exists, not the actual key
+console.log(`Resend API key exists: ${!!resendApiKey}`);
 
 const resend = new Resend(resendApiKey);
+
+// Initialize Supabase client with service role key for email verification
+const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Setup CORS headers
 const corsHeaders = {
@@ -25,15 +31,16 @@ serve(async (req) => {
     
     // Parse request body
     const body = await req.json();
-    const { email, confirmation_url } = body;
+    const { email, user_id, domain } = body;
 
     console.log(`Request received for email: ${email}`);
-    console.log(`Original confirmation URL: ${confirmation_url}`);
+    console.log(`Domain provided: ${domain}`);
+    console.log(`User ID: ${user_id}`);
 
-    if (!email || !confirmation_url) {
-      console.error("Missing required fields:", { email: !!email, confirmation_url: !!confirmation_url });
+    if (!email || !domain || !user_id) {
+      console.error("Missing required fields:", { email: !!email, domain: !!domain, user_id: !!user_id });
       return new Response(
-        JSON.stringify({ error: "Email and confirmation URL are required" }),
+        JSON.stringify({ error: "Email, domain and user_id are required" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -41,83 +48,32 @@ serve(async (req) => {
       );
     }
 
-    // Extract token from the original confirmation URL
-    let token = "";
+    // Generate a verification link using the Supabase Admin API
     try {
-      const originalUrl = new URL(confirmation_url);
-      token = originalUrl.searchParams.get("token") || "";
-      console.log(`Extracted token: ${token.substring(0, 10)}...`);
-    } catch (e) {
-      console.error("Error extracting token:", e);
-    }
+      const { data, error } = await supabase.auth.admin.generateLink({
+        type: 'signup',
+        email,
+        options: {
+          redirectTo: `${domain}/auth?email_confirmed=true`,
+        }
+      });
 
-    // Get the current domain from request headers or fallback to a specific one
-    const origin = req.headers.get('origin');
-    const host = req.headers.get('host');
-    const referer = req.headers.get('referer');
-    
-    console.log(`Request headers - Origin: ${origin}, Host: ${host}, Referer: ${referer}`);
-    
-    // First try to use origin header since that's most reliable
-    let domain = origin;
-    
-    // If no origin, try to extract from referer
-    if (!domain && referer) {
-      try {
-        const refererUrl = new URL(referer);
-        domain = `${refererUrl.protocol}//${refererUrl.host}`;
-        console.log(`Extracted domain from referer: ${domain}`);
-      } catch (e) {
-        console.error("Error extracting domain from referer:", e);
+      if (error) {
+        console.error("Error generating verification link:", error);
+        throw error;
       }
-    }
-    
-    // If still no domain, use host header
-    if (!domain && host) {
-      // Check if it already has a protocol
-      if (host.startsWith('http')) {
-        domain = host;
-      } else {
-        domain = `https://${host}`;
-      }
-      console.log(`Using host as domain: ${domain}`);
-    }
-    
-    // Final fallback to the current URL if it's available
-    if (!domain) {
-      try {
-        const currentUrl = new URL(req.url);
-        domain = `${currentUrl.protocol}//${currentUrl.host}`;
-        console.log(`Using current URL as domain: ${domain}`);
-      } catch (e) {
-        console.error("Error extracting domain from request URL:", e);
-      }
-    }
-    
-    // Ultimate fallback
-    if (!domain || domain.includes('supabase')) {
-      // Replace with a domain that's guaranteed to work for your project
-      const lovableDomain = req.headers.get('x-client-domain');
-      if (lovableDomain) {
-        domain = lovableDomain;
-        console.log(`Using x-client-domain header: ${domain}`);
-      } else {
-        // Use a known working domain as the absolute fallback
-        domain = "https://inventory-track-pro-e54f.lovable.dev";
-        console.log(`Using fallback domain: ${domain}`);
-      }
-    }
 
-    // Construct the verification URL with the token
-    const verificationUrl = token 
-      ? `${domain}/auth?token=${token}&type=signup`
-      : `${domain}/auth?email_confirmed=true`;
-      
-    console.log(`Final verification URL: ${verificationUrl}`);
+      if (!data?.properties?.action_link) {
+        console.error("No verification link generated");
+        throw new Error("No verification link was generated");
+      }
 
-    // Send email via Resend
-    try {
-      const { data, error } = await resend.emails.send({
+      // Get the verification URL
+      const verificationUrl = data.properties.action_link;
+      console.log(`Generated verification URL: ${verificationUrl}`);
+
+      // Send email via Resend
+      const { data: emailData, error: emailError } = await resend.emails.send({
         from: "Inventory Track Pro <no-reply@resend.dev>", 
         to: email,
         subject: "Verify your email address",
@@ -134,10 +90,10 @@ serve(async (req) => {
         `,
       });
 
-      if (error) {
-        console.error("Resend API error:", error);
+      if (emailError) {
+        console.error("Resend API error:", emailError);
         return new Response(
-          JSON.stringify({ error: error.message }),
+          JSON.stringify({ error: emailError.message }),
           {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -145,18 +101,18 @@ serve(async (req) => {
         );
       }
 
-      console.log("Email sent successfully:", data);
+      console.log("Email sent successfully:", emailData);
       return new Response(
-        JSON.stringify({ success: true, messageId: data?.id }),
+        JSON.stringify({ success: true, messageId: emailData?.id }),
         {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
-    } catch (emailError) {
-      console.error("Error sending email via Resend:", emailError);
+    } catch (linkError) {
+      console.error("Error creating verification link:", linkError);
       return new Response(
-        JSON.stringify({ error: emailError.message }),
+        JSON.stringify({ error: linkError.message }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -46,7 +46,25 @@ const Auth = () => {
   
   useEffect(() => {
     const handleAuthRedirects = async () => {
-      // Check for verification token in URL
+      // Check for email_confirmed parameter from our verification link
+      const emailConfirmed = searchParams.get('email_confirmed');
+      if (emailConfirmed === 'true') {
+        console.log("Email verification success detected via URL parameter");
+        setEmailVerified(true);
+        toast({
+          title: "Email Verified",
+          description: "Your email has been successfully verified!",
+          variant: "default"
+        });
+        
+        // After showing the success message, redirect to dashboard
+        setTimeout(() => {
+          navigate('/dashboard', { replace: true });
+        }, 3000);
+        return;
+      }
+      
+      // Check for verification token in URL (legacy flow)
       const token = searchParams.get('token');
       const type = searchParams.get('type');
       
@@ -89,24 +107,6 @@ const Auth = () => {
         } finally {
           setIsVerifying(false);
         }
-        return;
-      }
-      
-      // Check for email_confirmed parameter - this comes from our custom verification URL
-      const emailConfirmedParam = searchParams.get('email_confirmed');
-      if (emailConfirmedParam === 'true') {
-        console.log("Email verification detected via URL parameter");
-        setEmailVerified(true);
-        toast({
-          title: "Email Verified",
-          description: "Your email has been successfully verified!",
-          variant: "default"
-        });
-        
-        // After showing the success message, redirect to dashboard
-        setTimeout(() => {
-          navigate('/dashboard', { replace: true });
-        }, 3000);
         return;
       }
       
