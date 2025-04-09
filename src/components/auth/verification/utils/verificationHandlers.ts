@@ -22,6 +22,8 @@ export async function handleSpaVerification(
   }
   
   try {
+    setIsVerifying(true);
+    
     const { data, error } = await supabase.auth.setSession({
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -35,6 +37,8 @@ export async function handleSpaVerification(
         description: error.message,
         variant: "destructive"
       });
+      setProcessingRedirect(false);
+      setIsVerifying(false);
       return;
     }
     
@@ -47,24 +51,24 @@ export async function handleSpaVerification(
     // Store this information in localStorage to handle page reloads
     if (needsSubscription) {
       localStorage.setItem('redirect_to_subscription', 'true');
-    }
-    
-    // Add a slight delay before navigation to prevent multiple redirects
-    setTimeout(() => {
-      if (needsSubscription) {
-        // Use replace to avoid adding to history stack
+      
+      // Use replace to avoid adding to history stack
+      setTimeout(() => {
         navigate('/payment', { replace: true });
-      } else {
-        // Regular flow
+        setProcessingRedirect(false);
+      }, 1000);
+    } else {
+      // Regular flow - navigate to dashboard with replace
+      setTimeout(() => {
         navigate('/dashboard', { replace: true });
-      }
-    }, 800);
+        setProcessingRedirect(false);
+      }, 1000);
+    }
   } catch (error: any) {
     console.error("Error during SPA verification:", error);
     setAuthError(`Verification error: ${error.message}`);
-  } finally {
-    setIsVerifying(false);
     setProcessingRedirect(false);
+    setIsVerifying(false);
   }
 }
 
@@ -102,21 +106,23 @@ export async function handleEmailVerification(
         description: error.message,
         variant: "destructive"
       });
+      setProcessingRedirect(false);
     } else {
       console.log("Email verified successfully");
       setEmailVerified(true);
       
-      // Add a slight delay before navigation
+      // Add a slight delay before navigation with replace
       setTimeout(() => {
         navigate('/payment', { replace: true });
-      }, 800);
+        setProcessingRedirect(false);
+      }, 1000);
     }
   } catch (error: any) {
     console.error("Error during email verification:", error);
     setAuthError(`Verification error: ${error.message}`);
+    setProcessingRedirect(false);
   } finally {
     setIsVerifying(false);
-    setProcessingRedirect(false);
   }
 }
 
@@ -142,19 +148,20 @@ export async function handleSuccessfulVerification(
       console.log("New user detected, redirecting to payment page");
       localStorage.setItem('redirect_to_subscription', 'true');
       
-      // Add a slight delay to prevent multiple redirects
+      // Add a slight delay to prevent multiple redirects, use replace
       setTimeout(() => {
-        // Use replace to avoid adding to history stack
         navigate('/payment', { replace: true });
-      }, 800);
+        setProcessingRedirect(false);
+      }, 1000);
     } else {
-      // After showing the success message, redirect to dashboard
+      // After showing the success message, redirect to dashboard with replace
       setTimeout(() => {
         navigate('/dashboard', { replace: true });
-      }, 800);
+        setProcessingRedirect(false);
+      }, 1000);
     }
   } else {
     console.log("No session found after verification, staying on auth page");
+    setProcessingRedirect(false);
   }
-  setProcessingRedirect(false);
 }

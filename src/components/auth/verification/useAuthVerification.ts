@@ -22,6 +22,7 @@ export function useAuthVerification() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [emailProvider, setEmailProvider] = useState<string | null>(null);
   const [processingRedirect, setProcessingRedirect] = useState(false);
+  const [redirectAttempted, setRedirectAttempted] = useState(false);
   
   // Set email provider when email changes
   useEffect(() => {
@@ -33,10 +34,10 @@ export function useAuthVerification() {
   // Handle auth redirects, tokens and errors
   useEffect(() => {
     const handleAuthRedirects = async () => {
-      // Prevent multiple calls to this handler
-      if (processingRedirect) return;
-      setProcessingRedirect(true);
+      // Prevent multiple calls to this handler or multiple redirect attempts
+      if (processingRedirect || redirectAttempted) return;
       
+      setProcessingRedirect(true);
       console.log("Handling auth redirects...");
       console.log("Current URL:", window.location.href);
       
@@ -61,6 +62,7 @@ export function useAuthVerification() {
       // Handle SPA verification (access_token in hash fragment)
       if (params.accessToken && params.hashType === 'signup') {
         console.log("Found access_token in hash, handling SPA verification");
+        setRedirectAttempted(true); // Mark that we've attempted a redirect
         await handleSpaVerification(
           params.accessToken,
           params.refreshToken,
@@ -75,6 +77,7 @@ export function useAuthVerification() {
       
       // Check for email_confirmed parameter from our verification link
       if (params.emailConfirmed) {
+        setRedirectAttempted(true); // Mark that we've attempted a redirect
         await handleSuccessfulVerification(
           params.newUser, 
           setEmailVerified, 
@@ -86,6 +89,7 @@ export function useAuthVerification() {
       
       // Handle verification token in URL (legacy or fallback flow)
       if (params.token && params.type === 'signup') {
+        setRedirectAttempted(true); // Mark that we've attempted a redirect
         await handleEmailVerification(
           params.token,
           params.type,
@@ -101,6 +105,7 @@ export function useAuthVerification() {
       // Handle password recovery flow
       if ((params.accessToken || params.token) && 
           (params.type === 'recovery' || params.hashType === 'recovery')) {
+        setRedirectAttempted(true); // Mark that we've attempted a redirect
         navigate('/auth/reset-password', { replace: true });
         setProcessingRedirect(false);
         return;
@@ -110,7 +115,7 @@ export function useAuthVerification() {
     };
     
     handleAuthRedirects();
-  }, [searchParams, navigate, processingRedirect]);
+  }, [searchParams, navigate]);
   
   return {
     verificationSent,

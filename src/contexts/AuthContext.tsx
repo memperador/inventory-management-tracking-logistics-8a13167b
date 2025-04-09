@@ -29,12 +29,9 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true);
   
   // Track if we've already processed a redirect
-  const [redirected, setRedirected] = useState(false);
+  const [redirectProcessed, setRedirectProcessed] = useState(false);
   
   useEffect(() => {
-    // To prevent multiple redirections, track if we've already processed a session
-    let initialSessionProcessed = false;
-    
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event);
@@ -58,9 +55,8 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
           const redirectToSubscription = localStorage.getItem('redirect_to_subscription') === 'true';
           
           // Only redirect if we haven't already processed a redirect and we're actually on the auth page
-          if ((needsSubscription || redirectToSubscription) && !redirected && !initialSessionProcessed && window.location.pathname === '/auth') {
-            initialSessionProcessed = true;
-            setRedirected(true);
+          if ((needsSubscription || redirectToSubscription) && !redirectProcessed && window.location.pathname === '/auth') {
+            setRedirectProcessed(true);
             localStorage.removeItem('redirect_to_subscription'); // Clear the flag
             
             // Use a delay to prevent race conditions
@@ -70,9 +66,8 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
             return;
           }
           
-          if (!redirected && !initialSessionProcessed && window.location.pathname === '/auth') {
-            initialSessionProcessed = true;
-            setRedirected(true);
+          if (!redirectProcessed && window.location.pathname === '/auth') {
+            setRedirectProcessed(true);
             const returnTo = new URLSearchParams(window.location.search).get('returnTo');
             
             // Use a delay to prevent race conditions
@@ -89,8 +84,7 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
             title: 'Signed out',
             description: 'You have been signed out successfully.',
           });
-          initialSessionProcessed = false;
-          setRedirected(false);
+          setRedirectProcessed(false);
           window.location.href = '/auth';
         } else if (event === 'PASSWORD_RECOVERY') {
           window.location.href = '/auth/reset-password';
