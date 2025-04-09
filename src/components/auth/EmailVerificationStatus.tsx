@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { MailCheck, Mail, Info } from 'lucide-react';
+import { MailCheck, Mail, Info, AlertCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -12,6 +12,8 @@ const EmailVerificationStatus = () => {
   const [resendingEmail, setResendingEmail] = useState(false);
   const [lastSentTime, setLastSentTime] = useState<Date | null>(null);
   const [resendCount, setResendCount] = useState(0);
+  const [emailResponse, setEmailResponse] = useState<any>(null);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
   
   // Load last sent time from localStorage on component mount
   useEffect(() => {
@@ -38,11 +40,17 @@ const EmailVerificationStatus = () => {
     if (!user.email) return;
     
     setResendingEmail(true);
+    setDebugInfo(null);
     try {
       console.log(`Attempting to resend verification email to ${user.email}`);
       
       // Capture the site URL dynamically
       const domain = window.location.origin;
+      console.log(`Using redirect URL: ${domain}/auth`);
+      
+      // Include timestamp in debug data to track this specific request
+      const requestTimestamp = new Date().toISOString();
+      console.log(`Request timestamp: ${requestTimestamp}`);
       
       const { data, error } = await supabase.auth.resend({
         type: 'signup',
@@ -54,8 +62,13 @@ const EmailVerificationStatus = () => {
       
       if (error) {
         console.error("Supabase resend error:", error);
+        setDebugInfo(`Error: ${error.message} (Code: ${error.status || 'unknown'})`);
         throw error;
       }
+      
+      // Store response data for debugging
+      setEmailResponse(data);
+      console.log(`Verification email request response:`, data);
       
       // Store the time when we sent the email in both state and localStorage
       const now = new Date();
@@ -68,6 +81,9 @@ const EmailVerificationStatus = () => {
       localStorage.setItem(`verificationSendCount_${user.email}`, newCount.toString());
       
       console.log(`Verification email resent successfully to ${user.email}`, data);
+      
+      // Store detailed debug info
+      setDebugInfo(`Request successful. Email sent at ${now.toLocaleTimeString()}`);
       
       toast({
         title: "Verification Email Sent",
@@ -135,15 +151,23 @@ const EmailVerificationStatus = () => {
           )}
         </div>
         
+        {debugInfo && (
+          <div className="mt-2 text-xs bg-yellow-100 p-2 rounded border border-yellow-300">
+            <p className="font-medium">Debug info: {debugInfo}</p>
+          </div>
+        )}
+        
         <div className="flex items-start mt-3 bg-yellow-100 p-3 rounded-md text-sm text-yellow-700">
-          <Info className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+          <AlertCircle className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="font-medium">Not seeing the verification email?</p>
+            <p className="font-medium">Troubleshooting Email Delivery Issues:</p>
             <ul className="list-disc pl-5 mt-1 space-y-1">
-              <li>Check your spam/junk folder</li> 
-              <li>Make sure the email address ({user.email}) is spelled correctly</li>
-              <li>Some email providers may delay delivery or filter verification emails</li>
-              <li>If you've tried multiple times with no success, contact support</li>
+              <li>Check your spam/junk folder (some providers move verification emails there)</li>
+              <li>Make sure the email address <strong>{user.email}</strong> is spelled correctly</li>
+              <li>Add <strong>noreply@mail.app.supabase.io</strong> to your contacts</li>
+              <li>Some email providers (especially corporate) block verification emails</li>
+              <li>Try using a different email provider (Gmail, Outlook, etc.)</li>
+              <li>If you control your email server, check its spam filter settings</li>
             </ul>
           </div>
         </div>

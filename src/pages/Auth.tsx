@@ -9,10 +9,11 @@ import EmailVerificationStatus from '@/components/auth/EmailVerificationStatus';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { AlertCircle, Mail, ExternalLink } from 'lucide-react';
+import { AlertCircle, Mail, ExternalLink, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 const Auth = () => {
   const [activeTab, setActiveTab] = useState("login");
@@ -24,6 +25,15 @@ const Auth = () => {
   const [authError, setAuthError] = useState<string | null>(null);
   const [isResendingVerification, setIsResendingVerification] = useState(false);
   const { user } = useAuth();
+  const [emailProvider, setEmailProvider] = useState<string | null>(null);
+  
+  // Store last email delivery test result
+  const [lastDeliveryResult, setLastDeliveryResult] = useLocalStorage<{
+    timestamp: string;
+    email: string;
+    success: boolean;
+    message: string;
+  } | null>('last_email_delivery_result', null);
   
   // Handle redirect if user is already logged in
   useEffect(() => {
@@ -97,24 +107,53 @@ const Auth = () => {
     handleAuthRedirects();
   }, [searchParams, navigate]);
   
+  // Detect email provider for better troubleshooting guidance
+  useEffect(() => {
+    if (verificationEmail) {
+      const domain = verificationEmail.split('@')[1]?.toLowerCase();
+      if (domain) {
+        if (domain.includes('gmail')) setEmailProvider('Gmail');
+        else if (domain.includes('outlook') || domain.includes('hotmail') || domain.includes('live')) setEmailProvider('Microsoft');
+        else if (domain.includes('yahoo')) setEmailProvider('Yahoo');
+        else if (domain.includes('proton')) setEmailProvider('ProtonMail');
+        else if (domain.includes('aol')) setEmailProvider('AOL');
+        else setEmailProvider(null);
+      }
+    }
+  }, [verificationEmail]);
+  
   const resendVerificationEmail = async (email: string) => {
     try {
       setIsResendingVerification(true);
       console.log(`Manually resending verification email to ${email}`);
       
+      // Capture origin for redirect
+      const domain = window.location.origin;
+      console.log(`Using redirect URL: ${domain}/auth`);
+      
       const { data, error } = await supabase.auth.resend({
         type: 'signup',
         email,
+        options: {
+          emailRedirectTo: `${domain}/auth`
+        }
       });
       
       if (error) {
         console.error("Failed to resend verification email:", error);
+        
+        // Store delivery result
+        setLastDeliveryResult({
+          timestamp: new Date().toISOString(),
+          email,
+          success: false,
+          message: error.message || "Unknown error"
+        });
+        
         throw error;
       }
       
-      console.log("Verification email sent successfully", data);
-      setVerificationSent(true);
-      setVerificationEmail(email);
+      console.log("Verification email resend response:", data);
       
       // Store the time when we sent the email in localStorage
       const now = new Date();
@@ -124,6 +163,14 @@ const Auth = () => {
       const storedCount = localStorage.getItem(`verificationSendCount_${email}`);
       const currentCount = storedCount ? parseInt(storedCount, 10) : 0;
       localStorage.setItem(`verificationSendCount_${email}`, (currentCount + 1).toString());
+      
+      // Store delivery result
+      setLastDeliveryResult({
+        timestamp: now.toISOString(),
+        email,
+        success: true,
+        message: "Verification email sent successfully"
+      });
       
       toast({
         title: "Verification Email Sent",
@@ -195,12 +242,32 @@ const Auth = () => {
                       <p className="font-medium">Troubleshooting tips:</p>
                       <ul className="list-disc pl-5 space-y-1">
                         <li>Check both inbox and spam/junk folders</li>
-                        <li>Add noreply@supabase.co to your contacts or safe senders list</li>
+                        <li>Add <strong>noreply@mail.app.supabase.io</strong> to your contacts</li>
                         <li>
-                          Email delivery can take a few minutes
+                          Email delivery can take up to 5-10 minutes with some providers
                         </li>
+                        {emailProvider && (
+                          <li>
+                            {emailProvider === 'Gmail' && "Gmail users: Check the 'Promotions' or 'Updates' tabs"}
+                            {emailProvider === 'Microsoft' && "Outlook/Hotmail users: Check the 'Other' or 'Junk' folders"}
+                            {emailProvider === 'Yahoo' && "Yahoo users: Check the 'Spam' folder and mark as 'Not Spam'"}
+                            {emailProvider === 'ProtonMail' && "ProtonMail users: Check spam folder and whitelist the sender"}
+                          </li>
+                        )}
+                        <li>Try using a personal email address if you're using a work email</li>
                       </ul>
                     </div>
+                  </div>
+                )}
+                
+                {lastDeliveryResult && lastDeliveryResult.email === verificationEmail && (
+                  <div className="mt-3 p-2 bg-yellow-100 rounded text-xs border border-yellow-300">
+                    <p className="font-medium">Last email delivery attempt:</p>
+                    <p>Time: {new Date(lastDeliveryResult.timestamp).toLocaleString()}</p>
+                    <p>Status: {lastDeliveryResult.success ? '✅ Success' : '❌ Failed'}</p>
+                    {!lastDeliveryResult.success && (
+                      <p>Error: {lastDeliveryResult.message}</p>
+                    )}
                   </div>
                 )}
               </AlertDescription>
@@ -231,20 +298,30 @@ const Auth = () => {
           {/* Add a help section at the bottom */}
           <div className="mt-6 pt-4 border-t border-gray-200">
             <h4 className="text-sm font-medium text-gray-700 flex items-center">
-              <AlertCircle className="h-3 w-3 mr-1" />
+              <Shield className="h-3 w-3 mr-1" />
               Having trouble with email verification?
             </h4>
             <p className="text-xs text-gray-500 mt-1">
-              If you're not receiving verification emails, please contact support or check your Supabase email settings.
+              If you're not receiving verification emails despite multiple attempts, there may be an issue with your Supabase email settings or your email provider's filters.
             </p>
-            <Button 
-              variant="link" 
-              size="sm"
-              className="text-xs p-0 h-auto mt-1"
-              onClick={() => window.open("https://supabase.com/dashboard/project/wscoyigjjcevriqqyxwo/auth/templates", "_blank")}
-            >
-              Check Supabase Email Settings <ExternalLink className="h-3 w-3 ml-1" />
-            </Button>
+            <div className="flex space-x-2 mt-2">
+              <Button 
+                variant="link" 
+                size="sm"
+                className="text-xs p-0 h-auto"
+                onClick={() => window.open("https://supabase.com/dashboard/project/wscoyigjjcevriqqyxwo/auth/templates", "_blank")}
+              >
+                Supabase Email Settings <ExternalLink className="h-3 w-3 ml-1" />
+              </Button>
+              <Button 
+                variant="link" 
+                size="sm"
+                className="text-xs p-0 h-auto"
+                onClick={() => window.open("https://supabase.com/dashboard/project/wscoyigjjcevriqqyxwo/auth/users", "_blank")}
+              >
+                Supabase Users <ExternalLink className="h-3 w-3 ml-1" />
+              </Button>
+            </div>
           </div>
         </CardContent>
         <CardFooter className="flex justify-center">
