@@ -1,115 +1,66 @@
-
-import React, { createContext, useState, ReactNode } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Tenant, TenantContextType } from '@/types/tenant';
-import { fetchTenant, updateTenantSettings as updateTenantSettingsService, updateTenantCompanyType } from '@/services/tenantService';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
-// Create context with default values and export it
+interface TenantContextType {
+  tenantId: string | null;
+  setTenantId: (tenantId: string | null) => void;
+  loading: boolean;
+}
+
 export const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
-// Provider component
 export const TenantProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
-  const [tenantId, setTenantId] = useState<string>('');
-  const queryClient = useQueryClient();
-  
-  // Get the tenant ID from the user profile
-  useQuery({
-    queryKey: ['userProfile', user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('tenant_id')
-        .eq('id', user.id)
-        .single();
-      
-      if (error) throw error;
-      if (data?.tenant_id) {
-        setTenantId(data.tenant_id);
+  const [tenantId, setTenantId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTenantId = async () => {
+      if (user) {
+        try {
+          const { data, error } = await supabase
+            .from('user_tenants')
+            .select('tenant_id')
+            .eq('user_id', user.id)
+            .single();
+
+          if (error) {
+            console.error("Error fetching tenant ID:", error);
+            toast({
+              title: 'Error',
+              description: 'Failed to fetch tenant information.',
+              variant: 'destructive',
+            });
+          } else if (data) {
+            setTenantId(data.tenant_id);
+          }
+        } catch (error) {
+          console.error("Unexpected error fetching tenant ID:", error);
+          toast({
+            title: 'Error',
+            description: 'An unexpected error occurred while fetching tenant information.',
+            variant: 'destructive',
+          });
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
       }
-      return data;
-    },
-    enabled: !!user,
-  });
-  
-  // Query for tenant data with caching
-  const { data: currentTenant, isLoading, error } = useQuery({
-    queryKey: ['tenant', tenantId],
-    queryFn: () => fetchTenant(tenantId),
-    enabled: !!tenantId,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-  
-  // Mutation for updating tenant settings
-  const updateSettingsMutation = useMutation({
-    mutationFn: async (settings: Partial<Tenant['settings']>) => {
-      if (!tenantId) throw new Error('No tenant selected');
-      return updateTenantSettingsService(tenantId, settings);
-    },
-    onSuccess: (newSettings) => {
-      // Optimistically update the cache
-      queryClient.setQueryData(['tenant', tenantId], (oldData: Tenant | undefined) => {
-        if (!oldData) return null;
-        return {
-          ...oldData,
-          settings: {
-            ...oldData.settings,
-            ...newSettings,
-          },
-        };
-      });
-    }
-  });
-  
-  // Mutation for updating tenant company type
-  const updateCompanyTypeMutation = useMutation({
-    mutationFn: async (companyType: Tenant['company_type']) => {
-      if (!tenantId) throw new Error('No tenant selected');
-      return updateTenantCompanyType(tenantId, companyType);
-    },
-    onSuccess: (companyType) => {
-      // Optimistically update the cache
-      queryClient.setQueryData(['tenant', tenantId], (oldData: Tenant | undefined) => {
-        if (!oldData) return null;
-        return {
-          ...oldData,
-          company_type: companyType,
-        };
-      });
-    }
-  });
-  
-  const setCurrentTenant = (tenant: Tenant) => {
-    setTenantId(tenant.id);
-  };
-  
-  const updateTenantSettings = (settings: Partial<Tenant['settings']>) => {
-    updateSettingsMutation.mutate(settings);
-  };
-  
-  const updateCompanyType = (companyType: Tenant['company_type']) => {
-    updateCompanyTypeMutation.mutate(companyType);
-  };
-  
-  const value = {
-    currentTenant: currentTenant || null,
-    isLoading,
-    error: error as Error | null,
-    setCurrentTenant,
-    updateTenantSettings,
-    updateCompanyType,
-  };
-  
+    };
+
+    fetchTenantId();
+  }, [user]);
+
   return (
-    <TenantContext.Provider value={value}>
+    <TenantContext.Provider value={{
+      tenantId,
+      setTenantId,
+      loading,
+    }}>
       {children}
     </TenantContext.Provider>
   );
 };
-
-// Re-export the hook for convenience
-export { useTenant } from '@/hooks/useTenantContext';
