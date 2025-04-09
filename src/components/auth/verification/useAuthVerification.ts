@@ -23,6 +23,7 @@ export function useAuthVerification() {
   const [emailProvider, setEmailProvider] = useState<string | null>(null);
   const [processingRedirect, setProcessingRedirect] = useState(false);
   const [redirectAttempted, setRedirectAttempted] = useState(false);
+  const [loading, setLoading] = useState(true);
   
   // Set email provider when email changes
   useEffect(() => {
@@ -35,7 +36,10 @@ export function useAuthVerification() {
   useEffect(() => {
     const handleAuthRedirects = async () => {
       // Prevent multiple calls to this handler or multiple redirect attempts
-      if (processingRedirect || redirectAttempted) return;
+      if (processingRedirect || redirectAttempted) {
+        setLoading(false);
+        return;
+      }
       
       setProcessingRedirect(true);
       console.log("Handling auth redirects...");
@@ -49,6 +53,7 @@ export function useAuthVerification() {
         const errorMessage = handleAuthErrors(params.errorCode, params.errorDescription);
         setAuthError(errorMessage);
         setProcessingRedirect(false);
+        setLoading(false);
         return;
       }
       
@@ -56,6 +61,7 @@ export function useAuthVerification() {
       if (params.hashError) {
         setAuthError(params.hashErrorDesc || "Authentication error occurred. Please try again.");
         setProcessingRedirect(false);
+        setLoading(false);
         return;
       }
       
@@ -72,6 +78,7 @@ export function useAuthVerification() {
           navigate,
           setProcessingRedirect
         );
+        setLoading(false);
         return;
       }
       
@@ -84,6 +91,7 @@ export function useAuthVerification() {
           navigate, 
           setProcessingRedirect
         );
+        setLoading(false);
         return;
       }
       
@@ -99,6 +107,7 @@ export function useAuthVerification() {
           navigate,
           setProcessingRedirect
         );
+        setLoading(false);
         return;
       }
       
@@ -108,10 +117,13 @@ export function useAuthVerification() {
         setRedirectAttempted(true); // Mark that we've attempted a redirect
         navigate('/auth/reset-password', { replace: true });
         setProcessingRedirect(false);
+        setLoading(false);
         return;
       }
       
+      // If no special parameters, just finish loading
       setProcessingRedirect(false);
+      setLoading(false);
     };
     
     handleAuthRedirects();
@@ -127,6 +139,7 @@ export function useAuthVerification() {
     setIsResendingVerification,
     emailVerified,
     isVerifying,
-    emailProvider
+    emailProvider,
+    loading
   };
 }

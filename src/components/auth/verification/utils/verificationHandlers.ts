@@ -48,21 +48,19 @@ export async function handleSpaVerification(
     // Check if this is a new user needing subscription
     const needsSubscription = data.user?.user_metadata?.needs_subscription === true;
     
-    // Store this information in localStorage to handle page reloads
+    console.log("After verification, needsSubscription:", needsSubscription);
+    
+    // Use replace to avoid adding to history stack
     if (needsSubscription) {
-      localStorage.setItem('redirect_to_subscription', 'true');
-      
-      // Use replace to avoid adding to history stack
-      setTimeout(() => {
-        navigate('/payment', { replace: true });
-        setProcessingRedirect(false);
-      }, 1000);
+      // Store this information to handle page reloads
+      console.log("User needs subscription, navigating to payment page");
+      navigate('/payment', { replace: true });
+      setProcessingRedirect(false);
     } else {
       // Regular flow - navigate to dashboard with replace
-      setTimeout(() => {
-        navigate('/dashboard', { replace: true });
-        setProcessingRedirect(false);
-      }, 1000);
+      console.log("User verified, navigating to dashboard");
+      navigate('/dashboard', { replace: true });
+      setProcessingRedirect(false);
     }
   } catch (error: any) {
     console.error("Error during SPA verification:", error);
@@ -111,11 +109,9 @@ export async function handleEmailVerification(
       console.log("Email verified successfully");
       setEmailVerified(true);
       
-      // Add a slight delay before navigation with replace
-      setTimeout(() => {
-        navigate('/payment', { replace: true });
-        setProcessingRedirect(false);
-      }, 1000);
+      console.log("Navigating to payment after email verification");
+      navigate('/payment', { replace: true });
+      setProcessingRedirect(false);
     }
   } catch (error: any) {
     console.error("Error during email verification:", error);
@@ -145,20 +141,15 @@ export async function handleSuccessfulVerification(
     
     // Check if this is a new user that needs subscription
     if (newUser) {
-      console.log("New user detected, redirecting to payment page");
-      localStorage.setItem('redirect_to_subscription', 'true');
-      
-      // Add a slight delay to prevent multiple redirects, use replace
-      setTimeout(() => {
-        navigate('/payment', { replace: true });
-        setProcessingRedirect(false);
-      }, 1000);
+      console.log("New user detected, navigating to payment page");
+      console.log("Navigating to payment page directly");
+      navigate('/payment', { replace: true });
+      setProcessingRedirect(false);
     } else {
       // After showing the success message, redirect to dashboard with replace
-      setTimeout(() => {
-        navigate('/dashboard', { replace: true });
-        setProcessingRedirect(false);
-      }, 1000);
+      console.log("Navigating to dashboard directly");
+      navigate('/dashboard', { replace: true });
+      setProcessingRedirect(false);
     }
   } else {
     console.log("No session found after verification, staying on auth page");

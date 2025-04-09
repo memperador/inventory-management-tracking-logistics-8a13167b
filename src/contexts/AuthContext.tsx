@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,12 +27,12 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Track if we've already processed a redirect
-  const [redirectProcessed, setRedirectProcessed] = useState(false);
+  // Keep track of whether a navigation has been processed
+  const [navigationInProgress, setNavigationInProgress] = useState(false);
   
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state changed:', event);
         setSession(session);
         const newUser = session?.user ?? null;
@@ -44,65 +43,41 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
           onUserChange(newUser?.id || null);
         }
         
-        if (event === 'SIGNED_IN') {
-          toast({
-            title: 'Welcome to Inventory Track Pro!',
-            description: 'You have been successfully signed in.',
-          });
+        // Handle navigation only for signed in events and only if not already navigating
+        if (event === 'SIGNED_IN' && !navigationInProgress && window.location.pathname === '/auth') {
+          setNavigationInProgress(true);
+          console.log('Processing sign-in redirect...');
           
-          // Check if user needs subscription flow or was previously redirected
-          const needsSubscription = session?.user?.user_metadata?.needs_subscription === true;
-          const redirectToSubscription = localStorage.getItem('redirect_to_subscription') === 'true';
-          
-          // Only redirect if we haven't already processed a redirect and we're actually on the auth page
-          if ((needsSubscription || redirectToSubscription) && !redirectProcessed && window.location.pathname === '/auth') {
-            setRedirectProcessed(true);
-            localStorage.removeItem('redirect_to_subscription'); // Clear the flag
-            
-            // Use a delay to prevent race conditions
-            setTimeout(() => {
-              window.location.href = '/payment';
-            }, 500);
-            return;
-          }
-          
-          if (!redirectProcessed && window.location.pathname === '/auth') {
-            setRedirectProcessed(true);
+          // Use setTimeout to ensure state updates complete before navigation
+          setTimeout(() => {
+            const needsSubscription = session?.user?.user_metadata?.needs_subscription === true;
             const returnTo = new URLSearchParams(window.location.search).get('returnTo');
             
-            // Use a delay to prevent race conditions
-            setTimeout(() => {
-              if (returnTo) {
-                window.location.href = decodeURIComponent(returnTo);
-              } else {
-                window.location.href = '/dashboard';
-              }
-            }, 500);
-          }
+            if (needsSubscription) {
+              console.log('Redirecting to payment page...');
+              window.location.href = '/payment';
+            } else if (returnTo) {
+              console.log(`Redirecting to: ${returnTo}`);
+              window.location.href = decodeURIComponent(returnTo);
+            } else {
+              console.log('Redirecting to dashboard...');
+              window.location.href = '/dashboard';
+            }
+          }, 100);
         } else if (event === 'SIGNED_OUT') {
           toast({
             title: 'Signed out',
             description: 'You have been signed out successfully.',
           });
-          setRedirectProcessed(false);
+          setNavigationInProgress(false);
           window.location.href = '/auth';
         } else if (event === 'PASSWORD_RECOVERY') {
           window.location.href = '/auth/reset-password';
-        } else if (event === 'USER_UPDATED') {
-          toast({
-            title: 'Account updated',
-            description: 'Your account information has been updated.',
-          });
-        } else if (event === 'MFA_CHALLENGE_VERIFIED') {
-          toast({
-            title: 'Two-factor verification complete',
-            description: 'You have been authenticated successfully.',
-          });
         }
       }
     );
 
-    // Get the initial session just once
+    // Get the initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check:', session ? 'Authenticated' : 'Not authenticated');
       setSession(session);
