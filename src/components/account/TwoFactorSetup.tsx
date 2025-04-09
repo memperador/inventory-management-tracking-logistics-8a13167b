@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +9,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Copy, AlertCircle } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuthContext';
 
 const TwoFactorSetup = () => {
   const { user } = useAuth();
@@ -22,7 +21,6 @@ const TwoFactorSetup = () => {
   const [otp, setOtp] = useState('');
   const [factor, setFactor] = useState<any>(null);
 
-  // Check if 2FA is enabled
   useEffect(() => {
     const check2FAStatus = async () => {
       if (!user) return;
@@ -33,10 +31,8 @@ const TwoFactorSetup = () => {
         
         if (error) throw error;
         
-        // If currentLevel is aal2, 2FA is active
         setIsEnabled(data.currentLevel === 'aal2');
         
-        // Get enrolled factors to check if any exist
         const { data: factorsData } = await supabase.auth.mfa.listFactors();
         const hasTOTP = factorsData.totp.length > 0;
         setIsEnabled(hasTOTP);
@@ -56,7 +52,6 @@ const TwoFactorSetup = () => {
     try {
       setIsLoading(true);
       
-      // Start the 2FA enrollment process
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: 'totp'
       });
@@ -92,7 +87,6 @@ const TwoFactorSetup = () => {
       
       const challengeId = data.id;
       
-      // Verify the OTP
       const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
         factorId: factor.id,
         challengeId: challengeId,
@@ -125,7 +119,6 @@ const TwoFactorSetup = () => {
     try {
       setIsLoading(true);
       
-      // Get enrolled factors
       const { data: factorsData } = await supabase.auth.mfa.listFactors();
       const totpFactor = factorsData.totp[0];
       

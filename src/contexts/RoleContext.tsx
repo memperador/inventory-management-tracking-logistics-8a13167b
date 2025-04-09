@@ -1,7 +1,7 @@
 
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './AuthContext';
+import { useAuth } from '@/hooks/useAuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { UserRole, RoleContextType, roleHierarchy } from '@/types/roles';
 

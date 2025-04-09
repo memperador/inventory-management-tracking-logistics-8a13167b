@@ -2,7 +2,7 @@
 import React from 'react';
 import { LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuthContext';
 import { useRole } from '@/hooks/useRoleContext';
 import {
   SidebarGroup,
