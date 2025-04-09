@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         if (event === 'SIGNED_IN') {
           toast({
-            title: 'Welcome back!',
+            title: 'Welcome to Inventory Track Pro!',
             description: 'You have been successfully signed in.',
           });
           
@@ -61,6 +61,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             title: 'Two-factor verification complete',
             description: 'You have been authenticated successfully.',
           });
+        } else if (event === 'EMAIL_CONFIRMED') {
+          toast({
+            title: 'Email confirmed!',
+            description: 'Your email has been verified successfully.',
+          });
+          // Redirect to dashboard after email confirmation
+          window.location.href = '/dashboard';
         }
       }
     );
@@ -80,6 +87,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
+      // Determine the domain for site URL
+      const domain = window.location.origin;
+      
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -88,6 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             first_name: firstName,
             last_name: lastName
           },
+          emailRedirectTo: `${domain}/auth`,
         },
       });
 
