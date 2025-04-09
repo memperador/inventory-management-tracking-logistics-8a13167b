@@ -1,9 +1,7 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { useNavigate, useLocation } from 'react-router-dom';
 
 interface AuthContextType {
   user: User | null;
@@ -24,7 +22,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event);
@@ -37,7 +34,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             description: 'You have been successfully signed in.',
           });
           
-          // Get the return URL from query params if available
           const returnTo = new URLSearchParams(window.location.search).get('returnTo');
           if (returnTo) {
             window.location.href = decodeURIComponent(returnTo);
@@ -64,8 +60,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           });
         } 
         
-        // Handle email confirmation separately
-        // Check URL params for email confirmation status
         const url = new URL(window.location.href);
         const emailConfirmed = url.searchParams.get('email_confirmed') === 'true';
         
@@ -74,13 +68,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             title: 'Email confirmed!',
             description: 'Your email has been verified successfully.',
           });
-          // Redirect to dashboard after email confirmation
           window.location.href = '/dashboard';
         }
       }
     );
 
-    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check:', session ? 'Authenticated' : 'Not authenticated');
       setSession(session);
@@ -103,8 +95,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       setSession(data.session);
       setUser(data.session?.user ?? null);
-      
-      return data;
     } catch (error) {
       console.error("Failed to refresh session:", error);
       throw error;
@@ -113,7 +103,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
-      // Get the current domain for site URL
       const domain = window.location.origin;
       
       const { error } = await supabase.auth.signUp({
@@ -152,19 +141,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (error) throw error;
       
-      // Check if 2FA is required
       if (data?.session === null && data?.user !== null) {
-        // This indicates that 2FA is required
         const { data: factorData } = await supabase.auth.mfa.listFactors();
         
         if (factorData?.totp.length > 0) {
-          // Store email for 2FA page
           localStorage.setItem('pendingTwoFactorEmail', email);
-          
-          // Store the factor ID
           localStorage.setItem('factorId', factorData.totp[0].id);
-          
-          // Redirect to 2FA page
           window.location.href = '/auth/two-factor';
           return;
         }

@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { NotificationProvider } from '@/contexts/NotificationContext';
@@ -30,6 +29,8 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { TenantProvider } from '@/contexts/TenantContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -93,6 +94,10 @@ function App() {
 
                     {/* Add a catch-all 404 route */}
                     <Route path="*" element={<NotFound />} />
+
+                    {/* Add new routes */}
+                    <Route path="/terms-of-service" element={<TermsOfService />} />
+                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   </Routes>
                   <Toaster />
                 </NotificationProvider>

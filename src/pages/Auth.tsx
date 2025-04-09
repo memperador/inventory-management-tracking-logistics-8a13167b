@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,7 +8,7 @@ import EmailVerificationStatus from '@/components/auth/EmailVerificationStatus';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { AlertCircle, Mail, ExternalLink, Shield } from 'lucide-react';
+import { AlertCircle, Mail, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,7 +27,6 @@ const Auth = () => {
   const { user } = useAuth();
   const [emailProvider, setEmailProvider] = useState<string | null>(null);
   
-  // Store last email delivery test result
   const [lastDeliveryResult, setLastDeliveryResult] = useLocalStorage<{
     timestamp: string;
     email: string;
@@ -36,12 +34,9 @@ const Auth = () => {
     message: string;
   } | null>('last_email_delivery_result', null);
   
-  // Handle redirect if user is already logged in
   useEffect(() => {
     if (user) {
-      // Don't redirect if we're showing email verification status
       if (user.email && !user.email_confirmed_at && !searchParams.get('returnTo')) {
-        // Stay on auth page to show verification status
         return;
       }
       
@@ -54,17 +49,14 @@ const Auth = () => {
     }
   }, [user, navigate, searchParams]);
   
-  // Handle email confirmation or password recovery flows
   useEffect(() => {
     const handleAuthRedirects = async () => {
-      // Check for error messages from email verification
       const errorMessage = searchParams.get('error_description') || searchParams.get('error');
       if (errorMessage) {
         const decodedMessage = decodeURIComponent(errorMessage);
         setAuthError(decodedMessage);
         console.error("Auth redirect error:", decodedMessage);
         
-        // Show more user-friendly message for expired link
         if (decodedMessage.includes('expired')) {
           toast({
             title: "Verification Link Expired",
@@ -83,7 +75,6 @@ const Auth = () => {
         return;
       }
       
-      // Check for successful email verification
       const emailVerified = searchParams.get('email_confirmed') === 'true';
       if (emailVerified) {
         console.log("Email verification successful!");
@@ -95,12 +86,10 @@ const Auth = () => {
         return;
       }
       
-      // Check and handle recovery tokens for password reset
       const token = searchParams.get('token') || searchParams.get('access_token');
       const type = searchParams.get('type');
       
       if (token && type === 'recovery') {
-        // Auto-navigate to reset password page
         navigate('/auth/reset-password', { replace: true });
       }
     };
@@ -108,7 +97,6 @@ const Auth = () => {
     handleAuthRedirects();
   }, [searchParams, navigate]);
   
-  // Detect email provider for better troubleshooting guidance
   useEffect(() => {
     if (verificationEmail) {
       const domain = verificationEmail.split('@')[1]?.toLowerCase();
@@ -129,11 +117,9 @@ const Auth = () => {
       setManualResendDebug("Starting verification email resend process...");
       console.log(`Manually resending verification email to ${email}`);
       
-      // Capture origin for redirect
       const domain = window.location.origin;
       console.log(`Using redirect URL: ${domain}/auth`);
       
-      // Force session refresh before sending
       try {
         setManualResendDebug(prev => prev + "\nRefreshing session...");
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -156,7 +142,6 @@ const Auth = () => {
         console.warn("Error refreshing session:", refreshErr);
       }
       
-      // Add a small delay to ensure the session refresh has completed
       await new Promise(resolve => setTimeout(resolve, 500));
       
       setManualResendDebug(prev => prev + `\nSending verification email to: ${email}`);
@@ -173,7 +158,6 @@ const Auth = () => {
         console.error("Failed to resend verification email:", error);
         setManualResendDebug(prev => prev + `\nError: ${error.message}`);
         
-        // Store delivery result
         setLastDeliveryResult({
           timestamp: new Date().toISOString(),
           email,
@@ -187,16 +171,13 @@ const Auth = () => {
       setManualResendDebug(prev => prev + "\nAPI response received successfully");
       console.log("Verification email resend response:", data);
       
-      // Store the time when we sent the email in localStorage
       const now = new Date();
       localStorage.setItem(`lastVerificationSent_${email}`, now.toISOString());
       
-      // Increment the send count
       const storedCount = localStorage.getItem(`verificationSendCount_${email}`);
       const currentCount = storedCount ? parseInt(storedCount, 10) : 0;
       localStorage.setItem(`verificationSendCount_${email}`, (currentCount + 1).toString());
       
-      // Store delivery result
       setLastDeliveryResult({
         timestamp: now.toISOString(),
         email,
@@ -249,7 +230,6 @@ const Auth = () => {
             </Alert>
           )}
           
-          {/* Show email verification status for logged in users with unverified emails */}
           {user && !user.email_confirmed_at && <EmailVerificationStatus />}
           
           {verificationSent && (
@@ -364,38 +344,37 @@ const Auth = () => {
             </Tabs>
           )}
           
-          {/* Add a help section at the bottom */}
           <div className="mt-6 pt-4 border-t border-gray-200">
             <h4 className="text-sm font-medium text-gray-700 flex items-center">
               <Shield className="h-3 w-3 mr-1" />
               Having trouble with email verification?
             </h4>
             <p className="text-xs text-gray-500 mt-1">
-              If you're not receiving verification emails despite multiple attempts, there may be an issue with your email provider's filters or Supabase email settings.
+              If you're not receiving verification emails despite multiple attempts, there may be an issue with your email provider's filters or system email settings.
             </p>
             <div className="flex space-x-2 mt-2">
               <Button 
                 variant="link" 
                 size="sm"
                 className="text-xs p-0 h-auto"
-                onClick={() => window.open("https://supabase.com/dashboard/project/wscoyigjjcevriqqyxwo/auth/templates", "_blank")}
+                onClick={() => window.location.href = "/terms-of-service"}
               >
-                Supabase Email Settings <ExternalLink className="h-3 w-3 ml-1" />
+                Terms of Service
               </Button>
               <Button 
                 variant="link" 
                 size="sm"
                 className="text-xs p-0 h-auto"
-                onClick={() => window.open("https://supabase.com/dashboard/project/wscoyigjjcevriqqyxwo/auth/users", "_blank")}
+                onClick={() => window.location.href = "/privacy-policy"}
               >
-                Supabase Users <ExternalLink className="h-3 w-3 ml-1" />
+                Privacy Policy
               </Button>
             </div>
           </div>
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-xs text-gray-500">
-            By continuing, you agree to our Terms of Service and Privacy Policy
+            By continuing, you agree to our <a href="/terms-of-service" className="underline">Terms of Service</a> and <a href="/privacy-policy" className="underline">Privacy Policy</a>
           </p>
         </CardFooter>
       </Card>
