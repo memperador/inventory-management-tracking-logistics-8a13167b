@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,9 +37,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             description: 'You have been successfully signed in.',
           });
           
-          // Check if user needs subscription flow
+          // Check if user needs subscription flow or was previously redirected
           const needsSubscription = session?.user?.user_metadata?.needs_subscription === true;
-          if (needsSubscription) {
+          const redirectToSubscription = localStorage.getItem('redirect_to_subscription') === 'true';
+          
+          if (needsSubscription || redirectToSubscription) {
+            localStorage.removeItem('redirect_to_subscription'); // Clear the flag
             window.location.href = '/payment';
             return;
           }

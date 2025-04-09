@@ -7,6 +7,7 @@ import AppSidebar from './AppSidebar';
 import { AppHeader } from './AppHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SidebarProvider } from '@/components/ui/sidebar';
+import { TrialBanner } from '@/components/subscription/TrialBanner';
 
 const AppLayout = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -46,6 +47,11 @@ const AppLayout = () => {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
       <AppHeader toggleMenu={handleToggleMenu} isMenuOpen={isMenuOpen} />
+      
+      {/* Add TrialBanner after the header */}
+      <div className="px-4 md:px-6 mt-2">
+        <TrialBanner />
+      </div>
 
       <div className="flex flex-grow">
         <SidebarProvider defaultOpen={!isMobile}>

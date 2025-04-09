@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Clock, AlertCircle } from 'lucide-react';
+import { Clock, AlertCircle, SparklesIcon } from 'lucide-react';
 import { useTenant } from '@/hooks/useTenantContext';
 import { differenceInDays } from 'date-fns';
 
@@ -40,11 +40,19 @@ export const TrialBanner: React.FC<TrialBannerProps> = ({ className = '' }) => {
         ) : (
           <Clock className="h-5 w-5 text-blue-600" />
         )}
-        <span className={`text-sm font-medium ${isExpiringSoon ? 'text-amber-800' : 'text-blue-800'}`}>
-          {isExpiringSoon 
-            ? `Your free trial expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}!` 
-            : `You're on a free trial (${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining)`}
-        </span>
+        <div>
+          <span className={`text-sm font-medium ${isExpiringSoon ? 'text-amber-800' : 'text-blue-800'}`}>
+            {isExpiringSoon 
+              ? `Your free trial expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}!` 
+              : `You're on a free trial (${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining)`}
+          </span>
+          <div className="flex items-center mt-1">
+            <SparklesIcon className="h-3.5 w-3.5 text-purple-600 mr-1" />
+            <span className="text-xs text-purple-800">
+              Experiencing all Premium tier features during your trial
+            </span>
+          </div>
+        </div>
       </div>
       
       <Button

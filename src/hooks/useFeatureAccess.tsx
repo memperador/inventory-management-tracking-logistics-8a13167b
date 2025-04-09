@@ -1,4 +1,3 @@
-
 import { useTenant } from '@/hooks/useTenantContext';
 import { useRole } from '@/hooks/useRoleContext';
 import { 
@@ -22,7 +21,50 @@ export const useFeatureAccess = () => {
     // Admin always has access to all features for testing purposes
     if (userRole === 'admin') return true;
     
+    // During trial, grant access to all features
+    if (currentTenant?.subscription_status === 'trialing') return true;
+    
     return hasFeatureAccess(currentTenant, featureKey);
+  };
+
+  // Get the tier that a feature belongs to
+  const getFeatureTier = (featureKey: string): 'basic' | 'standard' | 'premium' | 'enterprise' | null => {
+    // Feature to tier mapping
+    const featureTierMap: Record<string, 'basic' | 'standard' | 'premium' | 'enterprise'> = {
+      // Basic tier features
+      'equipment': 'basic',
+      'projects': 'basic',
+      'inventory_management': 'basic',
+      'basic_analytics': 'basic',
+      'simple_alerts': 'basic',
+      'qr_generation': 'basic',
+      
+      // Standard tier features
+      'gps': 'standard',
+      'audit_logs': 'standard',
+      'advanced_alerts': 'standard',
+      'bulk_qr': 'standard',
+      'location_history': 'standard',
+      'tracking': 'standard',
+      
+      // Premium tier features
+      'advanced_gps': 'premium',
+      'geofencing': 'premium',
+      'route_optimization': 'premium',
+      'maintenance': 'premium',
+      'analytics': 'premium',
+      'premium_ai': 'premium',
+      
+      // Enterprise tier features
+      'api_access': 'enterprise',
+      'white_labeling': 'enterprise',
+      'sso': 'enterprise',
+      'custom_reporting': 'enterprise',
+      'sla': 'enterprise',
+      'custom_implementation': 'enterprise'
+    };
+    
+    return featureTierMap[featureKey] || null;
   };
 
   // Check if specific tier is active
@@ -108,6 +150,7 @@ export const useFeatureAccess = () => {
 
   return {
     canAccessFeature,
+    getFeatureTier,
     hasSubscriptionTier,
     getAccessibleFeatures,
     getAvailableAIFeatures,
@@ -115,6 +158,7 @@ export const useFeatureAccess = () => {
     getSubscriptionLimits,
     isUnderAssetLimit,
     isUnderUserLimit,
-    currentTier: currentTenant?.subscription_tier as 'basic' | 'standard' | 'premium' | 'enterprise' | null
+    currentTier: currentTenant?.subscription_tier as 'basic' | 'standard' | 'premium' | 'enterprise' | null,
+    isTrialMode: currentTenant?.subscription_status === 'trialing'
   };
 };

@@ -1,14 +1,16 @@
-
 import React, { ReactNode } from 'react';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from './UpgradePrompt';
 import { getUpgradePromptForFeature } from '@/utils/subscriptionUtils';
+import { FeatureTierBadge } from './FeatureTierBadge';
+import { useTenant } from '@/hooks/useTenantContext';
 
 interface FeatureGateProps {
   featureKey: string;
   children: ReactNode;
   fallback?: ReactNode;
   showUpgradePrompt?: boolean;
+  showTierBadge?: boolean;
   className?: string;
 }
 
@@ -17,13 +19,32 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
   children,
   fallback,
   showUpgradePrompt = true,
+  showTierBadge = true,
   className = ''
 }) => {
-  const { canAccessFeature } = useFeatureAccess();
+  const { canAccessFeature, getFeatureTier } = useFeatureAccess();
+  const { currentTenant } = useTenant();
   
   const hasAccess = canAccessFeature(featureKey);
+  const isTrialMode = currentTenant?.subscription_status === 'trialing';
+  
+  // Get the tier this feature belongs to
+  const featureTier = getFeatureTier(featureKey);
   
   if (hasAccess) {
+    // If the user has access and we should show tier badge (trial mode)
+    if (showTierBadge && isTrialMode && featureTier) {
+      return (
+        <div className="relative">
+          <div className="absolute top-2 right-2 z-10">
+            <FeatureTierBadge tier={featureTier} isTrialMode={true} />
+          </div>
+          {children}
+        </div>
+      );
+    }
+    
+    // Otherwise just show the content
     return <>{children}</>;
   }
   
