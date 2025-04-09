@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Tenant } from '@/types/tenant';
+import { fetchTenant, updateTenantSettings as updateSettings, updateTenantCompanyType } from '@/services/tenantService';
 
 interface TenantContextType {
   tenantId: string | null;
@@ -70,48 +71,29 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
     if (!id) return;
     
     try {
-      const { data, error } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('id', id)
-        .single();
-        
-      if (error) {
-        console.error("Error fetching tenant details:", error);
-        return;
-      }
-      
-      if (data) {
-        setCurrentTenant(data as Tenant);
-      }
+      const tenantData = await fetchTenant(id);
+      setCurrentTenant(tenantData);
     } catch (error) {
       console.error("Error fetching tenant details:", error);
     }
   };
   
   // Update tenant settings
-  const updateTenantSettings = async (settings: Partial<Tenant['settings']>) => {
+  const handleUpdateTenantSettings = async (settings: Partial<Tenant['settings']>) => {
     if (!tenantId || !currentTenant) {
       throw new Error("No tenant selected");
     }
     
     try {
-      const updatedSettings = {
-        ...currentTenant.settings,
-        ...settings
-      };
-      
-      const { error } = await supabase
-        .from('tenants')
-        .update({ settings: updatedSettings })
-        .eq('id', tenantId);
-        
-      if (error) throw error;
+      await updateSettings(tenantId, settings);
       
       // Update local state
       setCurrentTenant({
         ...currentTenant,
-        settings: updatedSettings
+        settings: {
+          ...currentTenant.settings,
+          ...settings
+        }
       });
       
     } catch (error) {
@@ -121,18 +103,13 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
   };
   
   // Update company type
-  const updateCompanyType = async (companyType: Tenant['company_type']) => {
+  const handleUpdateCompanyType = async (companyType: Tenant['company_type']) => {
     if (!tenantId || !currentTenant) {
       throw new Error("No tenant selected");
     }
     
     try {
-      const { error } = await supabase
-        .from('tenants')
-        .update({ company_type: companyType })
-        .eq('id', tenantId);
-        
-      if (error) throw error;
+      await updateTenantCompanyType(tenantId, companyType);
       
       // Update local state
       setCurrentTenant({
@@ -152,8 +129,8 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
       currentTenant,
       setTenantId,
       loading,
-      updateTenantSettings,
-      updateCompanyType
+      updateTenantSettings: handleUpdateTenantSettings,
+      updateCompanyType: handleUpdateCompanyType
     }}>
       {children}
     </TenantContext.Provider>
