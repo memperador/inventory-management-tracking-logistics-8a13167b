@@ -48,8 +48,7 @@ serve(async (req) => {
       );
     }
 
-    // Process the provided domain to ensure it's formatted correctly
-    // Strip any trailing slashes
+    // Strip any trailing slashes from domain
     let cleanDomain = domain;
     if (cleanDomain.endsWith('/')) {
       cleanDomain = cleanDomain.slice(0, -1);
@@ -67,6 +66,7 @@ serve(async (req) => {
     // Generate a verification link using the Supabase Admin API
     try {
       // Determine the correct redirect URL based on the domain
+      // Use absolute URL format to prevent incorrect domain concatenation
       const redirectTo = `${cleanDomain}/auth?email_confirmed=true`;
       console.log(`Using redirect URL: ${redirectTo}`);
       
@@ -88,7 +88,7 @@ serve(async (req) => {
         throw new Error("No verification link was generated");
       }
 
-      // Get the verification URL
+      // Get the verification URL - IMPORTANT: Don't modify this URL
       const verificationUrl = data.properties.action_link;
       console.log(`Generated verification URL: ${verificationUrl}`);
 

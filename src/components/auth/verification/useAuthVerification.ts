@@ -34,9 +34,41 @@ export function useAuthVerification() {
       console.log("Handling auth redirects...");
       console.log("Current URL:", window.location.href);
       
+      // Check if we have an error in the URL
+      const errorCode = searchParams.get('error_code');
+      const errorDescription = searchParams.get('error_description');
+      
+      if (errorCode === 'otp_expired' || errorCode === 'access_denied') {
+        console.error("Token expired or invalid:", errorDescription);
+        setAuthError(errorDescription || "Your verification link has expired or is invalid. Please request a new one.");
+        toast({
+          title: "Verification Failed",
+          description: "Your verification link has expired. Please request a new verification email.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       // Check if we're receiving parameters through hash fragment (SPA authentication)
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       console.log("Hash parameters:", Object.fromEntries(hashParams));
+      
+      // Check for hash error parameters
+      if (hashParams.has('error')) {
+        const hashErrorCode = hashParams.get('error_code');
+        const hashErrorDesc = hashParams.get('error_description');
+        
+        if (hashErrorCode === 'otp_expired' || hashParams.get('error') === 'access_denied') {
+          console.error("Hash token expired or invalid:", hashErrorDesc);
+          setAuthError(hashErrorDesc || "Your verification link has expired or is invalid. Please request a new one.");
+          toast({
+            title: "Verification Failed",
+            description: "Your verification link has expired. Please request a new verification email.",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
       
       if (hashParams.has('access_token') && hashParams.get('type') === 'signup') {
         console.log("Found access_token in hash, handling SPA verification");
