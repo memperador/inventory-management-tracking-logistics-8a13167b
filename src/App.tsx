@@ -27,7 +27,7 @@ import WorkflowPage from '@/pages/WorkflowPage';
 import Notifications from '@/pages/Notifications';
 import { RoleProvider } from '@/contexts/RoleContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthProvider } from '@/contexts/auth/AuthContext';
 import { TenantProvider } from '@/contexts/TenantContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import TermsOfService from './pages/TermsOfService';

@@ -1,7 +1,6 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuthContext';
+import { useAuth } from '@/contexts/auth/AuthContext';
 import AuthCard from '@/components/auth/AuthCard';
 import { useAuthVerification } from '@/hooks/useAuthVerification';
 
@@ -25,11 +24,9 @@ const Auth = () => {
     loading: verificationLoading
   } = useAuthVerification();
   
-  // Combine all loading states
   const isLoading = authLoading || verificationLoading;
   
   useEffect(() => {
-    // Only an empty effect to handle cleanup
     return () => {
       setNavigationProcessed(false);
     };

@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth/AuthContext';
 import { useRole } from '@/hooks/useRoleContext';
 import AppSidebar from './AppSidebar';
 import { AppHeader } from './AppHeader';

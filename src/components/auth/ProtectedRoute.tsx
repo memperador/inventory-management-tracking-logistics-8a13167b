@@ -1,7 +1,7 @@
 
 import React, { ReactNode, useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuthContext';
+import { useAuth } from '@/contexts/auth/AuthContext';
 import { useTenant } from '@/hooks/useTenantContext';
 import { UserRole } from '@/types/roles';
 import { useRole } from '@/hooks/useRoleContext';

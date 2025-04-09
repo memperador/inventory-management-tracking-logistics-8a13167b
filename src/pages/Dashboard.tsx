@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth/AuthContext';
 import PageHeader from '@/components/common/PageHeader';
 import RecentActivityList from '@/components/dashboard/RecentActivityList';
 import EmailVerificationStatus from '@/components/auth/EmailVerificationStatus';
