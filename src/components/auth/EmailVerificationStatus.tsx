@@ -11,6 +11,23 @@ const EmailVerificationStatus = () => {
   const { user, session } = useAuth();
   const [resendingEmail, setResendingEmail] = useState(false);
   const [lastSentTime, setLastSentTime] = useState<Date | null>(null);
+  const [resendCount, setResendCount] = useState(0);
+  
+  // Load last sent time from localStorage on component mount
+  useEffect(() => {
+    if (user?.email) {
+      const storedTime = localStorage.getItem(`lastVerificationSent_${user.email}`);
+      const storedCount = localStorage.getItem(`verificationSendCount_${user.email}`);
+      
+      if (storedTime) {
+        setLastSentTime(new Date(storedTime));
+      }
+      
+      if (storedCount) {
+        setResendCount(parseInt(storedCount, 10));
+      }
+    }
+  }, [user?.email]);
   
   if (!user) return null;
 
@@ -22,21 +39,32 @@ const EmailVerificationStatus = () => {
     
     setResendingEmail(true);
     try {
-      const { error } = await supabase.auth.resend({
+      console.log(`Attempting to resend verification email to ${user.email}`);
+      const { data, error } = await supabase.auth.resend({
         type: 'signup',
         email: user.email,
       });
       
       if (error) throw error;
       
-      // Store the time when we sent the email
-      setLastSentTime(new Date());
+      // Store the time when we sent the email in both state and localStorage
+      const now = new Date();
+      setLastSentTime(now);
+      const newCount = resendCount + 1;
+      setResendCount(newCount);
+      
+      // Store in localStorage to persist between refreshes
+      localStorage.setItem(`lastVerificationSent_${user.email}`, now.toISOString());
+      localStorage.setItem(`verificationSendCount_${user.email}`, newCount.toString());
+      
+      console.log(`Verification email resent successfully to ${user.email}`, data);
       
       toast({
         title: "Verification Email Sent",
         description: `We've sent a new verification email to ${user.email}. Please check your inbox and spam folders.`,
       });
     } catch (error: any) {
+      console.error("Failed to resend verification email:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to send verification email",
@@ -60,13 +88,15 @@ const EmailVerificationStatus = () => {
 
   // Calculate time since last resend attempt
   const canResendNow = !lastSentTime || (new Date().getTime() - lastSentTime.getTime()) > 60000;
+  const secondsRemaining = lastSentTime ? Math.ceil((60000 - (new Date().getTime() - lastSentTime.getTime())) / 1000) : 0;
 
   return (
     <Alert className="bg-yellow-50 border-yellow-200 mb-4">
       <Mail className="h-4 w-4 text-yellow-600" />
       <AlertDescription className="flex flex-col gap-2">
         <div className="text-yellow-800">
-          Please verify your email address. Check your inbox and spam folders for the verification link.
+          <p className="font-medium">Please verify your email address: {user.email}</p>
+          <p className="mt-1 text-sm">Check your inbox and spam folders for the verification link.</p>
         </div>
         
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
@@ -80,23 +110,32 @@ const EmailVerificationStatus = () => {
             {resendingEmail 
               ? "Sending..." 
               : !canResendNow 
-                ? "Wait 1 minute to resend" 
+                ? `Wait ${secondsRemaining}s to resend` 
                 : "Resend verification email"}
           </Button>
           
-          {lastSentTime && !canResendNow && (
+          {lastSentTime && (
             <span className="text-xs text-yellow-600 italic">
-              You can resend again in {Math.ceil((60000 - (new Date().getTime() - lastSentTime.getTime())) / 1000)} seconds
+              {resendCount > 0 && `Email sent ${resendCount} ${resendCount === 1 ? 'time' : 'times'}. `}
+              {!canResendNow ? 
+                `You can resend again in ${secondsRemaining} seconds` : 
+                `Last sent at ${lastSentTime.toLocaleTimeString()}`
+              }
             </span>
           )}
         </div>
         
-        <div className="flex items-start mt-2 text-xs text-yellow-700">
-          <Info className="h-3 w-3 mr-1 mt-0.5 flex-shrink-0" />
-          <span>
-            If you don't see the email, please check your spam folder. Some email providers might delay delivery
-            or filter verification emails.
-          </span>
+        <div className="flex items-start mt-3 bg-yellow-100 p-3 rounded-md text-sm text-yellow-700">
+          <Info className="h-4 w-4 mr-2 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium">Not seeing the verification email?</p>
+            <ul className="list-disc pl-5 mt-1 space-y-1">
+              <li>Check your spam/junk folder</li> 
+              <li>Make sure the email address ({user.email}) is spelled correctly</li>
+              <li>Some email providers may delay delivery or filter verification emails</li>
+              <li>If you've tried multiple times with no success, contact support</li>
+            </ul>
+          </div>
         </div>
       </AlertDescription>
     </Alert>

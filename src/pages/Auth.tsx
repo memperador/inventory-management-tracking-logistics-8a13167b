@@ -9,7 +9,7 @@ import EmailVerificationStatus from '@/components/auth/EmailVerificationStatus';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { AlertCircle, Mail } from 'lucide-react';
+import { AlertCircle, Mail, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,6 +22,7 @@ const Auth = () => {
   const [verificationSent, setVerificationSent] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isResendingVerification, setIsResendingVerification] = useState(false);
   const { user } = useAuth();
   
   // Handle redirect if user is already logged in
@@ -50,6 +51,7 @@ const Auth = () => {
       if (errorMessage) {
         const decodedMessage = decodeURIComponent(errorMessage);
         setAuthError(decodedMessage);
+        console.error("Auth redirect error:", decodedMessage);
         
         // Show more user-friendly message for expired link
         if (decodedMessage.includes('expired')) {
@@ -73,6 +75,7 @@ const Auth = () => {
       // Check for successful email verification
       const emailVerified = searchParams.get('email_confirmed') === 'true';
       if (emailVerified) {
+        console.log("Email verification successful!");
         toast({
           title: "Email Verified",
           description: "Your email has been verified successfully!",
@@ -96,26 +99,45 @@ const Auth = () => {
   
   const resendVerificationEmail = async (email: string) => {
     try {
-      const { error } = await supabase.auth.resend({
+      setIsResendingVerification(true);
+      console.log(`Manually resending verification email to ${email}`);
+      
+      const { data, error } = await supabase.auth.resend({
         type: 'signup',
         email,
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Failed to resend verification email:", error);
+        throw error;
+      }
       
+      console.log("Verification email sent successfully", data);
       setVerificationSent(true);
       setVerificationEmail(email);
+      
+      // Store the time when we sent the email in localStorage
+      const now = new Date();
+      localStorage.setItem(`lastVerificationSent_${email}`, now.toISOString());
+      
+      // Increment the send count
+      const storedCount = localStorage.getItem(`verificationSendCount_${email}`);
+      const currentCount = storedCount ? parseInt(storedCount, 10) : 0;
+      localStorage.setItem(`verificationSendCount_${email}`, (currentCount + 1).toString());
       
       toast({
         title: "Verification Email Sent",
         description: `We've sent a verification email to ${email}. Please check your inbox and spam folder.`,
       });
     } catch (error: any) {
+      console.error("Error sending verification email:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to send verification email",
         variant: "destructive",
       });
+    } finally {
+      setIsResendingVerification(false);
     }
   };
 
@@ -138,7 +160,7 @@ const Auth = () => {
                 <p className="mt-2 text-sm">
                   {authError.includes('expired') ? 
                     "Please request a new verification link below." : 
-                    "Please check your Supabase URL configuration in the dashboard."}
+                    "Please check your email address and try again."}
                 </p>
               </AlertDescription>
             </Alert>
@@ -151,17 +173,36 @@ const Auth = () => {
             <Alert className="mb-4 bg-yellow-50 border-yellow-200">
               <Mail className="h-4 w-4 text-yellow-600" />
               <AlertDescription className="text-yellow-800">
-                <p>We've sent a verification email to <strong>{verificationEmail}</strong>.</p>
-                <p className="mt-2 text-sm">
-                  If you don't see it, please check your spam folder or 
-                  <Button 
-                    variant="link" 
-                    className="p-0 h-auto text-yellow-800 underline ml-1"
-                    onClick={() => resendVerificationEmail(verificationEmail)}
-                  >
-                    click here to resend
-                  </Button>.
-                </p>
+                <p className="font-medium">We've sent a verification email to:</p>
+                <p className="my-1 font-bold">{verificationEmail}</p>
+                {isResendingVerification ? (
+                  <p className="text-sm italic mt-2">Sending...</p>
+                ) : (
+                  <div className="mt-3">
+                    <p className="text-sm">
+                      If you don't see it, please check your spam folder or 
+                      <Button 
+                        variant="link" 
+                        className="p-0 h-auto text-yellow-800 underline ml-1"
+                        onClick={() => resendVerificationEmail(verificationEmail)}
+                        disabled={isResendingVerification}
+                      >
+                        click here to resend
+                      </Button>.
+                    </p>
+                    
+                    <div className="mt-3 text-xs space-y-2">
+                      <p className="font-medium">Troubleshooting tips:</p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        <li>Check both inbox and spam/junk folders</li>
+                        <li>Add noreply@supabase.co to your contacts or safe senders list</li>
+                        <li>
+                          Email delivery can take a few minutes
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
               </AlertDescription>
             </Alert>
           )}
@@ -179,12 +220,32 @@ const Auth = () => {
               
               <TabsContent value="signup">
                 <SignupForm onSignupComplete={(email) => {
+                  console.log(`Signup complete for ${email}, showing verification notice`);
                   setVerificationEmail(email);
                   setVerificationSent(true);
                 }} />
               </TabsContent>
             </Tabs>
           )}
+          
+          {/* Add a help section at the bottom */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <h4 className="text-sm font-medium text-gray-700 flex items-center">
+              <AlertCircle className="h-3 w-3 mr-1" />
+              Having trouble with email verification?
+            </h4>
+            <p className="text-xs text-gray-500 mt-1">
+              If you're not receiving verification emails, please contact support or check your Supabase email settings.
+            </p>
+            <Button 
+              variant="link" 
+              size="sm"
+              className="text-xs p-0 h-auto mt-1"
+              onClick={() => window.open("https://supabase.com/dashboard/project/wscoyigjjcevriqqyxwo/auth/templates", "_blank")}
+            >
+              Check Supabase Email Settings <ExternalLink className="h-3 w-3 ml-1" />
+            </Button>
+          </div>
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-xs text-gray-500">
