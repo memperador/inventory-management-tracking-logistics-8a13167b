@@ -27,7 +27,7 @@ serve(async (req) => {
     const body = await req.json();
     const { email, confirmation_url } = body;
 
-    console.log(`Request body: ${JSON.stringify(body, null, 2)}`);
+    console.log(`Request received with body: ${JSON.stringify(body, null, 2)}`);
 
     if (!email || !confirmation_url) {
       console.error("Missing required fields:", { email: !!email, confirmation_url: !!confirmation_url });
@@ -40,9 +40,36 @@ serve(async (req) => {
       );
     }
 
+    // Extract domain to prevent incorrect domain in links
+    let verificationUrl = confirmation_url;
+    try {
+      // Ensure the URL is absolute and uses the correct domain
+      const urlObj = new URL(confirmation_url);
+      console.log(`Original URL domain: ${urlObj.origin}`);
+      
+      // If the URL contains localhost, replace it with the request origin 
+      if (urlObj.hostname.includes('localhost')) {
+        console.log("Detected localhost in URL, attempting to fix with request origin");
+        
+        // Extract the origin from the request headers
+        const requestOrigin = req.headers.get('origin');
+        if (requestOrigin) {
+          const requestUrl = new URL(requestOrigin);
+          urlObj.protocol = requestUrl.protocol;
+          urlObj.host = requestUrl.host;
+          verificationUrl = urlObj.toString();
+          console.log(`Fixed URL to: ${verificationUrl}`);
+        } else {
+          console.log("Could not determine request origin, using original URL");
+        }
+      }
+    } catch (urlError) {
+      console.error("Error processing URL:", urlError);
+    }
+
     // Log the request for debugging
     console.log(`Sending verification email to: ${email}`);
-    console.log(`Confirmation URL: ${confirmation_url}`);
+    console.log(`Confirmation URL: ${verificationUrl}`);
 
     // Send email via Resend
     try {
@@ -55,7 +82,7 @@ serve(async (req) => {
             <h2 style="color: #333; margin-bottom: 20px;">Confirm Your Email Address</h2>
             <p style="margin-bottom: 15px; line-height: 1.5;">Thank you for signing up for Inventory Track Pro. Please confirm your email address to get started.</p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${confirmation_url}" style="background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Confirm Email Address</a>
+              <a href="${verificationUrl}" style="background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Confirm Email Address</a>
             </div>
             <p style="margin-top: 15px; color: #555; font-size: 14px;">If you did not sign up for Inventory Track Pro, you can safely ignore this email.</p>
             <p style="margin-top: 30px; font-size: 12px; color: #888;">This link will expire in 24 hours.</p>
