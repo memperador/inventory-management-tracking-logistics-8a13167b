@@ -57,8 +57,8 @@ function App() {
                     <Route path="/unauthorized" element={<Unauthorized />} />
                     <Route path="/login" element={<Navigate to="/auth" replace />} />
                     
-                    {/* Root and default 404 redirects to auth page */}
-                    <Route path="/" element={<Navigate to="/auth" replace />} />
+                    {/* Root redirects to dashboard if authenticated, otherwise to auth page */}
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
                     <Route path="/404" element={<NotFound />} />
                     
                     <Route path="/onboarding" element={<ProtectedRoute redirectTo="/auth"><Onboarding /></ProtectedRoute>} />

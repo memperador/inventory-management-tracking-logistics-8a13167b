@@ -3,6 +3,7 @@ import React, { createContext, useState, useContext, useEffect, ReactNode } from
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface AuthContextType {
   user: User | null;
@@ -20,11 +21,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-
+  
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth state changed:', event);
         setSession(session);
         setUser(session?.user ?? null);
@@ -35,9 +36,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             description: 'You have been successfully signed in.',
           });
           
-          // Use window.location for navigation instead of useNavigate
-          if (window.location.pathname === '/auth') {
-            window.location.href = '/';
+          // Get the return URL from query params if available
+          const returnTo = new URLSearchParams(window.location.search).get('returnTo');
+          if (returnTo) {
+            window.location.href = decodeURIComponent(returnTo);
+          } else if (window.location.pathname === '/auth') {
+            window.location.href = '/dashboard';
           }
         } else if (event === 'SIGNED_OUT') {
           toast({
@@ -63,6 +67,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session ? 'Authenticated' : 'Not authenticated');
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);

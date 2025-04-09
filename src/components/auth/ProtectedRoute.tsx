@@ -40,7 +40,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // If user is not authenticated, redirect to login with the return URL
   if (!user) {
+    // Store the full URL including the pathname and search params for redirect after login
     const currentPath = encodeURIComponent(location.pathname + location.search);
+    console.log(`Redirecting unauthenticated user to ${redirectTo}?returnTo=${currentPath}`);
     return <Navigate to={`${redirectTo}?returnTo=${currentPath}`} replace />;
   }
   

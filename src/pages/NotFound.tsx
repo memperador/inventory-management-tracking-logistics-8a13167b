@@ -19,7 +19,9 @@ const NotFound = () => {
   }, [location.pathname]);
 
   const handleLoginClick = () => {
-    navigate("/auth");
+    // If user was trying to access a protected route, remember it for redirect after login
+    const currentPath = encodeURIComponent(location.pathname + location.search);
+    navigate(`/auth?returnTo=${currentPath}`);
   };
 
   const handleDashboardClick = () => {
@@ -41,7 +43,7 @@ const NotFound = () => {
           <Button onClick={handleDashboardClick} className="w-full">
             {user ? "Return to Dashboard" : "Go to Login"}
           </Button>
-          {location.pathname !== '/auth' && (
+          {location.pathname !== '/auth' && !user && (
             <Button onClick={handleLoginClick} variant="outline" className="w-full">
               Sign In / Sign Up
             </Button>
