@@ -48,8 +48,21 @@ serve(async (req) => {
       );
     }
 
-    // Ensure domain doesn't have trailing slash
-    const cleanDomain = domain.endsWith('/') ? domain.slice(0, -1) : domain;
+    // Process the domain to ensure it's formatted correctly
+    // Strip any trailing slashes
+    let cleanDomain = domain;
+    if (cleanDomain.endsWith('/')) {
+      cleanDomain = cleanDomain.slice(0, -1);
+    }
+    
+    // Check if the domain is a localhost URL and make sure it has the correct protocol
+    if (cleanDomain.includes('localhost') && !cleanDomain.startsWith('http')) {
+      cleanDomain = `http://${cleanDomain}`;
+    } else if (!cleanDomain.startsWith('http')) {
+      cleanDomain = `https://${cleanDomain}`;
+    }
+    
+    console.log(`Processed domain: ${cleanDomain}`);
     
     // Generate a verification link using the Supabase Admin API
     try {

@@ -46,6 +46,56 @@ const Auth = () => {
   
   useEffect(() => {
     const handleAuthRedirects = async () => {
+      console.log("Handling auth redirects...");
+      console.log("Current URL:", window.location.href);
+      
+      // Check if we're receiving parameters through hash fragment (SPA authentication)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      console.log("Hash parameters:", Object.fromEntries(hashParams));
+      
+      if (hashParams.has('access_token') && hashParams.get('type') === 'signup') {
+        console.log("Found access_token in hash, handling SPA verification");
+        try {
+          setIsVerifying(true);
+          const accessToken = hashParams.get('access_token');
+          
+          // Create a session with the access token
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken!,
+            refresh_token: hashParams.get('refresh_token')!,
+          });
+          
+          if (error) {
+            console.error("Error setting session:", error);
+            setAuthError(`Verification failed: ${error.message}`);
+            toast({
+              title: "Verification Failed",
+              description: error.message,
+              variant: "destructive"
+            });
+          } else {
+            console.log("Session created successfully:", data);
+            setEmailVerified(true);
+            toast({
+              title: "Email Verified",
+              description: "Your email has been successfully verified!",
+              variant: "default"
+            });
+            
+            // After showing the success message, redirect to dashboard
+            setTimeout(() => {
+              navigate('/dashboard', { replace: true });
+            }, 1500);
+          }
+        } catch (error: any) {
+          console.error("Error during SPA verification:", error);
+          setAuthError(`Verification error: ${error.message}`);
+        } finally {
+          setIsVerifying(false);
+        }
+        return;
+      }
+      
       // Check for email_confirmed parameter from our verification link
       const emailConfirmed = searchParams.get('email_confirmed');
       if (emailConfirmed === 'true') {
@@ -60,11 +110,11 @@ const Auth = () => {
         // After showing the success message, redirect to dashboard
         setTimeout(() => {
           navigate('/dashboard', { replace: true });
-        }, 3000);
+        }, 1500);
         return;
       }
       
-      // Check for verification token in URL (legacy flow)
+      // Check for verification token in URL (legacy or fallback flow)
       const token = searchParams.get('token_hash') || searchParams.get('token');
       const type = searchParams.get('type');
       
@@ -99,7 +149,7 @@ const Auth = () => {
             // After showing the success message, redirect to dashboard
             setTimeout(() => {
               navigate('/dashboard', { replace: true });
-            }, 3000);
+            }, 1500);
           }
         } catch (error: any) {
           console.error("Error during email verification:", error);

@@ -5,7 +5,7 @@ import { toast } from '@/hooks/use-toast';
 
 export const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
   try {
-    // Get the absolute URL of the current origin
+    // Get the absolute URL of the current origin - ensure it's fully formatted
     const domain = window.location.origin;
     console.log("Current domain for verification:", domain);
     
@@ -18,7 +18,6 @@ export const signUp = async (email: string, password: string, firstName: string,
           first_name: firstName,
           last_name: lastName
         },
-        // Do not set emailRedirectTo here to prevent default email
       },
     });
 
@@ -31,7 +30,10 @@ export const signUp = async (email: string, password: string, firstName: string,
         // Get the user ID for verification
         const userId = data.user.id;
         
-        // Build the absolute function URL
+        console.log("Sending custom verification email to:", email);
+        console.log("Using domain:", domain);
+        
+        // Build the absolute function URL with the correct project domain
         const functionUrl = `${domain}/functions/v1/custom-verification-email`;
         console.log("Calling function URL:", functionUrl);
         
@@ -60,6 +62,7 @@ export const signUp = async (email: string, password: string, firstName: string,
           });
           
           // Fall back to Supabase's default verification method as backup
+          console.log("Attempting fallback verification via Supabase");
           const { error: resendError } = await supabase.auth.resend({
             type: 'signup',
             email,
@@ -72,6 +75,10 @@ export const signUp = async (email: string, password: string, firstName: string,
             console.error("Fallback verification failed:", resendError);
           } else {
             console.log("Fallback verification email sent");
+            toast({
+              title: 'Verification Email Sent',
+              description: 'Please check your email to verify your account.',
+            });
           }
         } else {
           console.log('Custom verification email sent successfully');
@@ -87,6 +94,26 @@ export const signUp = async (email: string, password: string, firstName: string,
           description: 'Failed to send verification email. Please try again later or check your spam folder.',
           variant: 'destructive',
         });
+        
+        // Try the fallback method if custom email fails
+        try {
+          const { error: fallbackError } = await supabase.auth.resend({
+            type: 'signup',
+            email,
+            options: {
+              emailRedirectTo: `${domain}/auth?email_confirmed=true`
+            }
+          });
+          
+          if (!fallbackError) {
+            toast({
+              title: 'Verification Email Sent',
+              description: 'Please check your email to verify your account.',
+            });
+          }
+        } catch (fallbackErr) {
+          console.error("Fallback email method also failed:", fallbackErr);
+        }
       }
     } else {
       toast({
