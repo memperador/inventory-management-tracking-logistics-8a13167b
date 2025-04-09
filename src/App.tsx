@@ -32,18 +32,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 
-// Create a client
 const queryClient = new QueryClient();
 
-// Helper component to handle project redirect
 const ProjectRedirect = () => {
   const { projectId } = useParams();
   return <Navigate to={`/projects/${projectId}`} replace />;
 };
 
-// Helper component to decide where to redirect from the root route
 const RootRedirect = () => {
-  // We'll just redirect to auth for now to ensure visitors see the login/signup first
   return <Navigate to="/auth" replace />;
 };
 
@@ -57,23 +53,15 @@ function App() {
               <RoleProvider>
                 <NotificationProvider>
                   <Routes>
-                    {/* Auth Routes - Accessible without authentication */}
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/auth/reset-password" element={<ResetPassword />} />
                     <Route path="/auth/two-factor" element={<TwoFactorAuth />} />
                     <Route path="/unauthorized" element={<Unauthorized />} />
                     <Route path="/login" element={<Navigate to="/auth" replace />} />
-                    
-                    {/* Root route redirects to auth page for fresh visitors */}
                     <Route path="/" element={<RootRedirect />} />
                     <Route path="/404" element={<NotFound />} />
-                    
                     <Route path="/onboarding" element={<ProtectedRoute redirectTo="/auth"><Onboarding /></ProtectedRoute>} />
-
-                    {/* Add redirect for incorrect "project" (singular) URL to "projects" (plural) */}
                     <Route path="/project/:projectId" element={<ProjectRedirect />} />
-
-                    {/* Protected routes that require authentication */}
                     <Route element={<ProtectedRoute redirectTo="/auth"><AppLayout /></ProtectedRoute>}>
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/projects" element={<Projects />} />
@@ -91,11 +79,7 @@ function App() {
                       <Route path="/ai-assistant" element={<AIAssistant />} />
                       <Route path="/workflow" element={<WorkflowPage />} />
                     </Route>
-
-                    {/* Add a catch-all 404 route */}
                     <Route path="*" element={<NotFound />} />
-
-                    {/* Add new routes */}
                     <Route path="/terms-of-service" element={<TermsOfService />} />
                     <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   </Routes>

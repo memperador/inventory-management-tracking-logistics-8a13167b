@@ -1,6 +1,5 @@
-
 import { MailCheck, Mail } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuthContext';
 
 export const EmailVerificationIndicator = () => {
   const { user } = useAuth();

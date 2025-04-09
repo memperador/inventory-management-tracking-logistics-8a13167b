@@ -9,7 +9,7 @@ import EmailVerificationStatus from '@/components/auth/EmailVerificationStatus';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuthContext';
 import AuthErrorAlert from '@/components/auth/AuthErrorAlert';
 import VerificationAlert from '@/components/auth/VerificationAlert';
 import AuthFooter from '@/components/auth/AuthFooter';

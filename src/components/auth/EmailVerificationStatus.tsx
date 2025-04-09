@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuthContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Mail } from 'lucide-react';
 import EmailClientLink from './verification/EmailClientLink';
