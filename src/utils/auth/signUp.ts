@@ -17,10 +17,11 @@ export const signUp = async (email: string, password: string, firstName: string,
       options: {
         data: {
           first_name: firstName,
-          last_name: lastName
+          last_name: lastName,
+          needs_subscription: true // Add flag to indicate subscription needed
         },
         // Use the full URL to /auth route with a query parameter to indicate verification
-        emailRedirectTo: `${domain}/auth?email_confirmed=true`,
+        emailRedirectTo: `${domain}/auth?email_confirmed=true&new_user=true`,
       },
     });
 

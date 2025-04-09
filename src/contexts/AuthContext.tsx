@@ -4,6 +4,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { signUp, signIn, signOut, resetPassword, refreshSession as refreshSessionUtil } from '@/utils/auth';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
   user: User | null;
@@ -37,6 +38,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             description: 'You have been successfully signed in.',
           });
           
+          // Check if user needs subscription flow
+          const needsSubscription = session?.user?.user_metadata?.needs_subscription === true;
+          if (needsSubscription) {
+            window.location.href = '/payment';
+            return;
+          }
+          
           const returnTo = new URLSearchParams(window.location.search).get('returnTo');
           if (returnTo) {
             window.location.href = decodeURIComponent(returnTo);
@@ -65,13 +73,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         const url = new URL(window.location.href);
         const emailConfirmed = url.searchParams.get('email_confirmed') === 'true';
+        const newUser = url.searchParams.get('new_user') === 'true';
         
         if (emailConfirmed) {
           toast({
             title: 'Email confirmed!',
             description: 'Your email has been verified successfully.',
           });
-          window.location.href = '/dashboard';
+          
+          if (newUser) {
+            window.location.href = '/payment';
+          } else {
+            window.location.href = '/dashboard';
+          }
         }
       }
     );

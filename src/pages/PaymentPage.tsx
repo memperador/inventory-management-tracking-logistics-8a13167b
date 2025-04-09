@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { StripeProvider } from '@/components/payment/StripeProvider';
 import PaymentForm from '@/components/payment/PaymentForm';
@@ -115,9 +114,7 @@ const PaymentPage = () => {
   const [activeTab, setActiveTab] = useState('plans');
   const { currentTenant, updateCompanyType } = useTenant();
   const { toast } = useToast();
-  
-  // Calculate selected tier price
-  const selectedTierData = serviceTiers.find(tier => tier.id === selectedTier) || serviceTiers[1];
+  const { user } = useTenant();
 
   const handleTierChange = (tierId: string) => {
     setSelectedTier(tierId);
@@ -153,14 +150,21 @@ const PaymentPage = () => {
     });
   };
 
-  // Determine if this is an upgrade from existing subscription
   const isUpgrade = !!currentTenant?.subscription_tier;
+  const isNewSignup = !!user?.user_metadata?.needs_subscription;
 
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-3xl font-bold mb-6">
-        {isUpgrade ? 'Upgrade Subscription' : 'Choose Your Service Plan'}
+        {isNewSignup ? 'Choose Your Plan' : (isUpgrade ? 'Upgrade Subscription' : 'Choose Your Service Plan')}
       </h1>
+      
+      {isNewSignup && (
+        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800">
+          <h2 className="text-xl font-semibold mb-2">Welcome to Inventory Track Pro!</h2>
+          <p>Please select a subscription plan to continue. All plans include a 14-day free trial period.</p>
+        </div>
+      )}
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
         <TabsList className="grid grid-cols-2 w-[400px] mb-4">

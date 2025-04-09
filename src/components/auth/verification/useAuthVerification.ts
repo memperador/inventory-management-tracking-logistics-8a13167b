@@ -108,10 +108,23 @@ export function useAuthVerification() {
                 variant: "default"
               });
               
-              // After showing the success message, redirect to dashboard
-              setTimeout(() => {
-                navigate('/dashboard', { replace: true });
-              }, 1500);
+              // Check if this is a new user needing subscription
+              const needsSubscription = data.user?.user_metadata?.needs_subscription === true;
+              if (needsSubscription) {
+                toast({
+                  title: "Welcome! Please Select a Plan",
+                  description: "Choose a subscription plan to continue.",
+                  variant: "default"
+                });
+                setTimeout(() => {
+                  navigate('/payment', { replace: true });
+                }, 1500);
+              } else {
+                // Regular flow
+                setTimeout(() => {
+                  navigate('/dashboard', { replace: true });
+                }, 1500);
+              }
             }
           } else {
             console.error("Missing tokens in hash parameters");
@@ -128,6 +141,7 @@ export function useAuthVerification() {
       
       // Check for email_confirmed parameter from our verification link
       const emailConfirmed = searchParams.get('email_confirmed');
+      const newUser = searchParams.get('new_user');
       if (emailConfirmed === 'true') {
         console.log("Email verification success detected via URL parameter");
         setEmailVerified(true);
@@ -140,11 +154,26 @@ export function useAuthVerification() {
         // Fetch the current auth status to ensure we have the latest session
         const { data } = await supabase.auth.getSession();
         if (data.session) {
-          console.log("Session found after verification, redirecting to dashboard");
-          // After showing the success message, redirect to dashboard
-          setTimeout(() => {
-            navigate('/dashboard', { replace: true });
-          }, 1500);
+          console.log("Session found after verification");
+          
+          // Check if this is a new user that needs subscription
+          if (newUser === 'true') {
+            console.log("New user detected, redirecting to payment page");
+            toast({
+              title: "Welcome! Please Select a Plan",
+              description: "Choose a subscription plan to continue.",
+              variant: "default"
+            });
+            setTimeout(() => {
+              navigate('/payment', { replace: true });
+            }, 1500);
+          } else {
+            console.log("Existing user, redirecting to dashboard");
+            // After showing the success message, redirect to dashboard
+            setTimeout(() => {
+              navigate('/dashboard', { replace: true });
+            }, 1500);
+          }
         } else {
           console.log("No session found after verification, staying on auth page");
         }
@@ -183,9 +212,14 @@ export function useAuthVerification() {
               variant: "default"
             });
             
-            // After showing the success message, redirect to dashboard
+            // After showing the success message, redirect to payment page for new users
+            toast({
+              title: "Welcome! Please Select a Plan",
+              description: "Choose a subscription plan to continue.",
+              variant: "default"
+            });
             setTimeout(() => {
-              navigate('/dashboard', { replace: true });
+              navigate('/payment', { replace: true });
             }, 1500);
           }
         } catch (error: any) {

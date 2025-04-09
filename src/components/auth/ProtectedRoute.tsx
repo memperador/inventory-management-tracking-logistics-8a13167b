@@ -9,11 +9,13 @@ interface ProtectedRouteProps {
   requiredRoles?: UserRole[];
   redirectTo?: string;
   children?: ReactNode;
+  allowFreeTrialUsers?: boolean;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredRoles = [],
   redirectTo = '/auth',
+  allowFreeTrialUsers = false,
   children
 }) => {
   const { user, loading } = useAuth();
@@ -28,6 +30,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       console.log("Unauthorized access attempt to:", location.pathname, "- Redirecting to auth");
     } else {
       console.log("User authenticated, allowing access to:", location.pathname);
+      
+      // Check if user needs to select a subscription plan
+      const needsSubscription = user.user_metadata?.needs_subscription === true;
+      if (needsSubscription && location.pathname !== '/payment') {
+        console.log("User needs subscription, redirecting to payment page");
+      }
     }
   }, [user, loading, location.pathname]);
   
@@ -48,6 +56,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     const currentPath = encodeURIComponent(location.pathname + location.search);
     console.log(`Redirecting unauthenticated user to ${redirectTo}?returnTo=${currentPath}`);
     return <Navigate to={`${redirectTo}?returnTo=${currentPath}`} replace />;
+  }
+  
+  // Check if the user needs to subscribe first
+  const needsSubscription = user.user_metadata?.needs_subscription === true;
+  if (needsSubscription && location.pathname !== '/payment') {
+    console.log("Redirecting user to payment page to select a plan");
+    return <Navigate to="/payment" replace />;
   }
   
   // If no specific roles are required, just being authenticated is enough
