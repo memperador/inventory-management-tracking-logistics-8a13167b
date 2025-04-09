@@ -66,7 +66,13 @@ enabled = true
 # in emails.
 site_url = "https://muq.munetworks.io"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://muq.munetworks.io", "http://localhost:3000", "http://127.0.0.1:3000", "https://wscoyigjjcevriqqyxwo.supabase.co"]
+additional_redirect_urls = [
+  "https://muq.munetworks.io",
+  "https://muq.munetworks.io/auth",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "https://wscoyigjjcevriqqyxwo.supabase.co"
+]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # If disabled, the refresh token will never expire.
@@ -77,7 +83,7 @@ refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
 enable_signup = true
 # Enables the service role key to generate links for password reset and email invites.
-enable_confirmations = false
+enable_confirmations = true
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
@@ -86,7 +92,7 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = false
+enable_confirmations = true
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
@@ -103,5 +109,3 @@ vector_enabled = true
 
 [experimental.functions]
 [functions]
-[functions.custom-verification-email]
-verify_jwt = false

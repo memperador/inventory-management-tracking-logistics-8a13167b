@@ -38,14 +38,17 @@ export function useAuthVerification() {
       const errorCode = searchParams.get('error_code');
       const errorDescription = searchParams.get('error_description');
       
-      if (errorCode === 'otp_expired' || errorCode === 'access_denied') {
-        console.error("Token expired or invalid:", errorDescription);
-        setAuthError(errorDescription || "Your verification link has expired or is invalid. Please request a new one.");
-        toast({
-          title: "Verification Failed",
-          description: "Your verification link has expired. Please request a new verification email.",
-          variant: "destructive"
-        });
+      if (errorCode || searchParams.get('error')) {
+        console.error("Auth error:", errorDescription);
+        setAuthError(errorDescription || "Authentication error occurred. Please try again.");
+        
+        if (errorCode === 'otp_expired' || errorCode === 'access_denied') {
+          toast({
+            title: "Verification Failed",
+            description: "Your verification link has expired or is invalid. Please request a new one.",
+            variant: "destructive"
+          });
+        }
         return;
       }
       
@@ -58,16 +61,17 @@ export function useAuthVerification() {
         const hashErrorCode = hashParams.get('error_code');
         const hashErrorDesc = hashParams.get('error_description');
         
+        console.error("Hash auth error:", hashErrorDesc);
+        setAuthError(hashErrorDesc || "Authentication error occurred. Please try again.");
+        
         if (hashErrorCode === 'otp_expired' || hashParams.get('error') === 'access_denied') {
-          console.error("Hash token expired or invalid:", hashErrorDesc);
-          setAuthError(hashErrorDesc || "Your verification link has expired or is invalid. Please request a new one.");
           toast({
             title: "Verification Failed",
             description: "Your verification link has expired. Please request a new verification email.",
             variant: "destructive"
           });
-          return;
         }
+        return;
       }
       
       if (hashParams.has('access_token') && hashParams.get('type') === 'signup') {
@@ -179,29 +183,6 @@ export function useAuthVerification() {
           setAuthError(`Verification error: ${error.message}`);
         } finally {
           setIsVerifying(false);
-        }
-        return;
-      }
-      
-      // Check for other auth errors or redirects
-      const errorMessage = searchParams.get('error_description') || searchParams.get('error');
-      if (errorMessage) {
-        const decodedMessage = decodeURIComponent(errorMessage);
-        setAuthError(decodedMessage);
-        console.error("Auth redirect error:", decodedMessage);
-        
-        if (decodedMessage.includes('expired')) {
-          toast({
-            title: "Verification Link Expired",
-            description: "Your verification link has expired. Please request a new link.",
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Verification Error",
-            description: decodedMessage,
-            variant: "destructive"
-          });
         }
         return;
       }
