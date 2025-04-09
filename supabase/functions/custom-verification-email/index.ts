@@ -56,7 +56,7 @@ serve(async (req) => {
     }
     
     // Check if the domain is a localhost URL and make sure it has the correct protocol
-    if (cleanDomain.includes('localhost') && !cleanDomain.startsWith('http')) {
+    if ((cleanDomain.includes('localhost') || cleanDomain.includes('127.0.0.1')) && !cleanDomain.startsWith('http')) {
       cleanDomain = `http://${cleanDomain}`;
     } else if (!cleanDomain.startsWith('http')) {
       cleanDomain = `https://${cleanDomain}`;
@@ -87,6 +87,11 @@ serve(async (req) => {
       // Get the verification URL
       const verificationUrl = data.properties.action_link;
       console.log(`Generated verification URL: ${verificationUrl}`);
+
+      // Extract the token from the URL for debugging purposes
+      const urlObj = new URL(verificationUrl);
+      const tokenHash = urlObj.searchParams.get('token_hash') || 'unknown';
+      console.log(`Token hash in URL: ${tokenHash.substring(0, 10)}...`);
 
       // Send email via Resend
       const { data: emailData, error: emailError } = await resend.emails.send({

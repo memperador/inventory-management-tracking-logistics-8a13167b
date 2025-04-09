@@ -32,8 +32,17 @@ export const signUp = async (email: string, password: string, firstName: string,
         console.log("Sending custom verification email to:", email);
         console.log("Using domain:", domain);
         
-        // Build the absolute function URL with the correct project domain
-        const functionUrl = `${domain}/functions/v1/custom-verification-email`;
+        // Build the function URL with the correct project domain
+        // First, determine if we're running on localhost
+        let functionUrl;
+        if (domain.includes('localhost') || domain.includes('127.0.0.1')) {
+          // For local development, we target the Supabase local development server
+          functionUrl = `http://localhost:54321/functions/v1/custom-verification-email`;
+          console.log("Using local development function URL:", functionUrl);
+        } else {
+          // For production, use the full function URL with the project ID
+          functionUrl = `${domain}/functions/v1/custom-verification-email`;
+        }
         console.log("Calling function URL:", functionUrl);
         
         const response = await fetch(functionUrl, {
