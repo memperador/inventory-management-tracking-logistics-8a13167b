@@ -1,12 +1,17 @@
+
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { Tenant } from '@/types/tenant';
 
 interface TenantContextType {
   tenantId: string | null;
+  currentTenant: Tenant | null;
   setTenantId: (tenantId: string | null) => void;
   loading: boolean;
+  updateTenantSettings: (settings: Partial<Tenant['settings']>) => Promise<void>;
+  updateCompanyType: (companyType: Tenant['company_type']) => Promise<void>;
 }
 
 export const TenantContext = createContext<TenantContextType | undefined>(undefined);
@@ -14,16 +19,19 @@ export const TenantContext = createContext<TenantContextType | undefined>(undefi
 export const TenantProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const [tenantId, setTenantId] = useState<string | null>(null);
+  const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Fetch tenant ID when user changes
   useEffect(() => {
     const fetchTenantId = async () => {
       if (user) {
         try {
+          // Query the users table instead of user_tenants
           const { data, error } = await supabase
-            .from('user_tenants')
+            .from('users')
             .select('tenant_id')
-            .eq('user_id', user.id)
+            .eq('id', user.id)
             .single();
 
           if (error) {
@@ -35,6 +43,9 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
             });
           } else if (data) {
             setTenantId(data.tenant_id);
+            
+            // Fetch tenant details
+            fetchTenantDetails(data.tenant_id);
           }
         } catch (error) {
           console.error("Unexpected error fetching tenant ID:", error);
@@ -53,12 +64,96 @@ export const TenantProvider = ({ children }: { children: ReactNode }) => {
 
     fetchTenantId();
   }, [user]);
+  
+  // Fetch tenant details when tenant ID changes
+  const fetchTenantDetails = async (id: string) => {
+    if (!id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('tenants')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
+      if (error) {
+        console.error("Error fetching tenant details:", error);
+        return;
+      }
+      
+      if (data) {
+        setCurrentTenant(data as Tenant);
+      }
+    } catch (error) {
+      console.error("Error fetching tenant details:", error);
+    }
+  };
+  
+  // Update tenant settings
+  const updateTenantSettings = async (settings: Partial<Tenant['settings']>) => {
+    if (!tenantId || !currentTenant) {
+      throw new Error("No tenant selected");
+    }
+    
+    try {
+      const updatedSettings = {
+        ...currentTenant.settings,
+        ...settings
+      };
+      
+      const { error } = await supabase
+        .from('tenants')
+        .update({ settings: updatedSettings })
+        .eq('id', tenantId);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setCurrentTenant({
+        ...currentTenant,
+        settings: updatedSettings
+      });
+      
+    } catch (error) {
+      console.error("Error updating tenant settings:", error);
+      throw error;
+    }
+  };
+  
+  // Update company type
+  const updateCompanyType = async (companyType: Tenant['company_type']) => {
+    if (!tenantId || !currentTenant) {
+      throw new Error("No tenant selected");
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('tenants')
+        .update({ company_type: companyType })
+        .eq('id', tenantId);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setCurrentTenant({
+        ...currentTenant,
+        company_type: companyType
+      });
+      
+    } catch (error) {
+      console.error("Error updating company type:", error);
+      throw error;
+    }
+  };
 
   return (
     <TenantContext.Provider value={{
       tenantId,
+      currentTenant,
       setTenantId,
       loading,
+      updateTenantSettings,
+      updateCompanyType
     }}>
       {children}
     </TenantContext.Provider>
