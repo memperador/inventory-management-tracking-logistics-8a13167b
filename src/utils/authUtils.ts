@@ -5,12 +5,11 @@ import { toast } from '@/hooks/use-toast';
 
 export const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
   try {
-    // Use the current origin as the redirect URL
+    // Get the domain for the redirect URL - handle both production and development environments
     const domain = window.location.origin;
-    console.log("Current domain for redirect:", domain);
+    console.log("Current domain for verification:", domain);
     
-    // Regular signup with Supabase - but don't use the email redirect option
-    // This prevents Supabase from sending its own verification email
+    // 1. First create the user account with Supabase
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -19,27 +18,23 @@ export const signUp = async (email: string, password: string, firstName: string,
           first_name: firstName,
           last_name: lastName
         },
-        // Don't set emailRedirectTo here - we'll handle this in our custom email
+        // Intentionally DO NOT set emailRedirectTo 
+        // This prevents Supabase from sending the default verification email
       },
     });
 
     if (error) throw error;
+    console.log("User signup successful:", data);
 
-    // If signup was successful, send our own custom verification email
+    // 2. If signup was successful, send our custom branded verification email
     if (data?.user) {
       try {
-        // Create a confirmation URL for our custom email
-        // This should point to the actual origin, not localhost
+        // Create a proper confirmation URL that includes the correct domain
         const confirmationUrl = `${domain}/auth?email_confirmed=true`;
+        console.log("Sending custom verification email with URL:", confirmationUrl);
         
-        console.log("Signup successful, sending custom verification email");
-        console.log("Email:", email);
-        console.log("Confirmation URL:", confirmationUrl);
-        
-        // Call our custom Edge Function to send the branded email
-        // Use the full Supabase URL with project ID
+        // Call our custom edge function 
         const functionUrl = 'https://wscoyigjjcevriqqyxwo.supabase.co/functions/v1/custom-verification-email';
-        console.log("Calling function URL:", functionUrl);
         
         const response = await fetch(functionUrl, {
           method: 'POST',
@@ -54,16 +49,30 @@ export const signUp = async (email: string, password: string, firstName: string,
         });
 
         const responseData = await response.json();
-        console.log("Response status:", response.status);
-        console.log("Response data:", responseData);
+        console.log("Verification email function response:", responseData);
 
         if (!response.ok) {
           console.error('Failed to send custom verification email:', responseData);
           toast({
-            title: 'Verification Email Issue',
-            description: 'There was a problem sending the verification email. Please try again or contact support.',
+            title: 'Email Verification Issue',
+            description: 'There was a problem sending your verification email. Please try again or check your spam folder.',
             variant: 'destructive',
           });
+          
+          // Fall back to Supabase's default verification method as backup
+          const { error: resendError } = await supabase.auth.resend({
+            type: 'signup',
+            email,
+            options: {
+              emailRedirectTo: `${domain}/auth?email_confirmed=true`
+            }
+          });
+          
+          if (resendError) {
+            console.error("Fallback verification failed:", resendError);
+          } else {
+            console.log("Fallback verification email sent");
+          }
         } else {
           console.log('Custom verification email sent successfully');
           toast({
@@ -75,7 +84,7 @@ export const signUp = async (email: string, password: string, firstName: string,
         console.error('Error sending custom verification email:', emailError);
         toast({
           title: 'Verification Email Error',
-          description: 'Failed to send verification email. Please try again later.',
+          description: 'Failed to send verification email. Please try again later or check your spam folder.',
           variant: 'destructive',
         });
       }

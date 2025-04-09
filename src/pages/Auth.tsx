@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuthContext';
 import AuthErrorAlert from '@/components/auth/AuthErrorAlert';
 import VerificationAlert from '@/components/auth/VerificationAlert';
 import AuthFooter from '@/components/auth/AuthFooter';
+import VerifiedEmailAlert from '@/components/auth/verification/VerifiedEmailAlert';
 
 const Auth = () => {
   const [activeTab, setActiveTab] = useState("login");
@@ -23,6 +24,7 @@ const Auth = () => {
   const [verificationEmail, setVerificationEmail] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
   const [isResendingVerification, setIsResendingVerification] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
   const { user } = useAuth();
   const [emailProvider, setEmailProvider] = useState<string | null>(null);
   
@@ -43,6 +45,25 @@ const Auth = () => {
   
   useEffect(() => {
     const handleAuthRedirects = async () => {
+      // Check for email_confirmed parameter - this comes from our custom verification URL
+      const emailConfirmedParam = searchParams.get('email_confirmed');
+      if (emailConfirmedParam === 'true') {
+        console.log("Email verification detected via URL parameter");
+        setEmailVerified(true);
+        toast({
+          title: "Email Verified",
+          description: "Your email has been successfully verified!",
+          variant: "default"
+        });
+        
+        // After showing the success message, redirect to dashboard
+        setTimeout(() => {
+          navigate('/dashboard', { replace: true });
+        }, 3000);
+        return;
+      }
+      
+      // Check for other auth errors or redirects
       const errorMessage = searchParams.get('error_description') || searchParams.get('error');
       if (errorMessage) {
         const decodedMessage = decodeURIComponent(errorMessage);
@@ -62,22 +83,10 @@ const Auth = () => {
             variant: "destructive"
           });
         }
-        
-        navigate('/auth', { replace: true });
         return;
       }
       
-      const emailVerified = searchParams.get('email_confirmed') === 'true';
-      if (emailVerified) {
-        console.log("Email verification successful!");
-        toast({
-          title: "Email Verified",
-          description: "Your email has been verified successfully!",
-        });
-        navigate('/dashboard', { replace: true });
-        return;
-      }
-      
+      // Handle password recovery flow
       const token = searchParams.get('token') || searchParams.get('access_token');
       const type = searchParams.get('type');
       
@@ -115,6 +124,8 @@ const Auth = () => {
         <CardContent>
           {authError && <AuthErrorAlert errorMessage={authError} />}
           
+          {emailVerified && <VerifiedEmailAlert />}
+          
           {user && !user.email_confirmed_at && <EmailVerificationStatus />}
           
           {verificationSent && (
@@ -126,7 +137,7 @@ const Auth = () => {
             />
           )}
           
-          {(!user || user.email_confirmed_at) && (
+          {(!user || user.email_confirmed_at) && !emailVerified && (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Sign In</TabsTrigger>

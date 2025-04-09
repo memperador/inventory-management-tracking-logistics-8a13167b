@@ -27,7 +27,8 @@ serve(async (req) => {
     const body = await req.json();
     const { email, confirmation_url } = body;
 
-    console.log(`Request received with body: ${JSON.stringify(body, null, 2)}`);
+    console.log(`Request received for email: ${email}`);
+    console.log(`Original confirmation URL: ${confirmation_url}`);
 
     if (!email || !confirmation_url) {
       console.error("Missing required fields:", { email: !!email, confirmation_url: !!confirmation_url });
@@ -43,46 +44,67 @@ serve(async (req) => {
     // Extract domain to prevent incorrect domain in links
     let verificationUrl = confirmation_url;
     try {
-      // Ensure the URL is absolute and uses the correct domain
-      const urlObj = new URL(confirmation_url);
-      console.log(`Original URL domain: ${urlObj.origin}`);
+      // Get deployment URL from request headers or environment
+      const requestOrigin = req.headers.get('origin');
+      console.log(`Request origin: ${requestOrigin || 'not available'}`);
       
-      // If the URL contains localhost, replace it with the request origin 
-      if (urlObj.hostname.includes('localhost')) {
-        console.log("Detected localhost in URL, attempting to fix with request origin");
+      // Create a proper verification URL that points to production/deployed URL
+      const urlObj = new URL(confirmation_url);
+      
+      // Fix localhost URLs
+      if (urlObj.hostname.includes('localhost') || urlObj.hostname === '127.0.0.1') {
+        console.log("Converting localhost URL to deployed URL");
         
-        // Extract the origin from the request headers
-        const requestOrigin = req.headers.get('origin');
+        // If we have a request origin, use it
         if (requestOrigin) {
-          const requestUrl = new URL(requestOrigin);
-          urlObj.protocol = requestUrl.protocol;
-          urlObj.host = requestUrl.host;
+          const deployedUrl = new URL(requestOrigin);
+          urlObj.protocol = deployedUrl.protocol;
+          urlObj.host = deployedUrl.host;
           verificationUrl = urlObj.toString();
-          console.log(`Fixed URL to: ${verificationUrl}`);
         } else {
-          console.log("Could not determine request origin, using original URL");
+          // Fallback to fixed URL if no origin available
+          // Replace with your deployed domain
+          const deployedDomain = req.headers.get('referer') || 
+            req.headers.get('host') || 
+            'https://wscoyigjjcevriqqyxwo.supabase.co';
+            
+          try {
+            const deployedUrl = new URL(deployedDomain);
+            urlObj.protocol = deployedUrl.protocol;
+            urlObj.host = deployedUrl.host;
+          } catch (e) {
+            console.log("Could not parse as URL, using as hostname");
+            urlObj.protocol = 'https:';
+            urlObj.host = deployedDomain;
+          }
+          
+          // Ensure path includes /auth with email_confirmed parameter
+          if (!urlObj.pathname.includes('/auth')) {
+            urlObj.pathname = '/auth';
+          }
+          
+          urlObj.searchParams.set('email_confirmed', 'true');
+          verificationUrl = urlObj.toString();
         }
       }
+      
+      console.log(`Fixed verification URL: ${verificationUrl}`);
     } catch (urlError) {
       console.error("Error processing URL:", urlError);
     }
 
-    // Log the request for debugging
-    console.log(`Sending verification email to: ${email}`);
-    console.log(`Confirmation URL: ${verificationUrl}`);
-
     // Send email via Resend
     try {
       const { data, error } = await resend.emails.send({
-        from: "Inventory Track Pro <no-reply@resend.dev>", // Change to your branded email
+        from: "Inventory Track Pro <no-reply@resend.dev>", 
         to: email,
-        subject: "Confirm Your Signup",
+        subject: "Verify your email address",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
-            <h2 style="color: #333; margin-bottom: 20px;">Confirm Your Email Address</h2>
-            <p style="margin-bottom: 15px; line-height: 1.5;">Thank you for signing up for Inventory Track Pro. Please confirm your email address to get started.</p>
+            <h2 style="color: #333; margin-bottom: 20px;">Verify Your Email Address</h2>
+            <p style="margin-bottom: 15px; line-height: 1.5;">Thank you for signing up for Inventory Track Pro. Please verify your email address to complete your registration.</p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${verificationUrl}" style="background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Confirm Email Address</a>
+              <a href="${verificationUrl}" style="background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Verify Email Address</a>
             </div>
             <p style="margin-top: 15px; color: #555; font-size: 14px;">If you did not sign up for Inventory Track Pro, you can safely ignore this email.</p>
             <p style="margin-top: 30px; font-size: 12px; color: #888;">This link will expire in 24 hours.</p>
