@@ -1,18 +1,21 @@
-// If we're accessing the returned email from signUp, we need to update SignupForm.tsx 
-// to accommodate the new return type
+
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-const SignupForm = ({ 
-  setVerificationSent, 
-  setVerificationEmail 
-}: { 
+type SignupFormProps = {
   setVerificationSent?: (value: boolean) => void;
   setVerificationEmail?: (value: string) => void;
-}) => {
+  onSignupComplete?: (email: string) => void;
+};
+
+const SignupForm = ({ 
+  setVerificationSent, 
+  setVerificationEmail,
+  onSignupComplete
+}: SignupFormProps) => {
   const { signUp } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,6 +34,11 @@ const SignupForm = ({
       if (setVerificationSent && setVerificationEmail) {
         setVerificationSent(true);
         setVerificationEmail(result.email);
+      }
+
+      // If we have the new onSignupComplete handler, call it
+      if (onSignupComplete) {
+        onSignupComplete(result.email);
       }
     } catch (error) {
       console.error("Signup error:", error);
