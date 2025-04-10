@@ -124,14 +124,23 @@ export const InventoryPageContent: React.FC<InventoryPageContentProps> = ({
     setEquipmentData(updatedEquipment);
   };
 
+  // Create wrapper functions to pass filtered equipment data to export functions
+  const handleExportWrapper = () => {
+    handleExport(filteredEquipment);
+  };
+
+  const handleExportCSVWrapper = () => {
+    handleExportCSV(filteredEquipment);
+  };
+
   return (
     <div className="space-y-6">
       {showUpgradeBanner && <UpgradeBanner />}
       
       <InventoryHeader 
         onImport={handleImport}
-        onExport={handleExport}
-        onExportCSV={handleExportCSV}
+        onExport={handleExportWrapper}
+        onExportCSV={handleExportCSVWrapper}
         onAddItem={() => setIsNewItemDialogOpen(true)}
         onToggleVendorIntegration={() => setShowVendorIntegration(!showVendorIntegration)}
         showVendorIntegration={showVendorIntegration}
