@@ -13,7 +13,7 @@ const PaymentPage = () => {
   return (
     <div className="container mx-auto py-8">
       <BetaBanner />
-      <TrialBanner className="mb-6" />
+      <TrialBanner className="mb-6" showTierSwitcher={true} />
       
       <h1 className="text-3xl font-bold mb-6 flex items-center">
         <Zap className="mr-2 h-6 w-6 text-primary" />

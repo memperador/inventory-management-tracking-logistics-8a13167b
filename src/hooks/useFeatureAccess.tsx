@@ -58,6 +58,7 @@ export const useFeatureAccess = () => {
       
       // Standard tier features
       'gps': 'standard',
+      'gps_tracking': 'standard',
       'audit_logs': 'standard',
       'advanced_alerts': 'standard',
       'bulk_qr': 'standard',

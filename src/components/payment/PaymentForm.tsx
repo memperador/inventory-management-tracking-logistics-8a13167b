@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuditLogger } from '@/middleware/auditLogger';
 import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useTenant } from '@/hooks/useTenantContext';
+import { useNavigate } from 'react-router-dom';
 
 interface PaymentFormProps {
   amount: number;
@@ -25,70 +28,86 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   const elements = useElements();
   const { toast } = useToast();
   const { logEvent } = useAuditLogger();
+  const { currentTenant, setCurrentTenant } = useTenant();
+  const navigate = useNavigate();
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-
-    if (!stripe || !elements) {
-      // Stripe.js has not yet loaded
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
     try {
-      // In a real implementation, this would call your backend API
-      // to create a PaymentIntent and return the client_secret
-      // The API would also store the selected tier
-      const clientSecret = await createPaymentIntent(amount, selectedTier);
-
-      const cardElement = elements.getElement(CardElement);
-
-      if (!cardElement) {
-        throw new Error('Card element not found');
-      }
-
-      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(
-        clientSecret, 
-        {
-          payment_method: {
-            card: cardElement,
-          },
-        }
-      );
-
-      if (stripeError) {
-        throw new Error(stripeError.message || 'Payment failed');
-      }
+      // Mock successful payment without using Stripe
+      console.log(`Processing mock payment for $${(amount / 100).toFixed(2)} with tier ${selectedTier || 'unknown'}`);
       
-      if (paymentIntent?.status === 'succeeded') {
-        toast({
-          title: "Payment successful",
-          description: `Your payment of $${(amount / 100).toFixed(2)} was processed successfully`,
-        });
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Create a fake payment intent for the UI
+      const mockPaymentIntent = {
+        id: `mock_payment_${Date.now()}`,
+        amount: amount,
+        status: 'succeeded',
+        created: Date.now() / 1000,
+        tier: selectedTier
+      };
+      
+      // Update the tenant's subscription in Supabase
+      if (selectedTier && currentTenant?.id) {
+        const { error: updateError } = await supabase
+          .from('tenants')
+          .update({
+            subscription_tier: selectedTier,
+            subscription_status: 'active',
+            // Clear trial end date if it was on a trial
+            trial_ends_at: null
+          })
+          .eq('id', currentTenant.id);
         
-        // Log the successful payment
-        await logEvent({
-          userId: 'current-user', // In a real app, get from auth context
-          action: 'payment_processed',
-          entityType: 'payment',
-          entityId: paymentIntent.id,
-          newValue: {
-            amount,
-            status: paymentIntent.status,
-            id: paymentIntent.id,
-            tier: selectedTier
-          },
-        });
+        if (updateError) {
+          throw new Error(`Failed to update subscription: ${updateError.message}`);
+        }
         
-        if (onSuccess) {
-          onSuccess(paymentIntent);
+        // Update the local tenant state
+        if (currentTenant) {
+          setCurrentTenant({
+            ...currentTenant,
+            subscription_tier: selectedTier as any,
+            subscription_status: 'active',
+            trial_ends_at: null
+          });
         }
       }
+
+      toast({
+        title: "Subscription updated",
+        description: `Your ${selectedTier} subscription has been activated.`,
+      });
+      
+      // Log the successful mock payment
+      await logEvent({
+        userId: 'current-user',
+        action: 'mock_payment_processed',
+        entityType: 'payment',
+        entityId: mockPaymentIntent.id,
+        newValue: {
+          amount,
+          status: mockPaymentIntent.status,
+          id: mockPaymentIntent.id,
+          tier: selectedTier
+        },
+      });
+      
+      if (onSuccess) {
+        onSuccess(mockPaymentIntent);
+      }
+
+      // Redirect to dashboard
+      navigate('/dashboard');
+      
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       setError(errorMessage);
@@ -101,8 +120,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
       
       // Log the failed payment
       await logEvent({
-        userId: 'current-user', // In a real app, get from auth context
-        action: 'payment_failed',
+        userId: 'current-user',
+        action: 'mock_payment_failed',
         entityType: 'payment',
         entityId: 'attempt',
         metadata: {
@@ -118,16 +137,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     } finally {
       setLoading(false);
     }
-  };
-
-  // Mock function to simulate creating a payment intent
-  // In a real app, this would be an API call to your backend
-  const createPaymentIntent = async (amount: number, tier?: string): Promise<string> => {
-    console.log(`Creating payment intent for $${(amount / 100).toFixed(2)} with tier ${tier || 'unknown'}`);
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    // Return a fake client secret
-    return 'pi_fake_client_secret_for_demo_purposes_only';
   };
 
   const cardElementOptions = {
@@ -149,6 +158,9 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="rounded-md border p-4">
         <CardElement options={cardElementOptions} />
+        <div className="mt-2 text-sm text-blue-600">
+          This is a mock payment system - no actual charges will be processed
+        </div>
       </div>
       
       {error && (
@@ -157,7 +169,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
       
       <Button 
         type="submit" 
-        disabled={!stripe || loading || disabled} 
+        disabled={loading || disabled} 
         className="w-full"
       >
         {loading ? (
@@ -166,7 +178,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             Processing...
           </>
         ) : (
-          `Pay $${(amount / 100).toFixed(2)}`
+          `Mock Subscribe: $${(amount / 100).toFixed(2)}`
         )}
       </Button>
       

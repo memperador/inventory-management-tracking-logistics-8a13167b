@@ -8,6 +8,9 @@ import PaymentOptions from './PaymentOptions';
 import SubscriptionSummary from './SubscriptionSummary';
 import { Button } from '@/components/ui/button';
 import { Building, Sparkles } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { addDays } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 // Service tiers data
 const serviceTiers: ServiceTier[] = [
@@ -105,9 +108,10 @@ export const PlansTab: React.FC = () => {
   const [paymentAmount, setPaymentAmount] = React.useState(9900); // Default to Standard tier
   const [paymentType, setPaymentType] = React.useState('subscription');
   const [agreeToFees, setAgreeToFees] = React.useState(false);
-  const { currentTenant } = useTenant();
+  const { currentTenant, setCurrentTenant } = useTenant();
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   const handleTierChange = (tierId: string) => {
     setSelectedTier(tierId);
@@ -119,14 +123,18 @@ export const PlansTab: React.FC = () => {
 
   const selectedTierData = serviceTiers.find(tier => tier.id === selectedTier) || serviceTiers[1]; // Default to Standard
 
-  const handleSuccess = (paymentIntent: any) => {
+  const handleSuccess = async (paymentIntent: any) => {
     console.log('Payment succeeded:', paymentIntent);
     
-    // In a real app, you would update the subscription in the database
     toast({
       title: `Subscribed to ${selectedTierData.name} Plan`,
       description: `You now have access to ${selectedTierData.description} features.`,
     });
+    
+    // Redirect to dashboard after 2 seconds
+    setTimeout(() => {
+      navigate('/dashboard');
+    }, 2000);
   };
 
   const handleError = (error: Error) => {
@@ -143,16 +151,106 @@ export const PlansTab: React.FC = () => {
       title: "Enterprise Inquiry Sent",
       description: "Our team will contact you shortly to discuss your enterprise needs.",
     });
+    
+    // For testing purposes, also set the subscription to enterprise
+    if (currentTenant?.id) {
+      updateSubscription('enterprise');
+    }
   };
 
-  const handleStartTrial = () => {
-    toast({
-      title: "Free Trial Started",
-      description: "Your 7-day Premium tier trial has begun. Enjoy all Premium features!",
-    });
-    // In a real implementation, we would update the user's subscription status in the database
-    // For now, let's navigate to the dashboard
-    window.location.href = '/dashboard';
+  const handleStartTrial = async () => {
+    if (!currentTenant?.id) {
+      toast({
+        title: "Error",
+        description: "Unable to start trial - no tenant information found",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      // Calculate trial end date - 7 days from now
+      const trialEndsAt = addDays(new Date(), 7).toISOString();
+      
+      const { error } = await supabase
+        .from('tenants')
+        .update({
+          subscription_tier: 'premium',
+          subscription_status: 'trialing',
+          trial_ends_at: trialEndsAt
+        })
+        .eq('id', currentTenant.id);
+        
+      if (error) throw error;
+      
+      // Update the local tenant state
+      setCurrentTenant({
+        ...currentTenant,
+        subscription_tier: 'premium',
+        subscription_status: 'trialing',
+        trial_ends_at: trialEndsAt
+      });
+      
+      toast({
+        title: "Free Trial Started",
+        description: "Your 7-day Premium tier trial has begun. Enjoy all Premium features!",
+      });
+      
+      // Navigate to dashboard
+      navigate('/dashboard');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to start trial: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const updateSubscription = async (tier: string) => {
+    if (!currentTenant?.id) return;
+    
+    try {
+      const { error } = await supabase
+        .from('tenants')
+        .update({
+          subscription_tier: tier,
+          subscription_status: 'active',
+          // Clear trial end date if it was on a trial
+          trial_ends_at: null
+        })
+        .eq('id', currentTenant.id);
+        
+      if (error) throw error;
+      
+      // Update the local tenant state
+      setCurrentTenant({
+        ...currentTenant,
+        subscription_tier: tier as any,
+        subscription_status: 'active',
+        trial_ends_at: null
+      });
+      
+      toast({
+        title: `${tier.charAt(0).toUpperCase() + tier.slice(1)} Plan Activated`,
+        description: tier === 'enterprise' 
+          ? "Enterprise plan has been activated. Our team will contact you shortly."
+          : `Your ${tier} plan has been activated.`
+      });
+      
+      // Navigate to dashboard if not enterprise
+      if (tier !== 'enterprise') {
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 2000);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to update subscription: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive"
+      });
+    }
   };
 
   const isUpgrade = !!currentTenant?.subscription_tier;

@@ -1,4 +1,3 @@
-
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
@@ -175,11 +174,39 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
       // Determine if subscription is active or in trial
       const hasActiveSubscription = tenantData && 
         (tenantData.subscription_status === 'active');
-        
+      
+      // Check if trial is still valid (trial_ends_at is in the future)
       const inTrialPeriod = tenantData && 
         tenantData.subscription_status === 'trialing' && 
         tenantData.trial_ends_at && 
         new Date(tenantData.trial_ends_at) > new Date();
+      
+      // If trial has expired, update the status
+      if (tenantData && 
+          tenantData.subscription_status === 'trialing' && 
+          tenantData.trial_ends_at && 
+          new Date(tenantData.trial_ends_at) <= new Date()) {
+        
+        logAuth('AUTH-HANDLER', 'Trial has expired, updating status', {
+          level: AUTH_LOG_LEVELS.INFO
+        });
+        
+        // Update tenant with inactive subscription
+        const { error: updateError } = await supabase
+          .from('tenants')
+          .update({
+            subscription_status: 'inactive',
+            // Keep trial_ends_at for reference
+          })
+          .eq('id', userData.tenant_id);
+          
+        if (updateError) {
+          logAuth('AUTH-HANDLER', `Error updating expired trial: ${updateError.message}`, {
+            level: AUTH_LOG_LEVELS.ERROR,
+            data: updateError
+          });
+        }
+      }
       
       logAuth('AUTH-HANDLER', 'Subscription status:', {
         level: AUTH_LOG_LEVELS.INFO,
