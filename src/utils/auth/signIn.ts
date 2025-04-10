@@ -7,6 +7,14 @@ export const signIn = async (email: string, password: string) => {
     // Clear any previous login state to prevent loops
     sessionStorage.removeItem(`auth_processed_${email}`);
     
+    // Also clear any other session storage items that might cause loops
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && (key.startsWith('processing_') || key === 'login_toast_shown')) {
+        sessionStorage.removeItem(key);
+      }
+    }
+    
     const { data, error } = await supabase.auth.signInWithPassword({ 
       email, 
       password 
@@ -25,17 +33,20 @@ export const signIn = async (email: string, password: string) => {
       }
     }
     
-    // Set a flag to prevent duplicate toasts
+    // Set a flag to prevent duplicate toasts with a unique timestamp
+    const toastId = `login_toast_${Date.now()}`;
     if (!sessionStorage.getItem('login_toast_shown')) {
       toast({
         title: 'Welcome back!',
         description: 'You have been signed in successfully',
       });
-      sessionStorage.setItem('login_toast_shown', 'true');
+      sessionStorage.setItem('login_toast_shown', toastId);
       
       // Clear this flag after 5 seconds
       setTimeout(() => {
-        sessionStorage.removeItem('login_toast_shown');
+        if (sessionStorage.getItem('login_toast_shown') === toastId) {
+          sessionStorage.removeItem('login_toast_shown');
+        }
       }, 5000);
     }
   } catch (error: any) {

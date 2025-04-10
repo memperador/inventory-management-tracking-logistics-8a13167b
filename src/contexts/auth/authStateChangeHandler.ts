@@ -18,9 +18,23 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
     return;
   }
   
+  // Create a unique processing flag to ensure we're not handling the same process twice
+  const processingFlag = `processing_${currentSession?.user?.id}_${Date.now()}`;
+  if (sessionStorage.getItem(processingFlag)) {
+    console.log('Already processing an auth change, preventing duplicate processing');
+    return;
+  }
+  
+  // Set processing flag with 10s expiry to prevent concurrent processing
+  sessionStorage.setItem(processingFlag, 'true');
+  setTimeout(() => sessionStorage.removeItem(processingFlag), 10000);
+  
   // Use setTimeout to ensure state updates complete before navigation
   setTimeout(async () => {
-    if (!currentSession?.user) return;
+    if (!currentSession?.user) {
+      sessionStorage.removeItem(processingFlag);
+      return;
+    }
     
     try {
       // Check if user has an associated tenant
@@ -32,14 +46,15 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
         
       if (userError && userError.code !== 'PGRST116') {
         console.error('Error checking user tenant:', userError);
+        sessionStorage.removeItem(processingFlag);
         return;
       }
       
       // If no tenant is associated, redirect to onboarding
       if (!userData?.tenant_id) {
         console.log('No tenant associated, redirecting to onboarding');
-        window.location.href = '/onboarding';
         sessionStorage.setItem(sessionKey, '/onboarding');
+        window.location.href = '/onboarding';
         return;
       }
       
@@ -52,6 +67,7 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
         
       if (tenantError) {
         console.error('Error checking tenant subscription:', tenantError);
+        sessionStorage.removeItem(processingFlag);
         return;
       }
       
@@ -93,12 +109,14 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
       } else {
         // No redirect needed, stay on current page
         console.log('No redirect needed, staying on current page');
+        sessionStorage.removeItem(processingFlag);
         return;
       }
       
       // If we're already on the target page, don't redirect
       if (window.location.pathname === targetPath) {
         console.log(`Already on ${targetPath}, preventing redirect`);
+        sessionStorage.removeItem(processingFlag);
         return;
       }
       
@@ -108,6 +126,7 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
       
     } catch (error) {
       console.error('Error during post-login checks:', error);
+      sessionStorage.removeItem(processingFlag);
     }
   }, 0);
 };
