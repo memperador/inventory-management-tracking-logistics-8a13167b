@@ -39,7 +39,9 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
             body: { email }
           });
           
-          if (functionError || !userData) {
+          if (functionError) {
+            console.error("Error from get-user-by-email function:", functionError);
+            
             // Fallback approach - check directly in users table
             const { data: usersData, error: usersQueryError } = await supabase
               .from('users')
@@ -73,6 +75,7 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
             .single();
             
           if (tenantUserError) {
+            console.error("Error fetching user's tenant:", tenantUserError);
             setError(`User tenant info not found: ${tenantUserError.message}`);
             setLoading(false);
             return;
@@ -88,10 +91,15 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
               .single();
               
             if (tenantError) {
+              console.error("Error fetching tenant details:", tenantError);
               setError(`Tenant not found: ${tenantError.message}`);
             } else {
+              console.log("Tenant found for user:", tenantData);
               setTenantInfo(tenantData);
             }
+          } else {
+            console.warn("User has no tenant associated");
+            setError("User doesn't have a tenant associated. Please migrate the user first.");
           }
         } else {
           // Just check latest tenants
@@ -102,6 +110,7 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
             .limit(10);
             
           if (tenantError) {
+            console.error("Error fetching recent tenants:", tenantError);
             setError(`Failed to get recent tenants: ${tenantError.message}`);
           } else {
             console.log('Most recent tenants:', tenantData);
@@ -109,6 +118,7 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
         }
         
       } catch (err) {
+        console.error("Unexpected error during migration status check:", err);
         setError(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
       } finally {
         setLoading(false);

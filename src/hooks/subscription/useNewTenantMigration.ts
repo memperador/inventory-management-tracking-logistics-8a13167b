@@ -67,6 +67,9 @@ export const useNewTenantMigration = () => {
           })
         });
         
+        // Log the response status for debugging
+        console.log(`Edge function returned status: ${response.status}`);
+        
         // If we get any error response, fall back to direct migration
         if (!response.ok) {
           console.log(`Edge function returned ${response.status}, falling back to direct migration`);
@@ -143,40 +146,67 @@ export const useNewTenantMigration = () => {
         .select('id')
         .single();
         
-      if (createError || !newTenantData) {
+      if (createError) {
         console.error('Failed to create new tenant:', createError);
+        
+        // If this is an RLS policy violation, use the create-tenant edge function
+        if (createError.code === '42501') {
+          console.log('RLS policy violation detected, attempting to use service role via edge function');
+          
+          // Alternative approach: Call the edge function directly
+          const response = await fetch('/functions/v1/create-tenant', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              tenantName: newTenantName,
+              userId: userId,
+              isMigration: true
+            })
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Edge function error: ${response.status} - ${errorText}`);
+          }
+          
+          const responseText = await response.text();
+          console.log('Edge function response:', responseText);
+          
+          let result;
+          try {
+            result = JSON.parse(responseText);
+          } catch (e) {
+            throw new Error(`Failed to parse response: ${responseText}`);
+          }
+          
+          if (!result.success) {
+            throw new Error(result.error || 'Unknown error from edge function');
+          }
+          
+          const newTenantId = result.tenant_id;
+          
+          // Tenant was created by edge function, but we still need to ensure the user is associated
+          await associateUserWithTenant(userId, newTenantId);
+          
+          return {
+            success: true,
+            message: `Successfully created tenant via edge function and moved user`,
+            newTenantId
+          };
+        }
+        
         return {
           success: false,
-          message: `Failed to create new tenant: ${createError?.message || 'No tenant data returned'}`
+          message: `Failed to create new tenant: ${createError.message || 'No tenant data returned'}`
         };
       }
       
       const newTenantId = newTenantData.id;
       console.log('Created new tenant with ID:', newTenantId);
       
-      // Update the user's tenant_id in the users table
-      const { error: updateUserError } = await supabase
-        .from('users')
-        .update({ tenant_id: newTenantId })
-        .eq('id', userId);
-        
-      if (updateUserError) {
-        console.error('Failed to update user tenant:', updateUserError);
-        return {
-          success: false, 
-          message: `Failed to update user's tenant: ${updateUserError.message}`
-        };
-      }
-      
-      // Update the profile's tenant_id if it exists
-      const { error: updateProfileError } = await supabase
-        .from('profiles')
-        .update({ tenant_id: newTenantId })
-        .eq('id', userId);
-      
-      if (updateProfileError) {
-        console.warn('Failed to update profile tenant, but continuing:', updateProfileError.message);
-      }
+      await associateUserWithTenant(userId, newTenantId);
       
       // Start a trial for the new tenant
       try {
@@ -223,6 +253,32 @@ export const useNewTenantMigration = () => {
       });
       
       return failureResult;
+    }
+  };
+
+  /**
+   * Helper function to associate a user with a tenant
+   */
+  const associateUserWithTenant = async (userId: string, tenantId: string): Promise<void> => {
+    // Update the user's tenant_id in the users table
+    const { error: updateUserError } = await supabase
+      .from('users')
+      .update({ tenant_id: tenantId })
+      .eq('id', userId);
+      
+    if (updateUserError) {
+      console.error('Failed to update user tenant:', updateUserError);
+      throw updateUserError;
+    }
+    
+    // Update the profile's tenant_id if it exists
+    const { error: updateProfileError } = await supabase
+      .from('profiles')
+      .update({ tenant_id: tenantId })
+      .eq('id', userId);
+    
+    if (updateProfileError) {
+      console.warn('Failed to update profile tenant, but continuing:', updateProfileError.message);
     }
   };
 

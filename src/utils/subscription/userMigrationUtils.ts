@@ -17,6 +17,10 @@ export async function migrateUserToNewTenant(
   newTenantId?: string;
 }> {
   try {
+    logAuth('USER-MIGRATION', `Attempting to migrate user ${userId} to new tenant: ${newTenantName}`, {
+      level: AUTH_LOG_LEVELS.INFO
+    });
+    
     // Create a new tenant
     const { data: newTenantData, error: createError } = await supabase
       .from('tenants')
@@ -26,14 +30,30 @@ export async function migrateUserToNewTenant(
       .select('id')
       .single();
       
-    if (createError || !newTenantData) {
+    if (createError) {
+      logAuth('USER-MIGRATION', `Failed to create new tenant: ${createError.message}`, {
+        level: AUTH_LOG_LEVELS.ERROR,
+        data: { error: createError, code: createError.code, details: createError.details }
+      });
+      
+      if (createError.code === '42501') {
+        // This is an RLS permission error
+        return {
+          success: false,
+          message: `Row-level security prevented tenant creation. Try using edge functions or admin API key.`
+        };
+      }
+      
       return {
         success: false,
-        message: `Failed to create new tenant: ${createError?.message || 'No tenant data returned'}`
+        message: `Failed to create new tenant: ${createError.message || 'No tenant data returned'}`
       };
     }
     
     const newTenantId = newTenantData.id;
+    logAuth('USER-MIGRATION', `Successfully created new tenant with ID: ${newTenantId}`, {
+      level: AUTH_LOG_LEVELS.INFO
+    });
     
     // Update the user's tenant_id in the users table
     const { error: updateUserError } = await supabase
@@ -42,11 +62,20 @@ export async function migrateUserToNewTenant(
       .eq('id', userId);
       
     if (updateUserError) {
+      logAuth('USER-MIGRATION', `Failed to update user's tenant: ${updateUserError.message}`, {
+        level: AUTH_LOG_LEVELS.ERROR,
+        data: updateUserError
+      });
+      
       return {
         success: false, 
         message: `Failed to update user's tenant: ${updateUserError.message}`
       };
     }
+    
+    logAuth('USER-MIGRATION', `Successfully updated user's tenant to: ${newTenantId}`, {
+      level: AUTH_LOG_LEVELS.INFO
+    });
     
     // Update the profile's tenant_id if it exists
     const { error: updateProfileError } = await supabase
@@ -54,8 +83,29 @@ export async function migrateUserToNewTenant(
       .update({ tenant_id: newTenantId })
       .eq('id', userId);
     
+    if (updateProfileError) {
+      logAuth('USER-MIGRATION', `Note: Failed to update profile's tenant (continuing): ${updateProfileError.message}`, {
+        level: AUTH_LOG_LEVELS.WARN,
+        data: updateProfileError
+      });
+    } else {
+      logAuth('USER-MIGRATION', `Successfully updated user's profile tenant to: ${newTenantId}`, {
+        level: AUTH_LOG_LEVELS.INFO
+      });
+    }
+    
     // Start a trial for the new tenant
-    await startUserTrial(newTenantId);
+    try {
+      await startUserTrial(newTenantId);
+      logAuth('USER-MIGRATION', `Started trial for new tenant: ${newTenantId}`, {
+        level: AUTH_LOG_LEVELS.INFO
+      });
+    } catch (trialError) {
+      logAuth('USER-MIGRATION', `Failed to start trial (continuing): ${trialError instanceof Error ? trialError.message : 'Unknown error'}`, {
+        level: AUTH_LOG_LEVELS.WARN,
+        data: trialError
+      });
+    }
     
     return {
       success: true,
@@ -63,6 +113,11 @@ export async function migrateUserToNewTenant(
       newTenantId
     };
   } catch (error) {
+    logAuth('USER-MIGRATION', `Unexpected error during migration:`, {
+      level: AUTH_LOG_LEVELS.ERROR,
+      data: error
+    });
+    
     return {
       success: false,
       message: `Unexpected error during migration: ${error instanceof Error ? error.message : 'Unknown error'}`

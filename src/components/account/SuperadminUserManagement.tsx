@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -12,7 +11,6 @@ import UserMigrationSection from './superadmin/UserMigrationSection';
 import UserListSection from './superadmin/UserListSection';
 import { TenantMigrationUser } from './superadmin/types';
 
-// This component is only visible to superadmin users
 const SuperadminUserManagement: React.FC = () => {
   const [userEmail, setUserEmail] = useState('');
   const [newTenantName, setNewTenantName] = useState('');
@@ -30,18 +28,22 @@ const SuperadminUserManagement: React.FC = () => {
   
   const { toast } = useToast();
 
-  // Load all tenants for superadmin
   useEffect(() => {
     const loadTenants = async () => {
       setIsLoadingTenants(true);
       try {
+        console.log('Loading all tenants for superadmin view');
         const { data, error } = await supabase
           .from('tenants')
           .select('id, name, subscription_status, subscription_tier');
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error loading tenants:', error);
+          throw error;
+        }
         
-        // Add the required 'settings' property to make the data match the Tenant type
+        console.log(`Loaded ${data?.length || 0} tenants`);
+        
         const tenantsWithSettings = (data || []).map(tenant => ({
           ...tenant,
           settings: {
@@ -66,18 +68,15 @@ const SuperadminUserManagement: React.FC = () => {
     loadTenants();
   }, [toast]);
 
-  // Load all users for superadmin
   const loadAllUsers = async () => {
     setIsLoadingUsers(true);
     try {
-      // First fetch users
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('id, role, tenant_id, created_at');
       
       if (userError) throw userError;
       
-      // Then fetch profiles separately
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name');
@@ -86,9 +85,7 @@ const SuperadminUserManagement: React.FC = () => {
         console.error('Error fetching profiles:', profilesError);
       }
       
-      // Also fetch the tenant names for each user
       const usersWithInfo = await Promise.all((userData || []).map(async (user) => {
-        // Find the matching profile for this user
         const userProfile = profilesData?.find(profile => profile.id === user.id);
         
         try {
@@ -132,7 +129,13 @@ const SuperadminUserManagement: React.FC = () => {
   const handleMigrateUserToNewTenant = async (e: React.FormEvent) => {
     e.preventDefault();
     if (lookupResult && newTenantName.trim()) {
-      await migrateToNewTenant(newTenantName.trim(), lookupResult.userId);
+      console.log(`Initiating migration of user ${lookupResult.email} to new tenant ${newTenantName}`);
+      const result = await migrateToNewTenant(newTenantName.trim(), lookupResult.userId);
+      console.log('Migration result:', result);
+      
+      if (result.success) {
+        loadAllUsers();
+      }
     }
   };
 
@@ -140,7 +143,6 @@ const SuperadminUserManagement: React.FC = () => {
     if (!lookupResult || !existingTenantId) return;
     
     try {
-      // Update the user's tenant_id in the users table
       const { error: updateUserError } = await supabase
         .from('users')
         .update({ tenant_id: existingTenantId })
@@ -148,13 +150,11 @@ const SuperadminUserManagement: React.FC = () => {
         
       if (updateUserError) throw updateUserError;
       
-      // Update the profile's tenant_id if it exists
       const { error: updateProfileError } = await supabase
         .from('profiles')
         .update({ tenant_id: existingTenantId })
         .eq('id', lookupResult.userId);
       
-      // Find the tenant name for display purposes
       const selectedTenant = tenants.find(tenant => tenant.id === existingTenantId);
       
       toast({
@@ -162,7 +162,6 @@ const SuperadminUserManagement: React.FC = () => {
         description: `Successfully moved user to tenant "${selectedTenant?.name || 'Unknown'}"`,
       });
       
-      // Refresh user list
       loadAllUsers();
       
     } catch (error) {
@@ -185,7 +184,6 @@ const SuperadminUserManagement: React.FC = () => {
       </CardHeader>
       
       <CardContent className="space-y-6 pt-6">
-        {/* User Lookup Section */}
         <UserLookupSection 
           userEmail={userEmail} 
           setUserEmail={setUserEmail} 
@@ -194,7 +192,6 @@ const SuperadminUserManagement: React.FC = () => {
         
         <Separator />
         
-        {/* Migrate User Section */}
         {lookupResult && (
           <UserMigrationSection 
             lookupResult={lookupResult}
@@ -211,7 +208,6 @@ const SuperadminUserManagement: React.FC = () => {
         
         <Separator />
         
-        {/* View All Users Section */}
         <UserListSection 
           users={users}
           loadAllUsers={loadAllUsers}
