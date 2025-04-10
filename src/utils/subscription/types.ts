@@ -42,3 +42,11 @@ export interface UpgradePrompt {
   description: string;
   requiredTier: FeatureAccessLevel;
 }
+
+// Trial status interface
+export interface TrialStatus {
+  isActive: boolean;
+  daysRemaining: number;
+  endDate: Date | null;
+  trialTier: FeatureAccessLevel;
+}

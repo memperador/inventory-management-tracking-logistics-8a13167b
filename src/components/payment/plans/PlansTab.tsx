@@ -7,7 +7,7 @@ import PricingTiers, { ServiceTier } from './PricingTiers';
 import PaymentOptions from './PaymentOptions';
 import SubscriptionSummary from './SubscriptionSummary';
 import { Button } from '@/components/ui/button';
-import { Building } from 'lucide-react';
+import { Building, Sparkles } from 'lucide-react';
 
 // Service tiers data
 const serviceTiers: ServiceTier[] = [
@@ -145,6 +145,16 @@ export const PlansTab: React.FC = () => {
     });
   };
 
+  const handleStartTrial = () => {
+    toast({
+      title: "Free Trial Started",
+      description: "Your 7-day Premium tier trial has begun. Enjoy all Premium features!",
+    });
+    // In a real implementation, we would update the user's subscription status in the database
+    // For now, let's navigate to the dashboard
+    window.location.href = '/dashboard';
+  };
+
   const isUpgrade = !!currentTenant?.subscription_tier;
   const isNewSignup = user?.user_metadata?.needs_subscription === true;
   
@@ -174,9 +184,31 @@ export const PlansTab: React.FC = () => {
       {isNewSignup && (
         <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 text-blue-800">
           <h2 className="text-xl font-semibold mb-2">Welcome to Inventory Track Pro!</h2>
-          <p>Please select a subscription plan to continue. All plans include a 14-day free trial period.</p>
+          <p>Please select a subscription plan to continue, or start with our free trial.</p>
         </div>
       )}
+
+      {/* Free Trial Banner */}
+      <div className="mb-8 bg-gradient-to-r from-purple-100 to-cyan-100 border border-purple-200 rounded-lg p-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 h-40 w-40 opacity-10 -mt-12 -mr-12">
+          <Sparkles className="h-full w-full text-purple-500" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2 text-purple-800">Try Premium Free for 7 Days</h2>
+        <p className="mb-4 text-purple-700">
+          Experience all Premium tier features without commitment. During your trial, each feature will be labeled with its corresponding tier, so you'll know exactly what's included in each plan.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 items-center">
+          <Button 
+            onClick={handleStartTrial}
+            size="lg" 
+            className="bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            <Sparkles className="mr-2 h-5 w-5" />
+            Start 7-Day Free Trial
+          </Button>
+          <span className="text-purple-700 text-sm">No credit card required</span>
+        </div>
+      </div>
 
       <PricingTiers 
         tiers={serviceTiers} 

@@ -22,11 +22,10 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
   showTierBadge = true,
   className = ''
 }) => {
-  const { canAccessFeature, getFeatureTier } = useFeatureAccess();
+  const { canAccessFeature, getFeatureTier, isTrialMode } = useFeatureAccess();
   const { currentTenant } = useTenant();
   
   const hasAccess = canAccessFeature(featureKey);
-  const isTrialMode = currentTenant?.subscription_status === 'trialing';
   
   // Get the tier this feature belongs to
   const featureTier = getFeatureTier(featureKey);

@@ -30,12 +30,15 @@ export const useFeatureAccess = () => {
     return isActive || inTrial;
   };
 
+  // Check if user is in trial mode
+  const isTrialMode = !!currentTenant?.subscription_status === 'trialing';
+
   // Check if user has access to a feature
   const canAccessFeature = (featureKey: string): boolean => {
     // Admin always has access to all features for testing purposes
     if (userRole === 'admin') return true;
     
-    // During trial, grant access to all features
+    // During trial, grant access to Premium tier features
     if (currentTenant?.subscription_status === 'trialing') return true;
     
     return hasFeatureAccess(currentTenant, featureKey);
@@ -85,6 +88,11 @@ export const useFeatureAccess = () => {
   const hasSubscriptionTier = (tier: FeatureAccessLevel): boolean => {
     if (!currentTenant || !currentTenant.subscription_tier) return false;
     
+    // During trial, user has access to Premium tier
+    if (currentTenant.subscription_status === 'trialing') {
+      return tier === 'basic' || tier === 'standard' || tier === 'premium';
+    }
+    
     const tierHierarchy = {
       'basic': 1,
       'standard': 2,
@@ -105,6 +113,11 @@ export const useFeatureAccess = () => {
       return Object.keys(getAvailableFeaturesForTier('enterprise'));
     }
     
+    // During trial, user has access to Premium tier features
+    if (currentTenant?.subscription_status === 'trialing') {
+      return getAvailableFeaturesForTier('premium');
+    }
+    
     return getAvailableFeaturesForTier(
       currentTenant?.subscription_tier as 'basic' | 'standard' | 'premium' | 'enterprise' | null
     );
@@ -112,6 +125,11 @@ export const useFeatureAccess = () => {
 
   // Get current subscription limits
   const getSubscriptionLimits = () => {
+    // During trial, use Premium tier limits
+    if (currentTenant?.subscription_status === 'trialing') {
+      return getSubscriptionTierLimits('premium');
+    }
+    
     return getSubscriptionTierLimits(
       currentTenant?.subscription_tier as 'basic' | 'standard' | 'premium' | 'enterprise' | null
     );
@@ -146,7 +164,17 @@ export const useFeatureAccess = () => {
 
   // Get available AI features for current tier
   const getAvailableAIFeatures = (): string[] => {
-    if (!currentTenant || !currentTenant.subscription_tier) return [];
+    if (!currentTenant) return [];
+    
+    // During trial, use Premium tier AI features
+    if (currentTenant.subscription_status === 'trialing') {
+      return [
+        'basic_ai_assistant', 'inventory_suggestions', 'tracking_insights', 'route_suggestions', 
+        'advanced_analytics', 'predictive_maintenance', 'custom_ai_queries'
+      ];
+    }
+    
+    if (!currentTenant.subscription_tier) return [];
     
     const tier = currentTenant.subscription_tier as 'basic' | 'standard' | 'premium' | 'enterprise';
     const aiFeatures = {

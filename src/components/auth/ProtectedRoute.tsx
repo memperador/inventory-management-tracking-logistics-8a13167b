@@ -17,7 +17,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredRoles = [],
   redirectTo = '/auth',
-  allowFreeTrialUsers = false,
+  allowFreeTrialUsers = true,
   children
 }) => {
   const { user, loading } = useAuth();
@@ -93,16 +93,24 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Check if the user needs to subscribe first
   const needsSubscription = user.user_metadata?.needs_subscription === true;
   const noActiveSubscription = currentTenant && 
-                              currentTenant.subscription_status !== 'active';
-                              
-  if ((needsSubscription || noActiveSubscription) && location.pathname !== '/payment') {
+                              currentTenant.subscription_status !== 'active' && 
+                              currentTenant.subscription_status !== 'trialing';
+  
+  // Don't redirect to payment page if the user is in a trial or allowFreeTrialUsers is true
+  const isInTrial = currentTenant?.subscription_status === 'trialing';
+  
+  if ((needsSubscription || noActiveSubscription) && 
+      location.pathname !== '/payment' && 
+      !(allowFreeTrialUsers && isInTrial)) {
     logAuth('PROTECTED-ROUTE', `Redirecting user ${user.id} to payment page to select a plan`, {
       level: AUTH_LOG_LEVELS.INFO,
       data: {
         needsSubscription,
         hasActiveTenant: !!currentTenant,
         currentPath: location.pathname,
-        subscriptionStatus: currentTenant?.subscription_status || 'none'
+        subscriptionStatus: currentTenant?.subscription_status || 'none',
+        isInTrial,
+        allowFreeTrialUsers
       }
     });
     return <Navigate to="/payment" replace />;

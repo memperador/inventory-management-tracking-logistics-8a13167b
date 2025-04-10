@@ -2,6 +2,7 @@
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
+import { addDays } from 'date-fns';
 
 /**
  * Handles post-login checks and redirects based on auth state changes
@@ -112,10 +113,10 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
         level: AUTH_LOG_LEVELS.INFO
       });
       
-      // Check tenant subscription status - just get the fields we know exist
+      // Check tenant subscription status
       const { data: tenantData, error: tenantError } = await supabase
         .from('tenants')
-        .select('subscription_status, subscription_tier')
+        .select('subscription_status, subscription_tier, trial_ends_at')
         .eq('id', userData.tenant_id)
         .single();
         
@@ -128,22 +129,57 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
         return;
       }
 
+      // Check if this is a brand new signup with needs_subscription flag
       const needsSubscription = currentSession.user.user_metadata?.needs_subscription === true;
       logAuth('AUTH-HANDLER', `User needs subscription: ${needsSubscription}`, {
         level: AUTH_LOG_LEVELS.INFO
       });
+      
+      // If this is a new signup with no subscription yet, start a trial
+      if (needsSubscription && (!tenantData.subscription_status || tenantData.subscription_status === 'inactive')) {
+        logAuth('AUTH-HANDLER', 'Starting 7-day free trial for new user', {
+          level: AUTH_LOG_LEVELS.INFO
+        });
+        
+        // Calculate trial end date - 7 days from now
+        const trialEndsAt = addDays(new Date(), 7).toISOString();
+        
+        // Update tenant with trial information
+        const { error: updateError } = await supabase
+          .from('tenants')
+          .update({
+            subscription_status: 'trialing',
+            subscription_tier: 'premium', // Give them Premium during trial
+            trial_ends_at: trialEndsAt
+          })
+          .eq('id', userData.tenant_id);
+          
+        if (updateError) {
+          logAuth('AUTH-HANDLER', `Error starting free trial: ${updateError.message}`, {
+            level: AUTH_LOG_LEVELS.ERROR,
+            data: updateError
+          });
+          // Continue processing even if update fails
+        } else {
+          logAuth('AUTH-HANDLER', `Free trial started successfully, ends at: ${trialEndsAt}`, {
+            level: AUTH_LOG_LEVELS.INFO
+          });
+        }
+      }
       
       const returnTo = new URLSearchParams(window.location.search).get('returnTo');
       logAuth('AUTH-HANDLER', `Return URL from query params: ${returnTo || 'none'}`, {
         level: AUTH_LOG_LEVELS.INFO
       });
       
-      // Determine if subscription is active
+      // Determine if subscription is active or in trial
       const hasActiveSubscription = tenantData && 
         (tenantData.subscription_status === 'active');
-
-      // We don't have the trial_ends_at field yet, so we'll assume no trial
-      const inTrialPeriod = false;
+        
+      const inTrialPeriod = tenantData && 
+        tenantData.subscription_status === 'trialing' && 
+        tenantData.trial_ends_at && 
+        new Date(tenantData.trial_ends_at) > new Date();
       
       logAuth('AUTH-HANDLER', 'Subscription status:', {
         level: AUTH_LOG_LEVELS.INFO,
@@ -151,14 +187,15 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
           hasActiveSubscription,
           inTrialPeriod,
           subscriptionStatus: tenantData?.subscription_status || 'none',
-          subscriptionTier: tenantData?.subscription_tier || 'none'
+          subscriptionTier: tenantData?.subscription_tier || 'none',
+          trialEndsAt: tenantData?.trial_ends_at || 'none'
         }
       });
       
       let targetPath = '';
       
       // Redirect logic
-      if (needsSubscription || (!hasActiveSubscription && !inTrialPeriod)) {
+      if (needsSubscription && !hasActiveSubscription && !inTrialPeriod) {
         logAuth('AUTH-HANDLER', 'User needs subscription, redirecting to payment page', {
           level: AUTH_LOG_LEVELS.INFO
         });
