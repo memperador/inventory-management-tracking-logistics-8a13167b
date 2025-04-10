@@ -1,198 +1,40 @@
 
 import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { useTenant } from '@/hooks/useTenantContext';
-import { useAuth } from '@/contexts/auth';
-import { 
-  verifyTrialPeriod, 
-  migrateUserToNewTenant 
-} from '@/contexts/auth/handlers/subscriptionHandler';
-import { supabase } from '@/integrations/supabase/client';
+import { UserLookupResult } from '@/components/account/superadmin/types';
+import { useUserLookup } from './useUserLookup';
+import { useTrialVerification } from './useTrialVerification';
+import { useTenantUtils } from './useTenantUtils';
+import { useUserMigration } from './useUserMigration';
 
 export const useTenantManagement = () => {
-  const { toast } = useToast();
-  const { user, refreshSession } = useAuth();
-  const { currentTenant } = useTenant();
-  const [isLoading, setIsLoading] = useState(false);
-  const [trialVerificationResult, setTrialVerificationResult] = useState<any>(null);
-  const [migrationResult, setMigrationResult] = useState<any>(null);
-  const [lookupResult, setLookupResult] = useState<{ userId: string, email: string } | null>(null);
+  // Combine the smaller hooks
+  const userLookup = useUserLookup();
+  const trialVerification = useTrialVerification();
+  const tenantUtils = useTenantUtils();
+  const userMigration = useUserMigration();
 
-  /**
-   * Look up a user by their email
-   */
-  const lookupUserByEmail = async (email: string) => {
-    setIsLoading(true);
-    setLookupResult(null);
-    
-    try {
-      // Simple approach to look up users - in a production app you would have proper email storage
-      // For demo purposes, we'll just search for users and use the first one
-      const { data, error } = await supabase
-        .from('users')
-        .select('id')
-        .limit(1);
-
-      if (error || !data || data.length === 0) {
-        toast({
-          title: "User Not Found",
-          description: `No user found with email: ${email}. SuperAdmin may need to check Supabase directly.`,
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return null;
-      }
-
-      // Use the first user found (for demonstration purposes)
-      const userId = data[0]?.id;
-      
-      if (!userId) {
-        toast({
-          title: "User Not Found",
-          description: `No user found with email: ${email}.`,
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return null;
-      }
-
-      // For demonstration purposes
-      setLookupResult({ userId, email });
-      toast({
-        title: "User Found",
-        description: `Found user: ${email}`
-      });
-      setIsLoading(false);
-      return { userId, email };
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: `Failed to lookup user: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive"
-      });
-      setIsLoading(false);
-      return null;
-    }
-  };
-
-  /**
-   * Verify the trial period for a specific tenant or the current tenant
-   */
-  const verifyTrialStatus = async (tenantId?: string) => {
-    const targetTenantId = tenantId || currentTenant?.id;
-    
-    if (!targetTenantId) {
-      toast({
-        title: "Error",
-        description: "No tenant information available",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    
-    try {
-      const result = await verifyTrialPeriod(targetTenantId);
-      setTrialVerificationResult(result);
-      
-      toast({
-        title: result.isValid ? "Trial Verification" : "Trial Verification Failed",
-        description: result.message,
-        variant: result.isValid ? "default" : "destructive"
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: `Failed to verify trial: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  /**
-   * Get tenant ID for a user
-   */
-  const getTenantIdForUser = async (userId: string): Promise<string | null> => {
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('tenant_id')
-        .eq('id', userId)
-        .single();
-        
-      if (error || !data) {
-        toast({
-          title: "Error",
-          description: `Could not find tenant for user: ${error?.message || 'Unknown error'}`,
-          variant: "destructive" 
-        });
-        return null;
-      }
-      
-      return data.tenant_id;
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: `Failed to get tenant ID: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive"
-      });
-      return null;
-    }
-  };
-
-  /**
-   * Migrate the user to a new tenant
-   */
-  const migrateToNewTenant = async (newTenantName: string, userId?: string) => {
-    const targetUserId = userId || user?.id;
-    
-    if (!targetUserId) {
-      toast({
-        title: "Error",
-        description: "No user information available",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    
-    try {
-      const result = await migrateUserToNewTenant(targetUserId, newTenantName);
-      setMigrationResult(result);
-      
-      toast({
-        title: result.success ? "Migration Successful" : "Migration Failed",
-        description: result.message,
-        variant: result.success ? "default" : "destructive"
-      });
-      
-      // If migration was successful and we're migrating ourselves, refresh the session
-      if (result.success && targetUserId === user?.id) {
-        await refreshSession();
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: `Failed to migrate user: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Calculate overall loading state
+  const isLoading = userLookup.isLoading || 
+                    trialVerification.isLoading || 
+                    userMigration.isLoading;
 
   return {
-    isLoading,
-    lookupResult,
-    trialVerificationResult,
-    migrationResult,
-    lookupUserByEmail,
-    verifyTrialStatus,
-    migrateToNewTenant,
-    getTenantIdForUser
+    // User lookup
+    lookupResult: userLookup.lookupResult,
+    lookupUserByEmail: userLookup.lookupUserByEmail,
+    
+    // Trial verification
+    trialVerificationResult: trialVerification.trialVerificationResult,
+    verifyTrialStatus: trialVerification.verifyTrialStatus,
+    
+    // Tenant utilities
+    getTenantIdForUser: tenantUtils.getTenantIdForUser,
+    
+    // User migration
+    migrationResult: userMigration.migrationResult,
+    migrateToNewTenant: userMigration.migrateToNewTenant,
+    
+    // Overall loading state
+    isLoading
   };
 };
