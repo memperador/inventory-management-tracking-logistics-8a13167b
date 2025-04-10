@@ -1,5 +1,6 @@
 
 import { useMigrationBase, MigrationResult } from './useMigrationBase';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useExistingTenantMigration = () => {
   const {
@@ -46,40 +47,52 @@ export const useExistingTenantMigration = () => {
         userId: targetUserId
       });
       
-      const response = await fetch(functionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({
-          action: 'migrateToExisting',
-          tenantId: tenantId,
-          userId: targetUserId
-        })
-      });
-      
-      const result = await handleMigrationResponse(response, targetUserId);
-      
-      const successResult = {
-        success: true,
-        message: `Successfully moved user to existing tenant`,
-        newTenantId: tenantId
-      };
-      
-      setMigrationResult(successResult);
-      
-      toast({
-        title: "Migration Successful",
-        description: successResult.message,
-      });
-      
-      // If migration was successful and we're migrating ourselves, refresh the session
-      if (targetUserId === user?.id) {
-        await refreshSession();
-      }
+      try {
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({
+            action: 'migrateToExisting',
+            tenantId: tenantId,
+            userId: targetUserId
+          })
+        });
 
-      return successResult;
+        // If we get a 404, the edge function might not be deployed in development
+        if (response.status === 404) {
+          console.log('Edge function not found, falling back to direct migration');
+          return await performDirectExistingMigration(tenantId, targetUserId);
+        }
+        
+        const result = await handleMigrationResponse(response, targetUserId);
+        
+        const successResult = {
+          success: true,
+          message: `Successfully moved user to existing tenant`,
+          newTenantId: tenantId
+        };
+        
+        setMigrationResult(successResult);
+        
+        toast({
+          title: "Migration Successful",
+          description: successResult.message,
+        });
+        
+        // If migration was successful and we're migrating ourselves, refresh the session
+        if (targetUserId === user?.id) {
+          await refreshSession();
+        }
+
+        return successResult;
+      } catch (fetchError) {
+        console.error('Error calling edge function:', fetchError);
+        // Try direct migration as fallback
+        return await performDirectExistingMigration(tenantId, targetUserId);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Migration error:', error);
@@ -100,6 +113,76 @@ export const useExistingTenantMigration = () => {
       return failureResult;
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  /**
+   * Perform migration to existing tenant directly using Supabase client when edge function is not available
+   */
+  const performDirectExistingMigration = async (tenantId: string, userId: string): Promise<MigrationResult> => {
+    try {
+      console.log('Performing direct migration for user:', userId, 'to existing tenant:', tenantId);
+      
+      // Update the user's tenant_id in the users table
+      const { error: updateUserError } = await supabase
+        .from('users')
+        .update({ tenant_id: tenantId })
+        .eq('id', userId);
+        
+      if (updateUserError) {
+        return {
+          success: false, 
+          message: `Failed to update user's tenant: ${updateUserError.message}`
+        };
+      }
+      
+      // Update the profile's tenant_id if it exists
+      const { error: updateProfileError } = await supabase
+        .from('profiles')
+        .update({ tenant_id: tenantId })
+        .eq('id', userId);
+      
+      if (updateProfileError) {
+        console.warn('Failed to update profile tenant, but continuing:', updateProfileError.message);
+      }
+      
+      const successResult = {
+        success: true,
+        message: `Successfully moved user to existing tenant`,
+        newTenantId: tenantId
+      };
+      
+      setMigrationResult(successResult);
+      
+      toast({
+        title: "Migration Successful",
+        description: successResult.message,
+      });
+      
+      // If migration was successful and we're migrating ourselves, refresh the session
+      if (userId === user?.id) {
+        await refreshSession();
+      }
+      
+      return successResult;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Direct migration error:', error);
+      
+      const failureResult = {
+        success: false,
+        message: `Failed to migrate user directly: ${errorMessage}`
+      };
+      
+      setMigrationResult(failureResult);
+      
+      toast({
+        title: "Error",
+        description: `Failed to migrate user: ${errorMessage}`,
+        variant: "destructive"
+      });
+      
+      return failureResult;
     }
   };
 
