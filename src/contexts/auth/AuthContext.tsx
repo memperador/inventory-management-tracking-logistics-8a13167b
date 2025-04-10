@@ -30,10 +30,26 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
+    // Track the last auth event to prevent duplicate processing
+    let lastAuthEvent = '';
+    let lastAuthUserId = '';
+    
     // First set up the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         console.log('Auth state changed:', event);
+        
+        // Skip duplicate events for the same user
+        const currentUserId = currentSession?.user?.id || '';
+        const eventKey = `${event}-${currentUserId}`;
+        
+        if (eventKey === lastAuthEvent) {
+          console.log('Skipping duplicate auth event:', event);
+          return;
+        }
+        
+        lastAuthEvent = eventKey;
+        lastAuthUserId = currentUserId;
         
         setSession(currentSession);
         const newUser = currentSession?.user ?? null;

@@ -4,6 +4,9 @@ import { toast } from '@/hooks/use-toast';
 
 export const signIn = async (email: string, password: string) => {
   try {
+    // Clear any previous login state to prevent loops
+    sessionStorage.removeItem(`auth_processed_${email}`);
+    
     const { data, error } = await supabase.auth.signInWithPassword({ 
       email, 
       password 
@@ -22,10 +25,19 @@ export const signIn = async (email: string, password: string) => {
       }
     }
     
-    toast({
-      title: 'Welcome back!',
-      description: 'You have been signed in successfully',
-    });
+    // Set a flag to prevent duplicate toasts
+    if (!sessionStorage.getItem('login_toast_shown')) {
+      toast({
+        title: 'Welcome back!',
+        description: 'You have been signed in successfully',
+      });
+      sessionStorage.setItem('login_toast_shown', 'true');
+      
+      // Clear this flag after 5 seconds
+      setTimeout(() => {
+        sessionStorage.removeItem('login_toast_shown');
+      }, 5000);
+    }
   } catch (error: any) {
     toast({
       title: 'Error',
