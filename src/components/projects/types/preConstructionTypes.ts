@@ -9,6 +9,17 @@ export interface ChecklistItem {
   dueDate?: string;
   assignedTo?: string;
   notes?: string;
+  documents?: DocumentAttachment[];
+}
+
+export interface DocumentAttachment {
+  id: string;
+  name: string;
+  fileType: string;
+  uploadDate: string;
+  uploadedBy?: string;
+  fileSize?: string;
+  fileUrl?: string;
 }
 
 export interface PreConstructionSection {

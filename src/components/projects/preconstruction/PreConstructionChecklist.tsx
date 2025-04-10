@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   CheckSquare, 
@@ -7,7 +6,9 @@ import {
   MoreHorizontal, 
   Plus,
   FileText,
-  Calendar
+  Calendar,
+  Paperclip as PaperclipIcon,
+  File
 } from 'lucide-react';
 import { 
   Card, 
@@ -27,14 +28,30 @@ import { Badge } from '@/components/ui/badge';
 import { 
   ChecklistItem, 
   ChecklistItemStatus, 
-  PreConstructionSection 
+  PreConstructionSection,
+  DocumentAttachment
 } from '../types/preConstructionTypes';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import DocumentUploadDialog from './DocumentUploadDialog';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
 
 interface PreConstructionChecklistProps {
   sections: PreConstructionSection[];
   onUpdateItem: (sectionId: string, itemId: string, status: ChecklistItemStatus) => void;
   onAddItem: (sectionId: string) => void;
+  onAddDocument?: (sectionId: string, itemId: string, document: DocumentAttachment) => void;
 }
 
 const statusIcons = {
@@ -61,8 +78,55 @@ const statusColors: Record<ChecklistItemStatus, string> = {
 const PreConstructionChecklist: React.FC<PreConstructionChecklistProps> = ({ 
   sections, 
   onUpdateItem,
-  onAddItem
+  onAddItem,
+  onAddDocument
 }) => {
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [currentItem, setCurrentItem] = useState<{sectionId: string, itemId: string, title: string, sectionTitle: string}>({
+    sectionId: '',
+    itemId: '',
+    title: '',
+    sectionTitle: ''
+  });
+  const [viewingDocuments, setViewingDocuments] = useState<{
+    open: boolean,
+    documents: DocumentAttachment[],
+    itemTitle: string
+  }>({
+    open: false,
+    documents: [],
+    itemTitle: ''
+  });
+
+  const handleOpenUploadDialog = (sectionId: string, itemId: string, itemTitle: string, sectionTitle: string) => {
+    setCurrentItem({
+      sectionId,
+      itemId,
+      title: itemTitle,
+      sectionTitle
+    });
+    setIsUploadDialogOpen(true);
+  };
+
+  const handleDocumentAdded = (document: DocumentAttachment) => {
+    if (onAddDocument) {
+      onAddDocument(currentItem.sectionId, currentItem.itemId, document);
+    }
+  };
+
+  const handleViewDocuments = (documents: DocumentAttachment[] | undefined, itemTitle: string) => {
+    setViewingDocuments({
+      open: true,
+      documents: documents || [],
+      itemTitle
+    });
+  };
+
+  const getItemById = (sectionId: string, itemId: string): ChecklistItem | undefined => {
+    const section = sections.find(s => s.id === sectionId);
+    return section?.items.find(i => i.id === itemId);
+  };
+
   return (
     <div className="space-y-6">
       <Accordion type="multiple" className="w-full">
@@ -96,46 +160,79 @@ const PreConstructionChecklist: React.FC<PreConstructionChecklistProps> = ({
                               Due: {new Date(item.dueDate).toLocaleDateString()}
                             </div>
                           )}
+                          
+                          {item.documents && item.documents.length > 0 && (
+                            <div className="flex items-center gap-1 mt-2">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 text-xs px-2 py-1"
+                                onClick={() => handleViewDocuments(item.documents, item.title)}
+                              >
+                                <File className="h-3 w-3 mr-1" />
+                                {item.documents.length} document{item.documents.length !== 1 ? 's' : ''}
+                              </Button>
+                            </div>
+                          )}
                         </div>
                         
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              className={statusColors['pending']}
-                              onClick={() => onUpdateItem(section.id, item.id, 'pending')}
-                            >
-                              <Clock className="h-4 w-4 mr-2" />
-                              Pending
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className={statusColors['in-progress']}
-                              onClick={() => onUpdateItem(section.id, item.id, 'in-progress')}
-                            >
-                              <AlertCircle className="h-4 w-4 mr-2" />
-                              In Progress
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className={statusColors['completed']}
-                              onClick={() => onUpdateItem(section.id, item.id, 'completed')}
-                            >
-                              <CheckSquare className="h-4 w-4 mr-2" />
-                              Completed
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className={statusColors['not-required']}
-                              onClick={() => onUpdateItem(section.id, item.id, 'not-required')}
-                            >
-                              <FileText className="h-4 w-4 mr-2" />
-                              Not Required
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <div className="flex items-center space-x-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => handleOpenUploadDialog(section.id, item.id, item.title, section.title)}
+                                >
+                                  <PaperclipIcon className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Upload Document</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                className={statusColors['pending']}
+                                onClick={() => onUpdateItem(section.id, item.id, 'pending')}
+                              >
+                                <Clock className="h-4 w-4 mr-2" />
+                                Pending
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className={statusColors['in-progress']}
+                                onClick={() => onUpdateItem(section.id, item.id, 'in-progress')}
+                              >
+                                <AlertCircle className="h-4 w-4 mr-2" />
+                                In Progress
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className={statusColors['completed']}
+                                onClick={() => onUpdateItem(section.id, item.id, 'completed')}
+                              >
+                                <CheckSquare className="h-4 w-4 mr-2" />
+                                Completed
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className={statusColors['not-required']}
+                                onClick={() => onUpdateItem(section.id, item.id, 'not-required')}
+                              >
+                                <FileText className="h-4 w-4 mr-2" />
+                                Not Required
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                       
                       <div className="mt-3 flex items-center">
@@ -160,6 +257,58 @@ const PreConstructionChecklist: React.FC<PreConstructionChecklistProps> = ({
           </AccordionItem>
         ))}
       </Accordion>
+
+      <DocumentUploadDialog 
+        open={isUploadDialogOpen}
+        onOpenChange={setIsUploadDialogOpen}
+        onDocumentAdded={handleDocumentAdded}
+        sectionTitle={currentItem.sectionTitle}
+        itemTitle={currentItem.title}
+      />
+
+      <Dialog open={viewingDocuments.open} onOpenChange={(open) => setViewingDocuments(prev => ({...prev, open}))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Documents for {viewingDocuments.itemTitle}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {viewingDocuments.documents.length > 0 ? (
+              <div className="divide-y">
+                {viewingDocuments.documents.map(doc => (
+                  <div key={doc.id} className="py-3 first:pt-0 last:pb-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-muted rounded-md">
+                          <FileText className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{doc.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {doc.fileSize} • {new Date(doc.uploadDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" download>
+                          Download
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-muted-foreground">
+                <FileText className="h-10 w-10 mx-auto mb-3 text-muted-foreground/60" />
+                <p>No documents available</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setViewingDocuments(prev => ({...prev, open: false}))}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

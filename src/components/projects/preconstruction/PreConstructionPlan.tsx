@@ -11,11 +11,13 @@ import {
   ChecklistItem, 
   ChecklistItemStatus, 
   PreConstructionPlan, 
-  PreConstructionSection 
+  PreConstructionSection,
+  DocumentAttachment
 } from '../types/preConstructionTypes';
 import { v4 as uuidv4 } from '@/utils/uuid';
 import PreConstructionChecklist from './PreConstructionChecklist';
 import { supabase } from '@/integrations/supabase/client';
+import { useFileUploadWithPreview } from '@/hooks/useFileUploadWithPreview';
 
 interface PreConstructionPlanProps {
   projectId: string;
@@ -30,19 +32,22 @@ const defaultSections: PreConstructionSection[] = [
         id: 'permit-1',
         title: 'Building Permit Application',
         description: 'Submit application for main building permit',
-        status: 'pending'
+        status: 'pending',
+        documents: []
       },
       {
         id: 'permit-2',
         title: 'Electrical Permit',
         description: 'Obtain specialized electrical work permits',
-        status: 'pending'
+        status: 'pending',
+        documents: []
       },
       {
         id: 'permit-3',
         title: 'Site Plan Approval',
         description: 'Get approval for site plans from local authority',
-        status: 'pending'
+        status: 'pending',
+        documents: []
       }
     ]
   },
@@ -54,19 +59,22 @@ const defaultSections: PreConstructionSection[] = [
         id: 'site-1',
         title: 'Site Survey',
         description: 'Complete topographical and boundary survey',
-        status: 'pending'
+        status: 'pending',
+        documents: []
       },
       {
         id: 'site-2',
         title: 'Utility Locating',
         description: 'Mark underground utilities before excavation',
-        status: 'pending'
+        status: 'pending',
+        documents: []
       },
       {
         id: 'site-3',
         title: 'Environmental Assessment',
         description: 'Conduct required environmental tests',
-        status: 'pending'
+        status: 'pending',
+        documents: []
       }
     ]
   },
@@ -78,19 +86,22 @@ const defaultSections: PreConstructionSection[] = [
         id: 'resource-1',
         title: 'Equipment Requirements',
         description: 'Identify all equipment needed for project',
-        status: 'pending'
+        status: 'pending',
+        documents: []
       },
       {
         id: 'resource-2',
         title: 'Labor Planning',
         description: 'Determine labor requirements and scheduling',
-        status: 'pending'
+        status: 'pending',
+        documents: []
       },
       {
         id: 'resource-3',
         title: 'Material Procurement Plan',
         description: 'Create schedule for ordering and delivering materials',
-        status: 'pending'
+        status: 'pending',
+        documents: []
       }
     ]
   }
@@ -103,7 +114,8 @@ const PreConstructionPlanComponent: React.FC<PreConstructionPlanProps> = ({ proj
   const [newItem, setNewItem] = useState<Partial<ChecklistItem>>({
     title: '',
     description: '',
-    status: 'pending'
+    status: 'pending',
+    documents: []
   });
   const [activeSectionId, setActiveSectionId] = useState('');
   const { toast } = useToast();
@@ -136,9 +148,30 @@ const PreConstructionPlanComponent: React.FC<PreConstructionPlanProps> = ({ proj
     setNewItem({
       title: '',
       description: '',
-      status: 'pending'
+      status: 'pending',
+      documents: []
     });
     setIsAddItemDialogOpen(true);
+  };
+
+  const handleAddDocument = (sectionId: string, itemId: string, document: DocumentAttachment) => {
+    setSections(prev => 
+      prev.map(section => 
+        section.id === sectionId 
+          ? {
+              ...section,
+              items: section.items.map(item => 
+                item.id === itemId 
+                  ? { 
+                      ...item, 
+                      documents: [...(item.documents || []), document]
+                    } 
+                  : item
+              )
+            }
+          : section
+      )
+    );
   };
 
   const handleSaveNewItem = () => {
@@ -156,7 +189,8 @@ const PreConstructionPlanComponent: React.FC<PreConstructionPlanProps> = ({ proj
       title: newItem.title || '',
       description: newItem.description || '',
       status: newItem.status as ChecklistItemStatus || 'pending',
-      dueDate: newItem.dueDate
+      dueDate: newItem.dueDate,
+      documents: []
     };
 
     setSections(prev => 
@@ -216,6 +250,7 @@ const PreConstructionPlanComponent: React.FC<PreConstructionPlanProps> = ({ proj
             sections={sections}
             onUpdateItem={handleUpdateItem}
             onAddItem={handleAddItem}
+            onAddDocument={handleAddDocument}
           />
         </CardContent>
       </Card>
