@@ -33,6 +33,7 @@ export const useTenantManagement = () => {
     // User migration
     migrationResult: userMigration.migrationResult,
     migrateToNewTenant: userMigration.migrateToNewTenant,
+    migrateToExistingTenant: userMigration.migrateToExistingTenant,
     
     // Overall loading state
     isLoading

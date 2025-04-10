@@ -110,7 +110,63 @@ serve(async (req) => {
       );
     }
     
-    // Handle user migration case
+    // Handle migration to existing tenant
+    if (requestData.action === 'migrateToExisting' && requestData.userId && requestData.tenantId) {
+      console.log(`Migrating user ${requestData.userId} to existing tenant ${requestData.tenantId}`);
+      
+      // Associate the user with the tenant using service role
+      const { error: userUpdateError } = await serviceRoleClient
+        .from('users')
+        .update({ tenant_id: requestData.tenantId })
+        .eq('id', requestData.userId);
+
+      if (userUpdateError) {
+        console.error("Error associating user with existing tenant:", userUpdateError);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `Error associating user with existing tenant: ${userUpdateError.message}` 
+          }),
+          { 
+            status: 400, 
+            headers: { 
+              "Content-Type": "application/json",
+              ...corsHeaders
+            } 
+          }
+        );
+      }
+
+      console.log(`User ${requestData.userId} associated with existing tenant ${requestData.tenantId}`);
+      
+      // Update the profile's tenant_id if it exists
+      const { error: profileUpdateError } = await serviceRoleClient
+        .from('profiles')
+        .update({ tenant_id: requestData.tenantId })
+        .eq('id', requestData.userId);
+      
+      if (profileUpdateError) {
+        console.warn(`Warning: Failed to update profile tenant: ${profileUpdateError.message}`);
+      } else {
+        console.log(`User profile updated with tenant ${requestData.tenantId}`);
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "User migrated to existing tenant successfully",
+          tenant_id: requestData.tenantId 
+        }),
+        { 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
+    }
+    
+    // Handle user migration case to new tenant
     if (requestData.isMigration && requestData.userId && requestData.tenantName) {
       console.log(`Migrating user ${requestData.userId} to new tenant ${requestData.tenantName}`);
       
@@ -194,6 +250,31 @@ serve(async (req) => {
         console.log(`User profile updated with tenant ${tenantData.id}`);
       }
 
+      // Try to setup a trial period for the new tenant
+      try {
+        const trialEndsAt = new Date();
+        trialEndsAt.setDate(trialEndsAt.getDate() + 7); // 7-day trial
+        
+        const { error: trialError } = await serviceRoleClient
+          .from('tenants')
+          .update({
+            subscription_status: 'trialing',
+            subscription_tier: 'premium',
+            trial_ends_at: trialEndsAt.toISOString()
+          })
+          .eq('id', tenantData.id);
+        
+        if (trialError) {
+          console.warn("Error setting trial period:", trialError.message);
+        } else {
+          console.log(`Trial period set for tenant ${tenantData.id} until ${trialEndsAt.toISOString()}`);
+        }
+      } catch (e) {
+        console.warn("Error setting up trial:", e);
+        // Don't throw here, as the main migration was successful
+      }
+
+      console.log("Migration successful, returning response");
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -209,7 +290,7 @@ serve(async (req) => {
       );
     }
     
-    // Get the current authenticated user
+    // Get the current authenticated user if we get to this point
     const {
       data: { user },
       error: userError,
@@ -396,6 +477,7 @@ serve(async (req) => {
       );
     }
 
+    console.log("Standard tenant creation successful, returning response");
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -415,7 +497,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: error instanceof Error ? error.message : "Unknown error" 
       }),
       { 
         status: 400, 

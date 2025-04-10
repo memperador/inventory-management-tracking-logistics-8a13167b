@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,11 +9,17 @@ import { useTenantManagement } from '@/hooks/subscription/useTenantManagement';
 import { AlertCircle, CheckCircle, ArrowRight, ShieldAlert, Search, User } from 'lucide-react';
 import { Form, FormField, FormItem, FormLabel, FormControl } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
+import { supabase } from '@/integrations/supabase/client';
+import { Tenant } from '@/types/tenant';
 
 // This component is only visible to superadmin users or in development mode
 const TenantManagementSection: React.FC = () => {
   const [newTenantName, setNewTenantName] = useState('');
   const [userEmail, setUserEmail] = useState('');
+  const [existingTenantId, setExistingTenantId] = useState('');
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [isLoadingTenants, setIsLoadingTenants] = useState(false);
+
   const { 
     isLoading, 
     lookupResult,
@@ -22,8 +28,31 @@ const TenantManagementSection: React.FC = () => {
     lookupUserByEmail,
     verifyTrialStatus, 
     migrateToNewTenant,
+    migrateToExistingTenant,
     getTenantIdForUser
   } = useTenantManagement();
+
+  // Load tenants when the component mounts
+  useEffect(() => {
+    const fetchTenants = async () => {
+      setIsLoadingTenants(true);
+      try {
+        const { data, error } = await supabase
+          .from('tenants')
+          .select('*');
+          
+        if (error) throw error;
+        
+        setTenants(data || []);
+      } catch (error) {
+        console.error('Error fetching tenants:', error);
+      } finally {
+        setIsLoadingTenants(false);
+      }
+    };
+    
+    fetchTenants();
+  }, []);
 
   const handleUserLookup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +74,7 @@ const TenantManagementSection: React.FC = () => {
     }
   };
 
-  const handleMigrateUser = async (e: React.FormEvent) => {
+  const handleMigrateUserToNewTenant = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newTenantName.trim()) {
       if (lookupResult) {
@@ -54,6 +83,12 @@ const TenantManagementSection: React.FC = () => {
         // If no user is selected, migrate the current user
         await migrateToNewTenant(newTenantName.trim());
       }
+    }
+  };
+
+  const handleMigrateUserToExistingTenant = async () => {
+    if (existingTenantId && lookupResult) {
+      await migrateToExistingTenant(existingTenantId, lookupResult.userId);
     }
   };
 
@@ -154,57 +189,88 @@ const TenantManagementSection: React.FC = () => {
         <Separator />
         
         {/* User Migration Section */}
-        <div>
-          <h3 className="text-lg font-medium">Migrate User to New Tenant</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            {lookupResult 
-              ? `Move ${lookupResult.email} to a newly created tenant` 
-              : 'Move the current user to a newly created tenant'}
-          </p>
-          
-          <form onSubmit={handleMigrateUser} className="flex flex-col gap-4">
+        {lookupResult && (
+          <>
             <div>
-              <label htmlFor="tenantName" className="block text-sm font-medium mb-1">
-                New Tenant Name
-              </label>
-              <div className="flex gap-2">
-                <Input
-                  id="tenantName"
-                  placeholder="Enter new tenant name"
-                  value={newTenantName}
-                  onChange={(e) => setNewTenantName(e.target.value)}
-                  disabled={isLoading}
-                  required
-                />
-                <Button 
-                  type="submit" 
-                  disabled={isLoading || !newTenantName.trim()}
-                >
-                  Migrate <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+              <h3 className="text-lg font-medium">Migrate User to New Tenant</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Move {lookupResult.email} to a newly created tenant
+              </p>
+              
+              <form onSubmit={handleMigrateUserToNewTenant} className="flex flex-col gap-4">
+                <div>
+                  <label htmlFor="tenantName" className="block text-sm font-medium mb-1">
+                    New Tenant Name
+                  </label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="tenantName"
+                      placeholder="Enter new tenant name"
+                      value={newTenantName}
+                      onChange={(e) => setNewTenantName(e.target.value)}
+                      disabled={isLoading}
+                      required
+                    />
+                    <Button 
+                      type="submit" 
+                      disabled={isLoading || !newTenantName.trim()}
+                    >
+                      Migrate <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </form>
+              
+              <div className="mt-6">
+                <h3 className="text-lg font-medium">Migrate User to Existing Tenant</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Move {lookupResult.email} to an existing tenant
+                </p>
+                
+                <div className="flex gap-2">
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={existingTenantId}
+                    onChange={(e) => setExistingTenantId(e.target.value)}
+                    disabled={isLoadingTenants || isLoading}
+                  >
+                    <option value="">Select a tenant...</option>
+                    {tenants.map(tenant => (
+                      <option key={tenant.id} value={tenant.id}>
+                        {tenant.name} - {tenant.subscription_tier || 'No tier'} ({tenant.subscription_status || 'Unknown status'})
+                      </option>
+                    ))}
+                  </select>
+                  <Button 
+                    onClick={handleMigrateUserToExistingTenant}
+                    disabled={isLoading || !existingTenantId}
+                  >
+                    Migrate <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
               </div>
+              
+              {migrationResult && (
+                <Alert className="mt-4" variant={migrationResult.success ? "default" : "destructive"}>
+                  <div className="flex items-center">
+                    {migrationResult.success ? (
+                      <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5 mr-2" />
+                    )}
+                    <AlertTitle>Migration {migrationResult.success ? 'Succeeded' : 'Failed'}</AlertTitle>
+                  </div>
+                  <AlertDescription className="mt-2">
+                    {migrationResult.message}
+                    {migrationResult.success && migrationResult.newTenantId && (
+                      <div className="mt-1">New tenant ID: {migrationResult.newTenantId}</div>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
-          </form>
-          
-          {migrationResult && (
-            <Alert className="mt-4" variant={migrationResult.success ? "default" : "destructive"}>
-              <div className="flex items-center">
-                {migrationResult.success ? (
-                  <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
-                ) : (
-                  <AlertCircle className="h-5 w-5 mr-2" />
-                )}
-                <AlertTitle>Migration {migrationResult.success ? 'Succeeded' : 'Failed'}</AlertTitle>
-              </div>
-              <AlertDescription className="mt-2">
-                {migrationResult.message}
-                {migrationResult.success && (
-                  <div className="mt-1">New tenant ID: {migrationResult.newTenantId}</div>
-                )}
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
+          </>
+        )}
       </CardContent>
       
       <CardFooter className="flex justify-between border-t pt-6">

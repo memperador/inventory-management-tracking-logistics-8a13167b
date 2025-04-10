@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
@@ -34,6 +33,13 @@ const UserMigrationSection: React.FC<UserMigrationSectionProps> = ({
   handleMigrateUserToExistingTenant
 }) => {
   const { isLoading, migrationResult } = useTenantManagement();
+  const [localResult, setLocalResult] = useState<any>(null);
+  
+  useEffect(() => {
+    if (migrationResult) {
+      setLocalResult(migrationResult);
+    }
+  }, [migrationResult]);
 
   if (!lookupResult) return null;
 
@@ -78,15 +84,18 @@ const UserMigrationSection: React.FC<UserMigrationSectionProps> = ({
           </div>
         </form>
         
-        {migrationResult && (
+        {localResult && (
           <Alert 
             className="mt-4" 
-            variant={migrationResult.success ? "default" : "destructive"}
+            variant={localResult.success ? "default" : "destructive"}
           >
             <AlertCircle className="h-5 w-5" />
-            <AlertTitle>{migrationResult.success ? "Migration Successful" : "Migration Failed"}</AlertTitle>
+            <AlertTitle>{localResult.success ? "Migration Successful" : "Migration Failed"}</AlertTitle>
             <AlertDescription>
-              {migrationResult.message}
+              {localResult.message}
+              {localResult.success && localResult.newTenantId && (
+                <div className="mt-1">New tenant ID: {localResult.newTenantId}</div>
+              )}
             </AlertDescription>
           </Alert>
         )}
