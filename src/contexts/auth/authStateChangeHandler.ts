@@ -1,27 +1,35 @@
 
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 
 /**
  * Handles post-login checks and redirects based on auth state changes
  */
 export const handleAuthStateChange = (event: string, currentSession: Session | null) => {
-  console.log(`[AUTH-HANDLER] Starting handle auth state change for event: ${event}`, {
-    hasSession: !!currentSession,
-    userId: currentSession?.user?.id || 'none',
-    currentPath: window.location.pathname,
-    timestamp: new Date().toISOString()
+  logAuth('AUTH-HANDLER', `Starting handle auth state change for event: ${event}`, {
+    level: AUTH_LOG_LEVELS.INFO,
+    data: {
+      hasSession: !!currentSession,
+      userId: currentSession?.user?.id || 'none',
+      currentPath: window.location.pathname,
+      timestamp: new Date().toISOString()
+    }
   });
   
   // Skip processing if no user is logged in (for non-sign-in events)
   if (event !== 'SIGNED_IN' && !currentSession?.user) {
-    console.log(`[AUTH-HANDLER] No user session for event: ${event} - skipping`);
+    logAuth('AUTH-HANDLER', `No user session for event: ${event} - skipping`, {
+      level: AUTH_LOG_LEVELS.INFO
+    });
     return;
   }
   
   // For SIGNED_IN event, log additional info
   if (event === 'SIGNED_IN') {
-    console.log('[AUTH-HANDLER] User signed in, checking tenant and subscription status');
+    logAuth('AUTH-HANDLER', 'User signed in, checking tenant and subscription status', {
+      level: AUTH_LOG_LEVELS.INFO
+    });
   }
   
   // Prevent redirect loops by checking if we've already processed this session
@@ -30,36 +38,50 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
   
   // If we've processed this session and we're already on the target path, don't redirect again
   if (currentSession?.user?.id && sessionStorage.getItem(sessionKey) === currentPath) {
-    console.log(`[AUTH-HANDLER] Already processed this session for the current path: ${currentPath} - preventing redirect loop`);
+    logAuth('AUTH-HANDLER', `Already processed this session for the current path: ${currentPath} - preventing redirect loop`, {
+      level: AUTH_LOG_LEVELS.INFO
+    });
     return;
   }
   
   // Create a unique processing flag to ensure we're not handling the same process twice
   const processingFlag = `processing_${currentSession?.user?.id}_${Date.now()}`;
   if (sessionStorage.getItem(processingFlag)) {
-    console.log('[AUTH-HANDLER] Already processing an auth change, preventing duplicate processing');
+    logAuth('AUTH-HANDLER', 'Already processing an auth change, preventing duplicate processing', {
+      level: AUTH_LOG_LEVELS.INFO
+    });
     return;
   }
   
   // Set processing flag with 10s expiry to prevent concurrent processing
-  console.log(`[AUTH-HANDLER] Setting processing flag: ${processingFlag}`);
+  logAuth('AUTH-HANDLER', `Setting processing flag: ${processingFlag}`, {
+    level: AUTH_LOG_LEVELS.DEBUG
+  });
   sessionStorage.setItem(processingFlag, 'true');
   setTimeout(() => {
-    console.log(`[AUTH-HANDLER] Removing expired processing flag: ${processingFlag}`);
+    logAuth('AUTH-HANDLER', `Removing expired processing flag: ${processingFlag}`, {
+      level: AUTH_LOG_LEVELS.DEBUG
+    });
     sessionStorage.removeItem(processingFlag);
   }, 10000);
   
   // Use setTimeout to ensure state updates complete before navigation
   setTimeout(async () => {
-    console.log('[AUTH-HANDLER] Executing deferred auth state handler logic');
+    logAuth('AUTH-HANDLER', 'Executing deferred auth state handler logic', {
+      level: AUTH_LOG_LEVELS.INFO
+    });
     if (!currentSession?.user) {
-      console.log('[AUTH-HANDLER] No user in session, cleaning up and exiting');
+      logAuth('AUTH-HANDLER', 'No user in session, cleaning up and exiting', {
+        level: AUTH_LOG_LEVELS.INFO
+      });
       sessionStorage.removeItem(processingFlag);
       return;
     }
     
     try {
-      console.log('[AUTH-HANDLER] Checking user tenant for user:', currentSession.user.id);
+      logAuth('AUTH-HANDLER', `Checking user tenant for user: ${currentSession.user.id}`, {
+        level: AUTH_LOG_LEVELS.INFO
+      });
       // Check if user has an associated tenant
       const { data: userData, error: userError } = await supabase
         .from('users')
@@ -68,101 +90,122 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
         .single();
         
       if (userError && userError.code !== 'PGRST116') {
-        console.error('[AUTH-HANDLER] Error checking user tenant:', userError);
+        logAuth('AUTH-HANDLER', `Error checking user tenant: ${userError.message}`, {
+          level: AUTH_LOG_LEVELS.ERROR,
+          data: userError
+        });
         sessionStorage.removeItem(processingFlag);
         return;
       }
       
       // If no tenant is associated, redirect to onboarding
       if (!userData?.tenant_id) {
-        console.log('[AUTH-HANDLER] No tenant associated, redirecting to onboarding');
+        logAuth('AUTH-HANDLER', 'No tenant associated, redirecting to onboarding', {
+          level: AUTH_LOG_LEVELS.INFO
+        });
         sessionStorage.setItem(sessionKey, '/onboarding');
         window.location.href = '/onboarding';
         return;
       }
       
-      console.log('[AUTH-HANDLER] Checking tenant subscription status for tenant:', userData.tenant_id);
-      // Check tenant subscription status
+      logAuth('AUTH-HANDLER', `Checking tenant subscription status for tenant: ${userData.tenant_id}`, {
+        level: AUTH_LOG_LEVELS.INFO
+      });
+      
+      // Check tenant subscription status - just get the fields we know exist
       const { data: tenantData, error: tenantError } = await supabase
         .from('tenants')
-        .select('subscription_status, subscription_tier, trial_ends_at')
+        .select('subscription_status, subscription_tier')
         .eq('id', userData.tenant_id)
         .single();
         
       if (tenantError) {
-        console.error('[AUTH-HANDLER] Error checking tenant subscription:', tenantError);
+        logAuth('AUTH-HANDLER', `Error checking tenant subscription: ${tenantError.message}`, {
+          level: AUTH_LOG_LEVELS.ERROR,
+          data: tenantError
+        });
         sessionStorage.removeItem(processingFlag);
         return;
       }
-      
+
       const needsSubscription = currentSession.user.user_metadata?.needs_subscription === true;
-      console.log('[AUTH-HANDLER] User needs subscription:', needsSubscription);
+      logAuth('AUTH-HANDLER', `User needs subscription: ${needsSubscription}`, {
+        level: AUTH_LOG_LEVELS.INFO
+      });
       
       const returnTo = new URLSearchParams(window.location.search).get('returnTo');
-      console.log('[AUTH-HANDLER] Return URL from query params:', returnTo || 'none');
+      logAuth('AUTH-HANDLER', `Return URL from query params: ${returnTo || 'none'}`, {
+        level: AUTH_LOG_LEVELS.INFO
+      });
       
-      // Determine if subscription is active or in trial period
-      const now = new Date();
+      // Determine if subscription is active
+      const hasActiveSubscription = tenantData && 
+        (tenantData.subscription_status === 'active');
+
+      // We don't have the trial_ends_at field yet, so we'll assume no trial
+      const inTrialPeriod = false;
       
-      // Safe access to tenantData properties with null checks
-      const trialEndsAtStr = tenantData ? 
-        (tenantData && 'trial_ends_at' in tenantData ? 
-          String(tenantData.trial_ends_at) : 
-          null) : 
-        null;
-      
-      const trialEndsAt = trialEndsAtStr ? new Date(trialEndsAtStr) : null;
-      
-      const hasActiveSubscription = tenantData ? 
-        (tenantData && 'subscription_status' in tenantData ? 
-          String(tenantData.subscription_status) === 'active' : 
-          false) : 
-        false;
-      
-      const inTrialPeriod = trialEndsAt && trialEndsAt > now;
-      
-      console.log('[AUTH-HANDLER] Subscription status:', {
-        hasActiveSubscription,
-        inTrialPeriod,
-        trialEndsAt: trialEndsAt?.toISOString() || 'none',
-        subscriptionStatus: tenantData?.subscription_status || 'none',
-        subscriptionTier: tenantData?.subscription_tier || 'none'
+      logAuth('AUTH-HANDLER', 'Subscription status:', {
+        level: AUTH_LOG_LEVELS.INFO,
+        data: {
+          hasActiveSubscription,
+          inTrialPeriod,
+          subscriptionStatus: tenantData?.subscription_status || 'none',
+          subscriptionTier: tenantData?.subscription_tier || 'none'
+        }
       });
       
       let targetPath = '';
       
       // Redirect logic
       if (needsSubscription || (!hasActiveSubscription && !inTrialPeriod)) {
-        console.log('[AUTH-HANDLER] User needs subscription, redirecting to payment page');
+        logAuth('AUTH-HANDLER', 'User needs subscription, redirecting to payment page', {
+          level: AUTH_LOG_LEVELS.INFO
+        });
         targetPath = '/payment';
       } else if (returnTo) {
-        console.log(`[AUTH-HANDLER] Redirecting to returnTo URL: ${returnTo}`);
+        logAuth('AUTH-HANDLER', `Redirecting to returnTo URL: ${returnTo}`, {
+          level: AUTH_LOG_LEVELS.INFO
+        });
         targetPath = decodeURIComponent(returnTo);
       } else if (window.location.pathname === '/auth') {
-        console.log('[AUTH-HANDLER] Redirecting to dashboard');
+        logAuth('AUTH-HANDLER', 'Redirecting to dashboard', {
+          level: AUTH_LOG_LEVELS.INFO
+        });
         targetPath = '/dashboard';
       } else {
         // No redirect needed, stay on current page
-        console.log('[AUTH-HANDLER] No redirect needed, staying on current page:', window.location.pathname);
+        logAuth('AUTH-HANDLER', `No redirect needed, staying on current page: ${window.location.pathname}`, {
+          level: AUTH_LOG_LEVELS.INFO
+        });
         sessionStorage.removeItem(processingFlag);
         return;
       }
       
       // If we're already on the target page, don't redirect
       if (window.location.pathname === targetPath) {
-        console.log(`[AUTH-HANDLER] Already on ${targetPath}, preventing redirect`);
+        logAuth('AUTH-HANDLER', `Already on ${targetPath}, preventing redirect`, {
+          level: AUTH_LOG_LEVELS.INFO
+        });
         sessionStorage.removeItem(processingFlag);
         return;
       }
       
       // Store where we redirected to prevent loops
-      console.log(`[AUTH-HANDLER] Setting processed path in session storage: ${targetPath}`);
+      logAuth('AUTH-HANDLER', `Setting processed path in session storage: ${targetPath}`, {
+        level: AUTH_LOG_LEVELS.INFO
+      });
       sessionStorage.setItem(sessionKey, targetPath);
-      console.log(`[AUTH-HANDLER] Redirecting to: ${targetPath}`);
+      logAuth('AUTH-HANDLER', `Redirecting to: ${targetPath}`, {
+        level: AUTH_LOG_LEVELS.INFO
+      });
       window.location.href = targetPath;
       
     } catch (error) {
-      console.error('[AUTH-HANDLER] Error during post-login checks:', error);
+      logAuth('AUTH-HANDLER', 'Error during post-login checks:', {
+        level: AUTH_LOG_LEVELS.ERROR,
+        data: error
+      });
       sessionStorage.removeItem(processingFlag);
     }
   }, 0);

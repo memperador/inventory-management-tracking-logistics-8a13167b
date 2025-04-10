@@ -19,10 +19,8 @@ interface LogOptions {
   force?: boolean;
 }
 
-// Default to DEBUG in development, INFO in production
-const DEFAULT_LOG_LEVEL = process.env.NODE_ENV === 'production' 
-  ? AUTH_LOG_LEVELS.INFO 
-  : AUTH_LOG_LEVELS.DEBUG;
+// Always log everything in development
+const DEFAULT_LOG_LEVEL = AUTH_LOG_LEVELS.DEBUG;
 
 // Map log levels to console methods
 const LOG_METHODS = {
@@ -44,8 +42,8 @@ const storeLogInSession = (prefix: string, message: string, level: LogLevel, dat
       data
     });
     
-    // Keep only the last 100 logs to prevent storage issues
-    if (logs.length > 100) {
+    // Keep only the last 200 logs to prevent storage issues
+    if (logs.length > 200) {
       logs.shift();
     }
     

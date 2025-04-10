@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/auth/AuthContext';
 import { useTenant } from '@/hooks/useTenantContext';
 import { UserRole } from '@/types/roles';
 import { useRole } from '@/hooks/useRoleContext';
+import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 
 interface ProtectedRouteProps {
   requiredRoles?: UserRole[];
@@ -26,36 +27,49 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   
   // Log the authentication status and current path for debugging
   useEffect(() => {
-    console.log('[PROTECTED-ROUTE] ProtectedRoute status check', {
-      path: location.pathname,
-      authLoading: loading,
-      tenantLoading,
-      roleLoading: isRoleLoading,
-      isAuthenticated: !!user,
-      userId: user?.id || 'none',
-      hasActiveTenant: !!currentTenant,
-      tenantId: currentTenant?.id || 'none',
-      requiredRoles: requiredRoles.length > 0 ? requiredRoles : ['none'],
-      timestamp: new Date().toISOString()
+    logAuth('PROTECTED-ROUTE', 'ProtectedRoute status check', {
+      level: AUTH_LOG_LEVELS.INFO,
+      data: {
+        path: location.pathname,
+        authLoading: loading,
+        tenantLoading,
+        roleLoading: isRoleLoading,
+        isAuthenticated: !!user,
+        userId: user?.id || 'none',
+        hasActiveTenant: !!currentTenant,
+        tenantId: currentTenant?.id || 'none',
+        requiredRoles: requiredRoles.length > 0 ? requiredRoles : ['none'],
+        timestamp: new Date().toISOString()
+      }
     });
     
     if (loading || tenantLoading) {
-      console.log("[PROTECTED-ROUTE] Auth or tenant data loading, waiting...");
+      logAuth('PROTECTED-ROUTE', "Auth or tenant data loading, waiting...", {
+        level: AUTH_LOG_LEVELS.INFO
+      });
     } else if (!user) {
-      console.log("[PROTECTED-ROUTE] Unauthorized access attempt to:", location.pathname, "- Redirecting to auth");
+      logAuth('PROTECTED-ROUTE', `Unauthorized access attempt to: ${location.pathname} - Redirecting to auth`, {
+        level: AUTH_LOG_LEVELS.INFO
+      });
     } else {
-      console.log("[PROTECTED-ROUTE] User authenticated, allowing access to:", location.pathname);
+      logAuth('PROTECTED-ROUTE', `User authenticated, allowing access to: ${location.pathname}`, {
+        level: AUTH_LOG_LEVELS.INFO
+      });
       
       // Check if user needs to select a subscription plan
       const needsSubscription = user.user_metadata?.needs_subscription === true;
       if (needsSubscription && location.pathname !== '/payment') {
-        console.log("[PROTECTED-ROUTE] User needs subscription, redirecting to payment page");
+        logAuth('PROTECTED-ROUTE', "User needs subscription, redirecting to payment page", {
+          level: AUTH_LOG_LEVELS.INFO
+        });
       }
     }
   }, [user, loading, location.pathname, tenantLoading, currentTenant, isRoleLoading, requiredRoles]);
   
   if (loading || isRoleLoading || tenantLoading) {
-    console.log('[PROTECTED-ROUTE] Still loading, showing loading indicator');
+    logAuth('PROTECTED-ROUTE', 'Still loading, showing loading indicator', {
+      level: AUTH_LOG_LEVELS.INFO
+    });
     return (
       <div className="flex h-screen items-center justify-center bg-gray-100">
         <div className="flex flex-col items-center gap-4">
@@ -70,42 +84,50 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (!user) {
     // Store the full URL including the pathname and search params for redirect after login
     const currentPath = encodeURIComponent(location.pathname + location.search);
-    console.log(`[PROTECTED-ROUTE] Redirecting unauthenticated user to ${redirectTo}?returnTo=${currentPath}`);
+    logAuth('PROTECTED-ROUTE', `Redirecting unauthenticated user to ${redirectTo}?returnTo=${currentPath}`, {
+      level: AUTH_LOG_LEVELS.INFO
+    });
     return <Navigate to={`${redirectTo}?returnTo=${currentPath}`} replace />;
   }
   
   // Check if the user needs to subscribe first
   const needsSubscription = user.user_metadata?.needs_subscription === true;
   const noActiveSubscription = currentTenant && 
-                              currentTenant.subscription_status !== 'active' && 
-                              (!currentTenant.trial_ends_at || new Date(currentTenant.trial_ends_at) < new Date());
+                              currentTenant.subscription_status !== 'active';
                               
   if ((needsSubscription || noActiveSubscription) && location.pathname !== '/payment') {
-    console.log(`[PROTECTED-ROUTE] Redirecting user ${user.id} to payment page to select a plan`, {
-      needsSubscription,
-      hasActiveTenant: !!currentTenant,
-      currentPath: location.pathname,
-      subscriptionStatus: currentTenant?.subscription_status || 'none',
-      trialEndsAt: currentTenant?.trial_ends_at || 'none',
-      hasExpiredTrial: currentTenant?.trial_ends_at ? new Date(currentTenant.trial_ends_at) < new Date() : false
+    logAuth('PROTECTED-ROUTE', `Redirecting user ${user.id} to payment page to select a plan`, {
+      level: AUTH_LOG_LEVELS.INFO,
+      data: {
+        needsSubscription,
+        hasActiveTenant: !!currentTenant,
+        currentPath: location.pathname,
+        subscriptionStatus: currentTenant?.subscription_status || 'none'
+      }
     });
     return <Navigate to="/payment" replace />;
   }
   
   // If no specific roles are required, just being authenticated is enough
   if (requiredRoles.length === 0) {
-    console.log('[PROTECTED-ROUTE] No specific roles required, rendering content');
+    logAuth('PROTECTED-ROUTE', 'No specific roles required, rendering content', {
+      level: AUTH_LOG_LEVELS.INFO
+    });
     return children ? <>{children}</> : <Outlet />;
   }
   
   // If user doesn't have the required role, show unauthorized message or redirect
   if (!hasPermission(requiredRoles)) {
-    console.log(`[PROTECTED-ROUTE] User ${user.id} doesn't have required roles (${requiredRoles.join(', ')}), redirecting to unauthorized`);
+    logAuth('PROTECTED-ROUTE', `User ${user.id} doesn't have required roles (${requiredRoles.join(', ')}), redirecting to unauthorized`, {
+      level: AUTH_LOG_LEVELS.WARN
+    });
     return <Navigate to="/unauthorized" replace />;
   }
   
   // User has the required role, render the child routes
-  console.log(`[PROTECTED-ROUTE] User ${user.id} has required permissions, rendering content`);
+  logAuth('PROTECTED-ROUTE', `User ${user.id} has required permissions, rendering content`, {
+    level: AUTH_LOG_LEVELS.INFO
+  });
   return children ? <>{children}</> : <Outlet />;
 };
 

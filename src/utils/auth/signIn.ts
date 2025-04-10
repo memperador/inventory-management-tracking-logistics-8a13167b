@@ -1,12 +1,18 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 
 export const signIn = async (email: string, password: string) => {
-  console.log(`[AUTH-SIGNIN] Sign in initiated for email: ${email}`);
+  logAuth('AUTH-SIGNIN', `Sign in initiated for email: ${email}`, {
+    level: AUTH_LOG_LEVELS.INFO
+  });
+  
   try {
     // Clear any previous login state to prevent loops
-    console.log('[AUTH-SIGNIN] Clearing previous session storage items');
+    logAuth('AUTH-SIGNIN', 'Clearing previous session storage items', {
+      level: AUTH_LOG_LEVELS.INFO
+    });
     
     const keysToRemove = [];
     sessionStorage.removeItem(`auth_processed_${email}`);
@@ -25,30 +31,43 @@ export const signIn = async (email: string, password: string) => {
     
     // Remove items in a separate loop to avoid index issues
     keysToRemove.forEach(key => {
-      console.log(`[AUTH-SIGNIN] Removing session storage key: ${key}`);
+      logAuth('AUTH-SIGNIN', `Removing session storage key: ${key}`, {
+        level: AUTH_LOG_LEVELS.DEBUG
+      });
       sessionStorage.removeItem(key);
     });
     
-    console.log('[AUTH-SIGNIN] Calling supabase.auth.signInWithPassword');
+    logAuth('AUTH-SIGNIN', 'Calling supabase.auth.signInWithPassword', {
+      level: AUTH_LOG_LEVELS.INFO
+    });
+    
     const { data, error } = await supabase.auth.signInWithPassword({ 
       email, 
       password 
     });
     
-    console.log('[AUTH-SIGNIN] Sign in response received', { 
-      success: !error,
-      hasSession: !!data?.session,
-      hasUser: !!data?.user
+    logAuth('AUTH-SIGNIN', 'Sign in response received', { 
+      level: AUTH_LOG_LEVELS.INFO,
+      data: {
+        success: !error,
+        hasSession: !!data?.session,
+        hasUser: !!data?.user
+      }
     });
     
     if (error) throw error;
     
     if (data?.session === null && data?.user !== null) {
-      console.log('[AUTH-SIGNIN] Session is null but user is not null - checking for MFA');
+      logAuth('AUTH-SIGNIN', 'Session is null but user is not null - checking for MFA', {
+        level: AUTH_LOG_LEVELS.INFO
+      });
+      
       const { data: factorData } = await supabase.auth.mfa.listFactors();
       
-      if (factorData?.totp.length > 0) {
-        console.log('[AUTH-SIGNIN] MFA required, redirecting to two-factor page');
+      if (factorData?.totp && factorData.totp.length > 0) {
+        logAuth('AUTH-SIGNIN', 'MFA required, redirecting to two-factor page', {
+          level: AUTH_LOG_LEVELS.INFO
+        });
         localStorage.setItem('pendingTwoFactorEmail', email);
         localStorage.setItem('factorId', factorData.totp[0].id);
         window.location.href = '/auth/two-factor';
@@ -59,7 +78,10 @@ export const signIn = async (email: string, password: string) => {
     // Set a flag to prevent duplicate toasts with a unique timestamp
     const toastId = `login_toast_${Date.now()}`;
     if (!sessionStorage.getItem('login_toast_shown')) {
-      console.log('[AUTH-SIGNIN] Showing login toast notification');
+      logAuth('AUTH-SIGNIN', 'Showing login toast notification', {
+        level: AUTH_LOG_LEVELS.INFO
+      });
+      
       toast({
         title: 'Welcome back!',
         description: 'You have been signed in successfully',
@@ -67,18 +89,33 @@ export const signIn = async (email: string, password: string) => {
       sessionStorage.setItem('login_toast_shown', toastId);
       
       // Clear this flag after 5 seconds
-      console.log('[AUTH-SIGNIN] Setting timeout to clear login toast flag');
+      logAuth('AUTH-SIGNIN', 'Setting timeout to clear login toast flag', {
+        level: AUTH_LOG_LEVELS.DEBUG
+      });
+      
       setTimeout(() => {
         if (sessionStorage.getItem('login_toast_shown') === toastId) {
-          console.log('[AUTH-SIGNIN] Clearing login toast flag');
+          logAuth('AUTH-SIGNIN', 'Clearing login toast flag', {
+            level: AUTH_LOG_LEVELS.DEBUG
+          });
           sessionStorage.removeItem('login_toast_shown');
         }
       }, 5000);
     }
     
-    console.log('[AUTH-SIGNIN] Sign in process completed successfully');
+    logAuth('AUTH-SIGNIN', 'Sign in process completed successfully', {
+      level: AUTH_LOG_LEVELS.INFO
+    });
+    
+    // Return the session and user data
+    return { session: data.session, user: data.user };
+    
   } catch (error: any) {
-    console.error('[AUTH-SIGNIN] Error during sign in:', error.message || 'Failed to sign in');
+    logAuth('AUTH-SIGNIN', 'Error during sign in:', {
+      level: AUTH_LOG_LEVELS.ERROR,
+      data: error
+    });
+    
     toast({
       title: 'Error',
       description: error.message || 'Failed to sign in',
