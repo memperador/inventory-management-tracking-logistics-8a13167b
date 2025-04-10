@@ -15,6 +15,7 @@ interface StandardTrialBannerProps {
   borderColor: string;
   buttonVariant: string;
   showTierSwitcher: boolean;
+  className?: string; // Added the className prop to the interface
 }
 
 export const StandardTrialBanner: React.FC<StandardTrialBannerProps> = ({
@@ -26,14 +27,15 @@ export const StandardTrialBanner: React.FC<StandardTrialBannerProps> = ({
   bgColor,
   borderColor,
   buttonVariant,
-  showTierSwitcher
+  showTierSwitcher,
+  className = '' // Provide a default value
 }) => {
   const navigate = useNavigate();
   
   return (
     <div 
       className={`${bgColor} ${borderColor} 
-        border rounded-lg p-3 flex justify-between items-center`}
+        border rounded-lg p-3 flex justify-between items-center ${className}`}
     >
       <div className="flex items-center space-x-2">
         {isExpired ? (
