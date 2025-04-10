@@ -1,5 +1,6 @@
 
 import { useTenant } from '@/hooks/useTenantContext';
+import { calculateTrialDaysLeft, checkTrialStatus } from '@/contexts/auth/handlers/subscriptionHandler';
 
 export const useSubscriptionStatus = () => {
   const { currentTenant } = useTenant();
@@ -8,20 +9,22 @@ export const useSubscriptionStatus = () => {
   const hasActiveSubscription = (): boolean => {
     if (!currentTenant) return false;
     
-    const now = new Date();
-    const trialEndsAt = currentTenant.trial_ends_at ? new Date(currentTenant.trial_ends_at) : null;
     const isActive = currentTenant.subscription_status === 'active';
-    const inTrial = trialEndsAt && trialEndsAt > now;
+    const inValidTrial = checkTrialStatus(currentTenant);
     
-    return isActive || inTrial;
+    return isActive || inValidTrial;
   };
 
   // Check if user is in trial mode
   const isTrialMode = currentTenant?.subscription_status === 'trialing';
   
+  // Calculate days left in trial
+  const trialDaysLeft = calculateTrialDaysLeft(currentTenant?.trial_ends_at);
+  
   return {
     hasActiveSubscription,
     isTrialMode,
+    trialDaysLeft,
     currentTier: currentTenant?.subscription_tier as 'basic' | 'standard' | 'premium' | 'enterprise' | null
   };
 };

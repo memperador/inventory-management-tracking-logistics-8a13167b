@@ -15,7 +15,7 @@ interface StandardTrialBannerProps {
   borderColor: string;
   buttonVariant: string;
   showTierSwitcher: boolean;
-  className?: string; // Added the className prop to the interface
+  className?: string;
 }
 
 export const StandardTrialBanner: React.FC<StandardTrialBannerProps> = ({
@@ -28,7 +28,7 @@ export const StandardTrialBanner: React.FC<StandardTrialBannerProps> = ({
   borderColor,
   buttonVariant,
   showTierSwitcher,
-  className = '' // Provide a default value
+  className = ''
 }) => {
   const navigate = useNavigate();
   

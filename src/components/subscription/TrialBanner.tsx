@@ -4,6 +4,7 @@ import { useTenant } from '@/hooks/useTenantContext';
 import { differenceInDays } from 'date-fns';
 import StandardTrialBanner from './StandardTrialBanner';
 import TierTestingBanner from './TierTestingBanner';
+import { calculateTrialDaysLeft } from '@/contexts/auth/handlers/subscriptionHandler';
 
 interface TrialBannerProps {
   className?: string;
@@ -21,22 +22,15 @@ export const TrialBanner: React.FC<TrialBannerProps> = ({
     return null;
   }
   
-  // Calculate days left in trial
-  const trialEndDate = currentTenant.trial_ends_at 
-    ? new Date(currentTenant.trial_ends_at) 
-    : null;
-  
   const isTrialMode = currentTenant.subscription_status === 'trialing';
   
-  let daysLeft = 0;
-  if (trialEndDate) {
-    daysLeft = differenceInDays(trialEndDate, new Date());
-  }
+  // Use our improved calculation function
+  const daysLeft = calculateTrialDaysLeft(currentTenant.trial_ends_at);
   
   // Different warning levels based on days remaining
   const isExpiringSoon = daysLeft <= 3 && daysLeft >= 0;
   const isExpiring = daysLeft <= 7 && daysLeft > 3;
-  const isExpired = daysLeft < 0;
+  const isExpired = daysLeft === 0 && currentTenant.trial_ends_at !== null;
   
   // Determine display style based on urgency
   let bgColor, borderColor, textColor, buttonVariant;
