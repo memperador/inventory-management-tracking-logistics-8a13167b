@@ -38,14 +38,15 @@ export const InventoryCategoryTabs: React.FC<InventoryCategoryTabsProps> = ({
               }
             }
           }}>
-      <TabsList className="mb-4 overflow-auto max-w-full flex flex-nowrap pb-1">
-        <TabsTrigger value="all">
+      <TabsList className="mb-4 overflow-auto w-full justify-start bg-white border-slate-200 shadow-sm">
+        <TabsTrigger value="all" className="border-r border-slate-200">
           All Items <span className="ml-2 bg-muted rounded-full px-2 py-0.5 text-xs">{totalItems}</span>
         </TabsTrigger>
-        {INVENTORY_CATEGORIES.map(category => (
+        {INVENTORY_CATEGORIES.map((category, index) => (
           <TabsTrigger 
             key={category} 
             value={category.toLowerCase().replace(/\s+/g, '-')}
+            className={index < INVENTORY_CATEGORIES.length - 1 ? "border-r border-slate-200" : ""}
           >
             {category}
             <span className="ml-2 bg-muted rounded-full px-2 py-0.5 text-xs">
