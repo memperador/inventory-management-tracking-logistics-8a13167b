@@ -6,8 +6,11 @@ export * from './subscription/aiFeatures';
 export * from './subscription/limits';
 export * from './subscription/upgrades';
 export * from './subscription/accessControl';
-export * from './subscription/trialUtils';
-// Don't re-export verifyTrialPeriod from tenantVerification since it's already in trialUtils
+
+// Explicitly export verifyTrialPeriod from trialUtils
+export { verifyTrialPeriod } from './subscription/trialUtils';
+
+// Don't re-export verifyTenantTrialPeriod from tenantVerification since it's a different function
 export * from './subscription/tenantVerification';
 export * from './subscription/userSubscriptionUtils';
 export * from './subscription/userMigrationUtils';
