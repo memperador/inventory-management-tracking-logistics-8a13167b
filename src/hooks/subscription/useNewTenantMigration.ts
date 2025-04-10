@@ -46,10 +46,14 @@ export const useNewTenantMigration = () => {
         force: true
       });
       
-      const { data: migrationData, error: migrationError } = await supabase.rpc('create_tenant_and_migrate_user', { 
-        p_tenant_name: newTenantName,
-        p_user_id: targetUserId
-      });
+      // Fix #1: Cast the function name to any to bypass the type checking since the types aren't updated
+      const { data: migrationData, error: migrationError } = await supabase.rpc(
+        'create_tenant_and_migrate_user' as any, 
+        { 
+          p_tenant_name: newTenantName,
+          p_user_id: targetUserId
+        }
+      );
       
       if (migrationError) {
         logAuth('MIGRATION', `SQL function migration failed: ${migrationError.message}`, {
@@ -67,7 +71,8 @@ export const useNewTenantMigration = () => {
         force: true
       });
       
-      const newTenantId = migrationData?.tenant_id;
+      // Fix #2: Check if migrationData is an object and has tenant_id property
+      const newTenantId = typeof migrationData === 'object' && migrationData ? migrationData.tenant_id : null;
       
       if (!newTenantId) {
         throw new Error('No tenant ID returned from migration function');
