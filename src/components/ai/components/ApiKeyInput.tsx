@@ -45,7 +45,11 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({
           onChange={(e) => onApiKeyChange(e.target.value)}
           className="flex-1"
         />
-        <Button onClick={onSetApiKey} disabled={!apiKey.trim()}>
+        <Button 
+          onClick={onSetApiKey} 
+          disabled={!apiKey.trim()}
+          variant="default"  // Changed from "outline"
+        >
           Connect
         </Button>
       </div>

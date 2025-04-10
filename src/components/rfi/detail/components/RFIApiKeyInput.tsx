@@ -34,7 +34,12 @@ const RFIApiKeyInput: React.FC<RFIApiKeyInputProps> = ({
           onChange={e => setApiKeyInput(e.target.value)} 
           className="flex-1"
         />
-        <Button onClick={handleSetApiKey}>Connect</Button>
+        <Button 
+          onClick={handleSetApiKey}
+          variant="default"  // Changed from "outline"
+        >
+          Connect
+        </Button>
       </div>
     </div>
   );

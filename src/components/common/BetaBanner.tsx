@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -64,7 +63,7 @@ const BetaBanner: React.FC<BetaBannerProps> = ({ className }) => {
       </AlertDescription>
       <div className="flex gap-2 mt-2">
         <Button 
-          variant="outline" 
+          variant="default" 
           size="sm" 
           onClick={handleKeepBanner}
           className="text-sm border-orange-300 hover:bg-orange-100 dark:border-orange-700 dark:hover:bg-orange-900/30"
@@ -72,7 +71,7 @@ const BetaBanner: React.FC<BetaBannerProps> = ({ className }) => {
           Remind me tomorrow
         </Button>
         <Button 
-          variant="outline" 
+          variant="default" 
           size="sm" 
           onClick={handleRemoveBanner}
           className="text-sm border-orange-300 hover:bg-orange-100 dark:border-orange-700 dark:hover:bg-orange-900/30"
