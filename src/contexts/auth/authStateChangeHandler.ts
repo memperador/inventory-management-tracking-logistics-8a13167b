@@ -117,7 +117,7 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
             // Handle tenant conflict - show a toast message
             if (response.status === 409 && result.conflict) {
               logAuth('AUTH-HANDLER', `Tenant conflict detected: ${result.message}`, {
-                level: AUTH_LOG_LEVELS.WARNING,
+                level: AUTH_LOG_LEVELS.WARN, // Changed WARNING to WARN to match the enum
                 data: result
               });
               
