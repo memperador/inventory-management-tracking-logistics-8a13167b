@@ -2,6 +2,7 @@
 import { useMigrationBase, MigrationResult } from './useMigrationBase';
 import { supabase } from '@/integrations/supabase/client';
 import { startUserTrial } from '@/contexts/auth/handlers/tenantSubscription';
+import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 
 export const useNewTenantMigration = () => {
   const {
@@ -34,82 +35,108 @@ export const useNewTenantMigration = () => {
     setIsLoading(true);
     
     try {
-      console.log(`Starting migration to new tenant: ${newTenantName} for user: ${targetUserId}`);
+      logAuth('MIGRATION', `Starting migration to new tenant: ${newTenantName} for user: ${targetUserId}`, {
+        level: AUTH_LOG_LEVELS.INFO
+      });
       
-      // In webview or local dev, always try direct migration first
-      if (window.location.hostname.includes('webview') || process.env.NODE_ENV === 'development') {
-        console.log('Detected webview or development environment, using direct migration');
-        return await performDirectMigration(newTenantName, targetUserId);
-      }
-      
-      // Get current session access token for production environment
-      const accessToken = session?.access_token;
-      
-      if (!accessToken) {
-        throw new Error("No access token available. Please log in again.");
-      }
-      
-      // Call the create-tenant edge function - fixed for webview compatibility
-      const functionUrl = `/functions/v1/create-tenant`;
-      console.log(`Calling edge function at: ${functionUrl}`);
+      // Always try direct migration first as the most reliable method
+      logAuth('MIGRATION', 'Using direct database migration as primary approach', {
+        level: AUTH_LOG_LEVELS.INFO
+      });
       
       try {
-        const response = await fetch(functionUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
-          },
-          body: JSON.stringify({
-            tenantName: newTenantName,
-            userId: targetUserId,
-            isMigration: true
-          })
-        });
-        
-        // Log the response status for debugging
-        console.log(`Edge function returned status: ${response.status}`);
-        
-        // If we get any error response, fall back to direct migration
-        if (!response.ok) {
-          console.log(`Edge function returned ${response.status}, falling back to direct migration`);
-          return await performDirectMigration(newTenantName, targetUserId);
-        }
-        
-        const result = await handleMigrationResponse(response, targetUserId);
-        const newTenantId = result.tenant_id;
-        
-        if (!newTenantId) {
-          throw new Error('No tenant ID returned from the edge function');
-        }
-        
-        const successResult = {
-          success: true,
-          message: `Successfully moved user to new tenant "${newTenantName}"`,
-          newTenantId
-        };
-        
-        setMigrationResult(successResult);
-        
-        toast({
-          title: "Migration Successful",
-          description: successResult.message,
-        });
-        
-        // If migration was successful and we're migrating ourselves, refresh the session
-        if (targetUserId === user?.id) {
-          await refreshSession();
-        }
-
-        return successResult;
-      } catch (fetchError) {
-        console.error('Error calling edge function:', fetchError);
-        // Try direct migration as fallback
         return await performDirectMigration(newTenantName, targetUserId);
+      } catch (directError) {
+        logAuth('MIGRATION', `Direct migration failed, trying edge function: ${directError instanceof Error ? directError.message : 'Unknown error'}`, {
+          level: AUTH_LOG_LEVELS.WARN,
+          data: directError
+        });
+        
+        // Only try edge function if direct migration fails
+        // Get current session access token
+        const accessToken = session?.access_token;
+        
+        if (!accessToken) {
+          throw new Error("No access token available. Please log in again.");
+        }
+        
+        // Call the create-tenant edge function with full URL
+        const functionUrl = `/functions/v1/create-tenant`;
+        logAuth('MIGRATION', `Calling edge function at: ${functionUrl}`, {
+          level: AUTH_LOG_LEVELS.INFO,
+          data: {
+            tenantName: newTenantName,
+            userId: targetUserId
+          }
+        });
+        
+        try {
+          const response = await fetch(functionUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({
+              tenantName: newTenantName,
+              userId: targetUserId,
+              isMigration: true
+            })
+          });
+          
+          // Log the response status for debugging
+          logAuth('MIGRATION', `Edge function returned status: ${response.status}`, {
+            level: AUTH_LOG_LEVELS.INFO
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            logAuth('MIGRATION', `Edge function error: ${response.status} - ${errorText}`, {
+              level: AUTH_LOG_LEVELS.ERROR
+            });
+            throw new Error(`Edge function error: ${response.status} - ${errorText}`);
+          }
+          
+          const result = await handleMigrationResponse(response, targetUserId);
+          const newTenantId = result.tenant_id;
+          
+          if (!newTenantId) {
+            throw new Error('No tenant ID returned from the edge function');
+          }
+          
+          const successResult = {
+            success: true,
+            message: `Successfully moved user to new tenant "${newTenantName}"`,
+            newTenantId
+          };
+          
+          setMigrationResult(successResult);
+          
+          toast({
+            title: "Migration Successful",
+            description: successResult.message,
+          });
+          
+          // If migration was successful and we're migrating ourselves, refresh the session
+          if (targetUserId === user?.id) {
+            await refreshSession();
+          }
+
+          return successResult;
+        } catch (fetchError) {
+          logAuth('MIGRATION', 'Edge function attempt failed:', {
+            level: AUTH_LOG_LEVELS.ERROR,
+            data: fetchError
+          });
+          throw fetchError;
+        }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Migration error:', error);
+      logAuth('MIGRATION', `Migration failed: ${errorMessage}`, {
+        level: AUTH_LOG_LEVELS.ERROR,
+        data: error
+      });
       
       const failureResult = {
         success: false,
@@ -135,7 +162,9 @@ export const useNewTenantMigration = () => {
    */
   const performDirectMigration = async (newTenantName: string, userId: string): Promise<MigrationResult> => {
     try {
-      console.log('Performing direct migration for user:', userId, 'to tenant:', newTenantName);
+      logAuth('MIGRATION', `Performing direct migration for user: ${userId} to new tenant: ${newTenantName}`, {
+        level: AUTH_LOG_LEVELS.INFO
+      });
       
       // Create a new tenant
       const { data: newTenantData, error: createError } = await supabase
@@ -147,73 +176,69 @@ export const useNewTenantMigration = () => {
         .single();
         
       if (createError) {
-        console.error('Failed to create new tenant:', createError);
+        logAuth('MIGRATION', `Failed to create new tenant: ${createError.message}`, {
+          level: AUTH_LOG_LEVELS.ERROR,
+          data: createError
+        });
         
-        // If this is an RLS policy violation, use the create-tenant edge function
-        if (createError.code === '42501') {
-          console.log('RLS policy violation detected, attempting to use service role via edge function');
-          
-          // Alternative approach: Call the edge function directly
-          const response = await fetch('/functions/v1/create-tenant', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              tenantName: newTenantName,
-              userId: userId,
-              isMigration: true
-            })
-          });
-          
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Edge function error: ${response.status} - ${errorText}`);
-          }
-          
-          const responseText = await response.text();
-          console.log('Edge function response:', responseText);
-          
-          let result;
-          try {
-            result = JSON.parse(responseText);
-          } catch (e) {
-            throw new Error(`Failed to parse response: ${responseText}`);
-          }
-          
-          if (!result.success) {
-            throw new Error(result.error || 'Unknown error from edge function');
-          }
-          
-          const newTenantId = result.tenant_id;
-          
-          // Tenant was created by edge function, but we still need to ensure the user is associated
-          await associateUserWithTenant(userId, newTenantId);
-          
-          return {
-            success: true,
-            message: `Successfully created tenant via edge function and moved user`,
-            newTenantId
-          };
-        }
-        
-        return {
-          success: false,
-          message: `Failed to create new tenant: ${createError.message || 'No tenant data returned'}`
-        };
+        throw createError;
+      }
+      
+      if (!newTenantData || !newTenantData.id) {
+        throw new Error('No tenant ID returned after creation');
       }
       
       const newTenantId = newTenantData.id;
-      console.log('Created new tenant with ID:', newTenantId);
+      logAuth('MIGRATION', `Created new tenant with ID: ${newTenantId}`, {
+        level: AUTH_LOG_LEVELS.INFO
+      });
       
-      await associateUserWithTenant(userId, newTenantId);
+      // Update the user's tenant_id in the users table
+      const { error: updateUserError } = await supabase
+        .from('users')
+        .update({ tenant_id: newTenantId })
+        .eq('id', userId);
+        
+      if (updateUserError) {
+        logAuth('MIGRATION', `Failed to update user's tenant: ${updateUserError.message}`, {
+          level: AUTH_LOG_LEVELS.ERROR,
+          data: updateUserError
+        });
+        throw updateUserError;
+      }
+      
+      logAuth('MIGRATION', `Successfully updated user's tenant to: ${newTenantId}`, {
+        level: AUTH_LOG_LEVELS.INFO
+      });
+      
+      // Update the profile's tenant_id if it exists
+      const { error: updateProfileError } = await supabase
+        .from('profiles')
+        .update({ tenant_id: newTenantId })
+        .eq('id', userId);
+      
+      if (updateProfileError) {
+        logAuth('MIGRATION', `Warning: Failed to update profile tenant, but continuing: ${updateProfileError.message}`, {
+          level: AUTH_LOG_LEVELS.WARN,
+          data: updateProfileError
+        });
+      } else {
+        logAuth('MIGRATION', `Successfully updated user's profile tenant to: ${newTenantId}`, {
+          level: AUTH_LOG_LEVELS.INFO
+        });
+      }
       
       // Start a trial for the new tenant
       try {
         await startUserTrial(newTenantId);
-        console.log('Started trial for new tenant:', newTenantId);
+        logAuth('MIGRATION', `Started trial for new tenant: ${newTenantId}`, {
+          level: AUTH_LOG_LEVELS.INFO
+        });
       } catch (trialError) {
-        console.warn('Failed to start trial, but continuing:', trialError);
+        logAuth('MIGRATION', `Warning: Failed to start trial, but continuing: ${trialError instanceof Error ? trialError.message : 'Unknown error'}`, {
+          level: AUTH_LOG_LEVELS.WARN,
+          data: trialError
+        });
       }
       
       const successResult = {
@@ -236,49 +261,11 @@ export const useNewTenantMigration = () => {
       
       return successResult;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Direct migration error:', error);
-      
-      const failureResult = {
-        success: false,
-        message: `Failed to migrate user directly: ${errorMessage}`
-      };
-      
-      setMigrationResult(failureResult);
-      
-      toast({
-        title: "Error",
-        description: `Failed to migrate user: ${errorMessage}`,
-        variant: "destructive"
+      logAuth('MIGRATION', `Direct migration error:`, {
+        level: AUTH_LOG_LEVELS.ERROR,
+        data: error
       });
-      
-      return failureResult;
-    }
-  };
-
-  /**
-   * Helper function to associate a user with a tenant
-   */
-  const associateUserWithTenant = async (userId: string, tenantId: string): Promise<void> => {
-    // Update the user's tenant_id in the users table
-    const { error: updateUserError } = await supabase
-      .from('users')
-      .update({ tenant_id: tenantId })
-      .eq('id', userId);
-      
-    if (updateUserError) {
-      console.error('Failed to update user tenant:', updateUserError);
-      throw updateUserError;
-    }
-    
-    // Update the profile's tenant_id if it exists
-    const { error: updateProfileError } = await supabase
-      .from('profiles')
-      .update({ tenant_id: tenantId })
-      .eq('id', userId);
-    
-    if (updateProfileError) {
-      console.warn('Failed to update profile tenant, but continuing:', updateProfileError.message);
+      throw error;
     }
   };
 

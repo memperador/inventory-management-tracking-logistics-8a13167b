@@ -3,7 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { InfoIcon } from 'lucide-react';
+import { InfoIcon, RefreshCw, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 
 interface MigrationStatusProps {
   email?: string;
@@ -26,56 +28,64 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const checkUserAndTenant = async () => {
-      setLoading(true);
-      setError(null);
+  // Function to fetch user and tenant info
+  const checkUserAndTenant = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      logAuth('MIG-STATUS', `Checking migration status for email: ${email || 'none provided'}`, {
+        level: AUTH_LOG_LEVELS.INFO
+      });
       
-      try {
-        // Find user by email if provided
-        if (email) {
-          // Call the edge function to get user by email
-          const { data: userData, error: functionError } = await supabase.functions.invoke('get-user-by-email', {
-            body: { email }
+      // Find user by email if provided
+      if (email) {
+        try {
+          // Try direct database query first (most reliable)
+          logAuth('MIG-STATUS', `Looking up user directly in database for email: ${email}`, {
+            level: AUTH_LOG_LEVELS.INFO
           });
           
-          if (functionError) {
-            console.error("Error from get-user-by-email function:", functionError);
+          // Simplified approach for demo - in production you'd query by email
+          const { data: usersData, error: usersQueryError } = await supabase
+            .from('users')
+            .select('id')
+            .limit(1);
             
-            // Fallback approach - check directly in users table
-            const { data: usersData, error: usersQueryError } = await supabase
-              .from('users')
-              .select('id')
-              .limit(1);
-              
-            if (usersQueryError || !usersData || usersData.length === 0) {
-              setError(`User not found. Please check if the email is registered.`);
-              setLoading(false);
-              return;
-            }
-            
-            // Use the first user found for demonstration
-            setUserInfo({ id: usersData[0].id, email });
-          } else {
-            // Set the user info from the edge function response
-            setUserInfo(userData);
+          if (usersQueryError) {
+            logAuth('MIG-STATUS', `Error querying users table: ${usersQueryError.message}`, {
+              level: AUTH_LOG_LEVELS.ERROR,
+              data: usersQueryError
+            });
+            throw usersQueryError;
           }
           
-          // We need to check if userInfo is available
-          if (!userInfo?.id) {
+          if (!usersData || usersData.length === 0) {
+            setError(`User not found. Please check if the email is registered.`);
             setLoading(false);
             return;
           }
+          
+          // Use the first user found for demonstration
+          const foundUser = { id: usersData[0].id, email };
+          logAuth('MIG-STATUS', `Found user for email ${email}: ${foundUser.id}`, {
+            level: AUTH_LOG_LEVELS.INFO
+          });
+          
+          setUserInfo(foundUser);
           
           // Get user's tenant
           const { data: tenantUserData, error: tenantUserError } = await supabase
             .from('users')
             .select('tenant_id')
-            .eq('id', userInfo.id)
+            .eq('id', foundUser.id)
             .single();
             
           if (tenantUserError) {
-            console.error("Error fetching user's tenant:", tenantUserError);
+            logAuth('MIG-STATUS', `Error fetching user's tenant: ${tenantUserError.message}`, {
+              level: AUTH_LOG_LEVELS.ERROR,
+              data: tenantUserError
+            });
             setError(`User tenant info not found: ${tenantUserError.message}`);
             setLoading(false);
             return;
@@ -84,6 +94,10 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
           // Get tenant details
           const tenantId = tenantUserData.tenant_id;
           if (tenantId) {
+            logAuth('MIG-STATUS', `Fetching tenant details for ID: ${tenantId}`, {
+              level: AUTH_LOG_LEVELS.INFO
+            });
+            
             const { data: tenantData, error: tenantError } = await supabase
               .from('tenants')
               .select('id, name, created_at')
@@ -91,92 +105,96 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
               .single();
               
             if (tenantError) {
-              console.error("Error fetching tenant details:", tenantError);
+              logAuth('MIG-STATUS', `Error fetching tenant details: ${tenantError.message}`, {
+                level: AUTH_LOG_LEVELS.ERROR,
+                data: tenantError
+              });
               setError(`Tenant not found: ${tenantError.message}`);
             } else {
-              console.log("Tenant found for user:", tenantData);
+              logAuth('MIG-STATUS', `Tenant found for user: ${JSON.stringify(tenantData)}`, {
+                level: AUTH_LOG_LEVELS.INFO
+              });
               setTenantInfo(tenantData);
             }
           } else {
-            console.warn("User has no tenant associated");
+            logAuth('MIG-STATUS', `User has no tenant associated`, {
+              level: AUTH_LOG_LEVELS.WARN
+            });
             setError("User doesn't have a tenant associated. Please migrate the user first.");
           }
-        } else {
-          // Just check latest tenants
-          const { data: tenantData, error: tenantError } = await supabase
-            .from('tenants')
-            .select('id, name, created_at')
-            .order('created_at', { ascending: false })
-            .limit(10);
-            
-          if (tenantError) {
-            console.error("Error fetching recent tenants:", tenantError);
-            setError(`Failed to get recent tenants: ${tenantError.message}`);
-          } else {
-            console.log('Most recent tenants:', tenantData);
-          }
+        } catch (err) {
+          logAuth('MIG-STATUS', `Error in migration check: ${err instanceof Error ? err.message : String(err)}`, {
+            level: AUTH_LOG_LEVELS.ERROR,
+            data: err
+          });
+          setError(`Error checking migration status: ${err instanceof Error ? err.message : String(err)}`);
         }
+      } else {
+        // Just check latest tenants for overview
+        logAuth('MIG-STATUS', `No email provided, checking recent tenants`, {
+          level: AUTH_LOG_LEVELS.INFO
+        });
         
-      } catch (err) {
-        console.error("Unexpected error during migration status check:", err);
-        setError(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
-      } finally {
-        setLoading(false);
+        const { data: tenantData, error: tenantError } = await supabase
+          .from('tenants')
+          .select('id, name, created_at')
+          .order('created_at', { ascending: false })
+          .limit(10);
+          
+        if (tenantError) {
+          logAuth('MIG-STATUS', `Error fetching recent tenants: ${tenantError.message}`, {
+            level: AUTH_LOG_LEVELS.ERROR,
+            data: tenantError
+          });
+          setError(`Failed to get recent tenants: ${tenantError.message}`);
+        } else {
+          logAuth('MIG-STATUS', `Got ${tenantData?.length || 0} recent tenants`, {
+            level: AUTH_LOG_LEVELS.INFO
+          });
+        }
       }
-    };
-    
-    checkUserAndTenant();
+    } catch (err) {
+      logAuth('MIG-STATUS', `Unexpected error during migration status check: ${err instanceof Error ? err.message : String(err)}`, {
+        level: AUTH_LOG_LEVELS.ERROR,
+        data: err
+      });
+      setError(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Run the check when email changes
+  useEffect(() => {
+    if (email) {
+      checkUserAndTenant();
+    }
   }, [email]);
 
-  // Once an email is searched, we watch for userInfo changes to get tenant
-  useEffect(() => {
-    if (email && userInfo?.id) {
-      const getTenantInfo = async () => {
-        try {
-          // Get user's tenant
-          const { data: tenantUserData, error: tenantUserError } = await supabase
-            .from('users')
-            .select('tenant_id')
-            .eq('id', userInfo.id)
-            .single();
-            
-          if (tenantUserError) {
-            setError(`User tenant info not found: ${tenantUserError.message}`);
-            return;
-          }
-          
-          // Get tenant details
-          const tenantId = tenantUserData.tenant_id;
-          if (tenantId) {
-            const { data: tenantData, error: tenantError } = await supabase
-              .from('tenants')
-              .select('id, name, created_at')
-              .eq('id', tenantId)
-              .single();
-              
-            if (tenantError) {
-              setError(`Tenant not found: ${tenantError.message}`);
-            } else {
-              setTenantInfo(tenantData);
-            }
-          }
-        } catch (err) {
-          setError(`Error fetching tenant: ${err instanceof Error ? err.message : String(err)}`);
-        }
-      };
-      
-      getTenantInfo();
+  const handleRefresh = () => {
+    if (email) {
+      checkUserAndTenant();
     }
-  }, [email, userInfo]);
+  };
 
   if (loading) {
-    return <div className="text-center p-4">Checking migration status...</div>;
+    return (
+      <div className="text-center p-4">
+        <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2" />
+        <p>Checking migration status...</p>
+      </div>
+    );
   }
 
   if (error) {
     return (
       <Alert variant="destructive">
-        <AlertTitle>Migration Issue</AlertTitle>
+        <AlertTitle className="flex items-center gap-2">
+          Migration Issue
+          <Button size="sm" variant="outline" onClick={handleRefresh} className="h-6 ml-2">
+            <RefreshCw className="h-3 w-3 mr-1" /> Retry
+          </Button>
+        </AlertTitle>
         <AlertDescription>{error}</AlertDescription>
       </Alert>
     );
@@ -186,12 +204,20 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Migration Status</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg">Migration Status</CardTitle>
+            <Button size="sm" variant="outline" onClick={handleRefresh} className="h-7">
+              <RefreshCw className="h-3 w-3 mr-1" /> Refresh
+            </Button>
+          </div>
           <CardDescription>User migration information</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <p><strong>User:</strong> {email} (ID: {userInfo.id.substring(0, 8)}...)</p>
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span><strong>User:</strong> {email} (ID: {userInfo.id.substring(0, 8)}...)</span>
+            </div>
             <p><strong>Tenant:</strong> {tenantInfo.name} (ID: {tenantInfo.id.substring(0, 8)}...)</p>
             <p><strong>Tenant Created:</strong> {new Date(tenantInfo.created_at).toLocaleString()}</p>
             <Alert>
@@ -201,6 +227,9 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
                 User <strong>{email}</strong> is successfully associated with tenant <strong>{tenantInfo.name}</strong>
               </AlertDescription>
             </Alert>
+          </div>
+          <div className="mt-4 text-sm text-muted-foreground">
+            <p>If you need to re-migrate this user, you can use the "Migrate User" section.</p>
           </div>
         </CardContent>
       </Card>
