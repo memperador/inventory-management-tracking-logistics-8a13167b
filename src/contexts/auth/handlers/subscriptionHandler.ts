@@ -105,7 +105,7 @@ export async function verifyTrialPeriod(tenantId: string): Promise<{
     // Fetch the tenant data
     const { data: tenantData, error } = await supabase
       .from('tenants')
-      .select('subscription_status, trial_ends_at, subscription_tier')
+      .select('subscription_status, trial_ends_at, subscription_tier, name')
       .eq('id', tenantId)
       .single();
       
@@ -121,13 +121,14 @@ export async function verifyTrialPeriod(tenantId: string): Promise<{
     const isInTrial = tenantData.subscription_status === 'trialing';
     const trialEndsAt = tenantData.trial_ends_at;
     const daysLeft = calculateTrialDaysLeft(trialEndsAt);
+    const tenantName = tenantData.name || 'Unknown tenant';
     
     // Verify the trial is valid
     if (isInTrial && !trialEndsAt) {
       return {
         isValid: false,
         daysLeft: 0,
-        message: 'Tenant is marked as in trial but has no trial end date',
+        message: `Tenant "${tenantName}" is marked as in trial but has no trial end date`,
         tenantData
       };
     }
@@ -136,7 +137,7 @@ export async function verifyTrialPeriod(tenantId: string): Promise<{
       return {
         isValid: false,
         daysLeft: 0,
-        message: 'Trial has expired but status not updated',
+        message: `Trial for tenant "${tenantName}" has expired but status not updated`,
         tenantData
       };
     }
@@ -145,7 +146,7 @@ export async function verifyTrialPeriod(tenantId: string): Promise<{
       return {
         isValid: true,
         daysLeft,
-        message: `Valid trial with ${daysLeft} days remaining`,
+        message: `Valid trial for tenant "${tenantName}" with ${daysLeft} days remaining`,
         tenantData
       };
     }
@@ -153,7 +154,7 @@ export async function verifyTrialPeriod(tenantId: string): Promise<{
     return {
       isValid: true,
       daysLeft: 0,
-      message: `Not in trial mode. Current status: ${tenantData.subscription_status}`,
+      message: `Tenant "${tenantName}" is not in trial mode. Current status: ${tenantData.subscription_status}`,
       tenantData
     };
   } catch (error) {

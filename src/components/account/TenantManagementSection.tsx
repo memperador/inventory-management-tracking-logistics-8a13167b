@@ -6,23 +6,54 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useTenantManagement } from '@/hooks/subscription/useTenantManagement';
-import { AlertCircle, CheckCircle, ArrowRight, ShieldAlert } from 'lucide-react';
+import { AlertCircle, CheckCircle, ArrowRight, ShieldAlert, Search, User } from 'lucide-react';
+import { Form, FormField, FormItem, FormLabel, FormControl } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
 
 // This component is only visible to superadmin users or in development mode
 const TenantManagementSection: React.FC = () => {
   const [newTenantName, setNewTenantName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
   const { 
     isLoading, 
+    lookupResult,
     trialVerificationResult, 
     migrationResult,
+    lookupUserByEmail,
     verifyTrialStatus, 
-    migrateToNewTenant 
+    migrateToNewTenant,
+    getTenantIdForUser
   } = useTenantManagement();
+
+  const handleUserLookup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (userEmail.trim()) {
+      await lookupUserByEmail(userEmail.trim());
+    }
+  };
+
+  const handleVerifyTrial = async () => {
+    if (lookupResult) {
+      // First get the tenant ID for this user
+      const tenantId = await getTenantIdForUser(lookupResult.userId);
+      if (tenantId) {
+        await verifyTrialStatus(tenantId);
+      }
+    } else {
+      // If no user is selected, verify the current tenant
+      await verifyTrialStatus();
+    }
+  };
 
   const handleMigrateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newTenantName.trim()) {
-      await migrateToNewTenant(newTenantName.trim());
+      if (lookupResult) {
+        await migrateToNewTenant(newTenantName.trim(), lookupResult.userId);
+      } else {
+        // If no user is selected, migrate the current user
+        await migrateToNewTenant(newTenantName.trim());
+      }
     }
   };
 
@@ -36,16 +67,64 @@ const TenantManagementSection: React.FC = () => {
         <CardDescription>Advanced tenant administration tools for SuperAdmins only</CardDescription>
       </CardHeader>
       
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 pt-6">
+        {/* User Lookup Section */}
+        <div>
+          <h3 className="text-lg font-medium">User Lookup</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Find a user by email to perform operations on their account
+          </p>
+          
+          <form onSubmit={handleUserLookup} className="flex flex-col gap-4">
+            <div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter user email"
+                  value={userEmail}
+                  onChange={(e) => setUserEmail(e.target.value)}
+                  disabled={isLoading}
+                  className="flex-1"
+                  required
+                />
+                <Button 
+                  type="submit" 
+                  disabled={isLoading || !userEmail.trim()}
+                  variant="secondary"
+                >
+                  <Search className="mr-2 h-4 w-4" />
+                  Find User
+                </Button>
+              </div>
+            </div>
+          </form>
+          
+          {lookupResult && (
+            <Alert className="mt-4">
+              <div className="flex items-center">
+                <User className="h-5 w-5 mr-2" />
+                <AlertTitle>User Selected</AlertTitle>
+              </div>
+              <AlertDescription>
+                Email: {lookupResult.email} <br />
+                User ID: {lookupResult.userId.substring(0, 8)}...
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+        
+        <Separator />
+        
         {/* Trial Verification Section */}
         <div>
           <h3 className="text-lg font-medium">Verify Trial Period</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Check if the current tenant's trial period is configured correctly.
+            {lookupResult 
+              ? `Check if ${lookupResult.email}'s tenant trial period is configured correctly` 
+              : 'Check if the current tenant\'s trial period is configured correctly'}
           </p>
           
           <Button 
-            onClick={verifyTrialStatus} 
+            onClick={handleVerifyTrial} 
             disabled={isLoading}
             variant="outline"
           >
@@ -78,7 +157,9 @@ const TenantManagementSection: React.FC = () => {
         <div>
           <h3 className="text-lg font-medium">Migrate User to New Tenant</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Move the current user to a newly created tenant.
+            {lookupResult 
+              ? `Move ${lookupResult.email} to a newly created tenant` 
+              : 'Move the current user to a newly created tenant'}
           </p>
           
           <form onSubmit={handleMigrateUser} className="flex flex-col gap-4">
