@@ -1,99 +1,91 @@
 
-import { UpgradePrompt, FeatureAccessLevel } from './types';
-import { FEATURE_ACCESS_MAP } from './featureMap';
+import { FeatureAccessLevel, UpgradePrompt } from './types';
 
-// Function to get upgrade prompt for a feature
-export const getUpgradePromptForFeature = (
-  featureKey: string
-): UpgradePrompt | null => {
-  const requiredTier = FEATURE_ACCESS_MAP[featureKey];
-  if (!requiredTier) return null;
+// Feature to upgrade prompt mapping
+const FEATURE_UPGRADE_MAP: Record<string, UpgradePrompt> = {
+  // Standard tier features
+  'gps_tracking': {
+    title: 'GPS Tracking Available',
+    description: 'Track equipment location in real-time with our Standard plan',
+    requiredTier: 'standard'
+  },
+  'audit_logs': {
+    title: 'Access Audit Logs',
+    description: 'Track all equipment changes with detailed audit history',
+    requiredTier: 'standard'
+  },
+  'advanced_alerts': {
+    title: 'Advanced Alerts',
+    description: 'Set up customizable alerts and notifications',
+    requiredTier: 'standard'
+  },
+  'bulk_qr': {
+    title: 'Bulk QR Code Generation',
+    description: 'Generate multiple QR codes at once for efficient equipment tracking',
+    requiredTier: 'standard'
+  },
+  'location_history': {
+    title: 'Location History',
+    description: 'View historical location data for all your equipment',
+    requiredTier: 'standard'
+  },
   
-  const promptMap: Record<string, { title: string; description: string }> = {
-    // Standard tier features
-    'gps_tracking': {
-      title: 'Upgrade to Standard for GPS Tracking',
-      description: 'Track equipment location in real-time and view movement history.'
-    },
-    'audit_logs': {
-      title: 'Unlock Detailed Audit Logs',
-      description: 'See who changed what and when with comprehensive audit trails.'
-    },
-    'advanced_alerts': {
-      title: 'Get Advanced Alert Features',
-      description: 'Set up custom triggers and notification rules for your equipment.'
-    },
-    'bulk_qr': {
-      title: 'Enable Bulk QR Generation',
-      description: 'Generate and print multiple QR codes at once for faster inventory processing.'
-    },
-    'standard_ai_assistant': {
-      title: 'Upgrade to Standard AI Assistant',
-      description: 'Get enhanced AI capabilities with GPS tracking insights and route suggestions.'
-    },
-    
-    // Premium tier features
-    'advanced_gps': {
-      title: 'Upgrade to Premium for Advanced GPS',
-      description: 'Get detailed GPS analytics, custom reporting, and historical tracking.'
-    },
-    'geofencing': {
-      title: 'Add Geofencing Capabilities',
-      description: 'Set up virtual boundaries and get alerts when equipment crosses them.'
-    },
-    'route_optimization': {
-      title: 'Enable Route Optimization',
-      description: 'Let AI find the most efficient routes for your equipment transportation.'
-    },
-    'gps_intelligence': {
-      title: 'Access GPS Intelligence',
-      description: 'Get advanced insights and recommendations based on location data.'
-    },
-    'premium_ai_assistant': {
-      title: 'Upgrade to Premium AI Assistant',
-      description: 'Access our most powerful AI model with advanced asset management insights, predictive maintenance, and custom analysis.'
-    },
-    'predictive_maintenance': {
-      title: 'Enable Predictive Maintenance',
-      description: 'Let AI predict when your equipment needs maintenance based on usage patterns and historical data.'
-    },
-    'custom_ai_queries': {
-      title: 'Access Custom AI Queries',
-      description: 'Ask complex questions about your assets and get detailed, data-driven responses from our most advanced AI.'
-    },
-    
-    // Enterprise tier features
-    'white_labeling': {
-      title: 'Upgrade to Enterprise for White Labeling',
-      description: 'Remove our branding and replace it with your own company branding.'
-    },
-    'sso_integration': {
-      title: 'Enable Single Sign-On Integration',
-      description: 'Integrate with your company\'s SSO system for seamless authentication.'
-    },
-    'custom_api': {
-      title: 'Get Custom API Access',
-      description: 'Access our API with custom endpoints tailored to your organization\'s needs.'
-    },
-    'dedicated_support': {
-      title: 'Get Dedicated Support',
-      description: 'Work with a dedicated account manager and receive priority support.'
-    },
-    'custom_implementation': {
-      title: 'Custom Implementation Services',
-      description: 'Get personalized onboarding and implementation services tailored to your organization.'
-    },
-    'sla_guarantees': {
-      title: 'Service Level Agreement',
-      description: 'Get guaranteed response times and uptime commitments.'
-    }
-  };
+  // Premium tier features
+  'advanced_gps': {
+    title: 'Advanced GPS Features',
+    description: 'Access geofencing, route optimization and more',
+    requiredTier: 'premium'
+  },
+  'geofencing': {
+    title: 'Geofencing',
+    description: 'Set boundaries for your equipment and get alerts when they cross them',
+    requiredTier: 'premium'
+  },
+  'route_optimization': {
+    title: 'Route Optimization',
+    description: 'Find the most efficient routes for your equipment',
+    requiredTier: 'premium'
+  },
+  'premium_analytics': {
+    title: 'Premium Analytics',
+    description: 'Access advanced analytics and reporting features',
+    requiredTier: 'premium'
+  },
+  'premium_ai': {
+    title: 'Advanced AI Assistant',
+    description: 'Get AI-powered insights and recommendations',
+    requiredTier: 'premium'
+  },
   
-  const prompt = promptMap[featureKey];
-  if (!prompt) return null;
-  
-  return {
-    ...prompt,
-    requiredTier
-  };
+  // Enterprise tier features
+  'white_labeling': {
+    title: 'White Labeling',
+    description: 'Customize the application with your own branding',
+    requiredTier: 'enterprise'
+  },
+  'sso_integration': {
+    title: 'SSO Integration',
+    description: 'Integrate with your existing single sign-on solution',
+    requiredTier: 'enterprise'
+  },
+  'custom_api': {
+    title: 'Custom API Access',
+    description: 'Build custom integrations with our API',
+    requiredTier: 'enterprise'
+  },
+  'dedicated_support': {
+    title: 'Dedicated Support',
+    description: 'Get priority support from our dedicated team',
+    requiredTier: 'enterprise'
+  },
+  'sla_guarantees': {
+    title: 'SLA Guarantees',
+    description: 'Service level agreement guarantees for enterprise customers',
+    requiredTier: 'enterprise'
+  }
+};
+
+// Get the upgrade prompt for a feature
+export const getUpgradePromptForFeature = (featureKey: string): UpgradePrompt | null => {
+  return FEATURE_UPGRADE_MAP[featureKey] || null;
 };
