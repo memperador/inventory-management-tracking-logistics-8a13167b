@@ -5,6 +5,7 @@ import { PreConstructionSection, ChecklistItemStatus, DocumentAttachment } from 
 import DocumentUploadDialog from './DocumentUploadDialog';
 import DocumentViewer from './components/DocumentViewer';
 import ChecklistSection from './components/ChecklistSection';
+import StatusFilter from './components/StatusFilter';
 
 interface PreConstructionChecklistProps {
   sections: PreConstructionSection[];
@@ -35,6 +36,9 @@ const PreConstructionChecklist: React.FC<PreConstructionChecklistProps> = ({
     documents: [],
     itemTitle: ''
   });
+  
+  // Add state for status filtering
+  const [statusFilter, setStatusFilter] = useState<ChecklistItemStatus | 'all'>('all');
 
   const handleOpenUploadDialog = (sectionId: string, itemId: string, itemTitle: string, sectionTitle: string) => {
     setCurrentItem({
@@ -60,8 +64,29 @@ const PreConstructionChecklist: React.FC<PreConstructionChecklistProps> = ({
     });
   };
 
+  // Calculate overall progress
+  const totalTasks = sections.reduce((sum, section) => sum + section.items.length, 0);
+  const completedTasks = sections.reduce((sum, section) => 
+    sum + section.items.filter(item => item.status === 'completed').length, 0);
+  const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
   return (
     <div className="space-y-6">
+      {/* Add progress summary */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="bg-muted p-3 rounded-md flex items-center gap-4 w-full">
+          <div className="text-sm font-medium">
+            Overall Progress: {completedTasks}/{totalTasks} tasks completed ({progressPercentage}%)
+          </div>
+          <div className="w-full max-w-xs bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+            <div className="bg-primary h-2.5 rounded-full" style={{ width: `${progressPercentage}%` }}></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Add status filter */}
+      <StatusFilter selectedStatus={statusFilter} onStatusChange={setStatusFilter} />
+
       <Accordion type="multiple" className="w-full">
         {sections.map((section) => (
           <ChecklistSection
@@ -71,6 +96,7 @@ const PreConstructionChecklist: React.FC<PreConstructionChecklistProps> = ({
             onAddItem={onAddItem}
             onOpenUploadDialog={handleOpenUploadDialog}
             onViewDocuments={handleViewDocuments}
+            statusFilter={statusFilter}
           />
         ))}
       </Accordion>
