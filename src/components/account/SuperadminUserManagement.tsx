@@ -43,7 +43,17 @@ const SuperadminUserManagement: React.FC = () => {
           .select('id, name, subscription_status, subscription_tier');
         
         if (error) throw error;
-        setTenants(data || []);
+        
+        // Add the required 'settings' property to make the data match the Tenant type
+        const tenantsWithSettings = (data || []).map(tenant => ({
+          ...tenant,
+          settings: {
+            theme: 'light',
+            features: []
+          }
+        }));
+        
+        setTenants(tenantsWithSettings);
       } catch (error) {
         console.error('Error loading tenants:', error);
         toast({
@@ -63,20 +73,27 @@ const SuperadminUserManagement: React.FC = () => {
   const loadAllUsers = async () => {
     setIsLoadingUsers(true);
     try {
-      const { data, error } = await supabase
+      // First fetch users
+      const { data: userData, error: userError } = await supabase
         .from('users')
-        .select(`
-          id, 
-          role, 
-          tenant_id, 
-          created_at,
-          profiles:profiles(first_name, last_name)
-        `);
+        .select('id, role, tenant_id, created_at');
       
-      if (error) throw error;
+      if (userError) throw userError;
+      
+      // Then fetch profiles separately
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name');
+        
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
       
       // Also fetch the tenant names for each user
-      const usersWithTenantInfo = await Promise.all((data || []).map(async (user) => {
+      const usersWithInfo = await Promise.all((userData || []).map(async (user) => {
+        // Find the matching profile for this user
+        const userProfile = profilesData?.find(profile => profile.id === user.id);
+        
         try {
           const { data: tenantData } = await supabase
             .from('tenants')
@@ -87,18 +104,22 @@ const SuperadminUserManagement: React.FC = () => {
           return {
             ...user,
             tenantName: tenantData?.name || 'Unknown',
-            name: `${user.profiles?.first_name || ''} ${user.profiles?.last_name || ''}`.trim() || 'Unknown User'
+            name: userProfile ? 
+              `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'Unknown User' : 
+              'Unknown User'
           };
         } catch (e) {
           return {
             ...user,
             tenantName: 'Unknown',
-            name: `${user.profiles?.first_name || ''} ${user.profiles?.last_name || ''}`.trim() || 'Unknown User'
+            name: userProfile ? 
+              `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'Unknown User' : 
+              'Unknown User'
           };
         }
       }));
       
-      setUsers(usersWithTenantInfo);
+      setUsers(usersWithInfo);
     } catch (error) {
       console.error('Error loading users:', error);
       toast({

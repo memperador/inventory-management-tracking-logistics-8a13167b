@@ -26,11 +26,12 @@ export const useTenantManagement = () => {
     setLookupResult(null);
     
     try {
-      // Try to find user by matching partial ID in email
-      // This is a simple approach that avoids complex type issues
+      // Simple approach to look up users - in a production app you would have proper email storage
+      // For demo purposes, we'll just search for users and use the first one
       const { data, error } = await supabase
         .from('users')
-        .select('id');
+        .select('id')
+        .limit(1);
 
       if (error || !data || data.length === 0) {
         toast({
@@ -42,8 +43,7 @@ export const useTenantManagement = () => {
         return null;
       }
 
-      // In a real app with proper email storage, you'd look up by email directly
-      // For demo purposes, we'll just use the first user found
+      // Use the first user found (for demonstration purposes)
       const userId = data[0]?.id;
       
       if (!userId) {
