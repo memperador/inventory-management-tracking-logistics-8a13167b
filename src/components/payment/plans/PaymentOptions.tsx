@@ -4,19 +4,32 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter }
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ShieldCheck } from 'lucide-react';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { StripeProvider } from '@/components/payment/StripeProvider';
+import PaymentForm from '@/components/payment/PaymentForm';
 
 interface PaymentOptionsProps {
   agreeToFees: boolean;
   setAgreeToFees: (checked: boolean) => void;
   currentTier?: string;
   isUpgrade?: boolean;
+  amount: number;
+  paymentType: string;
+  selectedTier: string;
+  onSuccess: (paymentIntent: any) => void;
+  onError: (error: Error) => void;
 }
 
 export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
   agreeToFees,
   setAgreeToFees,
   currentTier,
-  isUpgrade
+  isUpgrade,
+  amount,
+  paymentType,
+  selectedTier,
+  onSuccess,
+  onError
 }) => {
   return (
     <Card>
@@ -44,6 +57,21 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
             I understand that payment processing fees for credit cards (Visa, Mastercard, Discover, American Express) 
             will be added to my bill. These fees are typically 2.9% + $0.30 per transaction.
           </Label>
+        </div>
+        
+        <div className="mt-6">
+          <ErrorBoundary>
+            <StripeProvider>
+              <PaymentForm 
+                amount={amount}
+                disabled={!agreeToFees}
+                paymentType={paymentType}
+                onSuccess={onSuccess}
+                onError={onError}
+                selectedTier={selectedTier}
+              />
+            </StripeProvider>
+          </ErrorBoundary>
         </div>
       </CardContent>
       <CardFooter className="flex flex-col items-start text-sm text-muted-foreground">

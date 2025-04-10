@@ -1,9 +1,6 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { StripeProvider } from '@/components/payment/StripeProvider';
-import PaymentForm from '@/components/payment/PaymentForm';
 import { ServiceTier } from './PricingTiers';
 import { PlanHeader } from './summary/PlanHeader';
 
@@ -20,20 +17,9 @@ interface SubscriptionSummaryProps {
 export const SubscriptionSummary: React.FC<SubscriptionSummaryProps> = ({
   selectedTierData,
   paymentType,
-  agreeToFees,
-  isUpgrade,
-  currentTier,
-  onSuccess,
-  onError
+  isUpgrade
 }) => {
-  // Calculate the correct amount based on payment type
-  const amount = paymentType === 'annual' 
-    ? Math.round(selectedTierData.price * 12 * 0.9) 
-    : selectedTierData.price;
-
-  const title = isUpgrade 
-    ? 'Upgrade to ' + selectedTierData.name 
-    : 'Subscribe to ' + selectedTierData.name;
+  const title = selectedTierData.name + ' Plan';
 
   return (
     <Card>
@@ -43,18 +29,30 @@ export const SubscriptionSummary: React.FC<SubscriptionSummaryProps> = ({
       />
       
       <CardContent>
-        <ErrorBoundary>
-          <StripeProvider>
-            <PaymentForm 
-              amount={amount}
-              disabled={!agreeToFees}
-              paymentType={paymentType}
-              onSuccess={onSuccess}
-              onError={onError}
-              selectedTier={selectedTierData.id}
-            />
-          </StripeProvider>
-        </ErrorBoundary>
+        <div className="space-y-4">
+          <div className="text-sm">
+            <p><strong>Features:</strong></p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              {selectedTierData.features.map((feature, index) => (
+                <li key={index}>{feature}</li>
+              ))}
+            </ul>
+          </div>
+          
+          <div className="text-sm">
+            <p><strong>Limits:</strong></p>
+            <ul className="pl-5 mt-2">
+              <li>Assets: {selectedTierData.limits.assets}</li>
+              <li>Users: {selectedTierData.limits.users}</li>
+            </ul>
+          </div>
+          
+          {selectedTierData.ai && (
+            <div className="text-sm">
+              <p><strong>AI Assistant:</strong> {selectedTierData.ai}</p>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

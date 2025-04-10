@@ -34,6 +34,11 @@ const StandardPlanSection: React.FC<StandardPlanSectionProps> = ({
   handleSuccess,
   handleError
 }) => {
+  // Calculate the correct amount based on payment type
+  const amount = paymentType === 'annual' 
+    ? Math.round(selectedTierData.price * 12 * 0.9) 
+    : selectedTierData.price;
+    
   return (
     <>
       <PricingTiers 
@@ -50,6 +55,11 @@ const StandardPlanSection: React.FC<StandardPlanSectionProps> = ({
           setAgreeToFees={setAgreeToFees}
           currentTier={currentTenantTier}
           isUpgrade={isUpgrade}
+          amount={amount}
+          paymentType={paymentType}
+          selectedTier={selectedTierData.id}
+          onSuccess={handleSuccess}
+          onError={handleError}
         />
         
         <SubscriptionSummary
