@@ -44,25 +44,49 @@ const TenantManagementSection: React.FC = () => {
         if (error) throw error;
         
         // Map the raw tenant data to match the Tenant interface with required settings property
-        const mappedTenants: Tenant[] = (data || []).map(tenant => ({
-          id: tenant.id,
-          name: tenant.name,
-          subscription_tier: tenant.subscription_tier,
-          subscription_status: tenant.subscription_status,
-          company_type: tenant.company_type as Tenant['company_type'],
-          trial_ends_at: tenant.trial_ends_at,
-          subscription_expires_at: tenant.subscription_expires_at,
-          settings: {
+        const mappedTenants: Tenant[] = (data || []).map(tenant => {
+          // Create default settings object
+          let settingsObject = {
             theme: 'light',
             features: [],
-            // Parse industry_code_preferences if it exists
-            ...(tenant.industry_code_preferences ? 
-              (typeof tenant.industry_code_preferences === 'string' 
-                ? JSON.parse(tenant.industry_code_preferences).settings || {}
-                : tenant.industry_code_preferences.settings || {})
-              : {})
+          };
+          
+          // Safely parse industry_code_preferences if it exists
+          if (tenant.industry_code_preferences) {
+            try {
+              // Handle string type
+              if (typeof tenant.industry_code_preferences === 'string') {
+                const parsed = JSON.parse(tenant.industry_code_preferences);
+                if (parsed && typeof parsed === 'object' && parsed.settings) {
+                  settingsObject = { ...settingsObject, ...parsed.settings };
+                }
+              } 
+              // Handle object type
+              else if (typeof tenant.industry_code_preferences === 'object' && tenant.industry_code_preferences !== null) {
+                const preferences = tenant.industry_code_preferences as Record<string, unknown>;
+                if (preferences.settings && typeof preferences.settings === 'object') {
+                  settingsObject = { 
+                    ...settingsObject, 
+                    ...preferences.settings as Record<string, unknown> 
+                  };
+                }
+              }
+            } catch (e) {
+              console.error('Error parsing industry_code_preferences:', e);
+            }
           }
-        }));
+          
+          return {
+            id: tenant.id,
+            name: tenant.name,
+            subscription_tier: tenant.subscription_tier,
+            subscription_status: tenant.subscription_status,
+            company_type: tenant.company_type as Tenant['company_type'],
+            trial_ends_at: tenant.trial_ends_at,
+            subscription_expires_at: tenant.subscription_expires_at,
+            settings: settingsObject
+          };
+        });
         
         setTenants(mappedTenants);
       } catch (error) {
