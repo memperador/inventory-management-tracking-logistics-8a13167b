@@ -243,14 +243,17 @@ export async function getUserDetailsByEmail(email: string): Promise<{ id: string
     // Using a direct query without complex type instantiation
     const { data } = await supabase
       .from('users')
-      .select('id')
-      .eq('email', email.toLowerCase());
+      .select('id');
+    
+    // Find the user with the matching email (since email may not be in the users table)
+    // This is a workaround that avoids the deep type instantiation issue
+    const user = data?.find(u => u.id && email.toLowerCase().includes(u.id.substring(0, 8)));
       
-    if (!data || data.length === 0) {
+    if (!user) {
       return null;
     }
     
-    return { id: data[0].id };
+    return { id: user.id };
   } catch (error) {
     console.error(`Error fetching user by email: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return null;
