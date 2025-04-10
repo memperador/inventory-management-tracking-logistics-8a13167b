@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, UserPlus, RefreshCw } from 'lucide-react';
+import { Plus, UserPlus, RefreshCw, AlertCircle } from 'lucide-react';
 import { UsersIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -13,6 +13,7 @@ import { fetchUsers, fetchProfiles } from '@/services/userService';
 import { Input } from '@/components/ui/input';
 import MigrationStatus from '@/components/users/MigrationStatus';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const UsersPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,6 +41,9 @@ const UsersPage = () => {
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Check if we have users with missing emails
+  const hasUsersWithoutEmails = users.some(user => user.email === 'No email available');
 
   const handleMigrationCheck = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +77,16 @@ const UsersPage = () => {
         description="Manage users and permissions"
         actions={headerActions}
       />
+      
+      {hasUsersWithoutEmails && (
+        <Alert variant="warning" className="bg-amber-50 border-amber-200">
+          <AlertCircle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800">
+            Some users are missing email addresses. This may affect functionality. 
+            Please update user information to include valid email addresses.
+          </AlertDescription>
+        </Alert>
+      )}
       
       <Tabs defaultValue="users">
         <TabsList>

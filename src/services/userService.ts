@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/types/user';
 
@@ -41,8 +40,8 @@ export const fetchUsers = async (): Promise<User[]> => {
       // Find profile for this user
       const profile = profilesData?.find(p => p.id === user.id);
       
-      // Get email from auth data or use placeholder with user ID
-      const email = emailMap.get(user.id) || `user-${user.id.substring(0, 8)}@example.com`;
+      // Get email from auth data - email is required
+      const email = emailMap.get(user.id);
       
       // Generate a better display name based on available information
       let name = '';
@@ -52,22 +51,21 @@ export const fetchUsers = async (): Promise<User[]> => {
       if (firstName || lastName) {
         // Use available name parts
         name = `${firstName} ${lastName}`.trim();
-      } else {
-        // Create a name based on email if available, fallback to user ID
+      } else if (email) {
+        // Create a name based on email if name parts aren't available
         const emailPrefix = email.split('@')[0];
-        if (emailPrefix && !emailPrefix.startsWith('user-')) {
-          name = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
-        } else {
-          name = `User ${user.id.substring(0, 6)}`;
-        }
+        name = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
+      } else {
+        // Ultimate fallback - should rarely happen with proper data
+        name = `User ${user.id.substring(0, 6)}`;
       }
       
       return {
         id: user.id,
         name,
-        email,
+        email: email || 'No email available',
         role: user.role,
-        status: 'active' as const,
+        status: email ? 'active' : 'incomplete',
         lastActive: user.created_at,
         tenantId: user.tenant_id
       };

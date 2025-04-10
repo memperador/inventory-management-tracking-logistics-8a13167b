@@ -5,6 +5,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import RoleDisplay from '@/components/users/RoleDisplay';
 import { User } from '@/types/user';
 import { Badge } from '@/components/ui/badge';
+import { AlertCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface UserListProps {
   users: User[];
@@ -57,21 +59,33 @@ const UserList: React.FC<UserListProps> = ({ users }) => {
             </TableRow>
           ) : (
             users.map((user) => (
-              <TableRow key={user.id}>
+              <TableRow key={user.id} className={user.email === 'No email available' ? 'bg-amber-50' : ''}>
                 <TableCell>
                   <div className="flex items-center space-x-3">
                     <Avatar>
-                      <AvatarFallback className={`${user.name.includes('User') ? 'bg-amber-100 text-amber-600' : 'bg-inventory-blue-light text-inventory-blue'}`}>
+                      <AvatarFallback className={`${user.email === 'No email available' ? 'bg-amber-100 text-amber-600' : 'bg-inventory-blue-light text-inventory-blue'}`}>
                         {getInitials(user.name)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <div className="font-medium">{user.name}</div>
-                      <div className="text-sm text-gray-500">
-                        {user.email.includes('@example.com') ? (
-                          <span className="italic text-amber-600">No email available</span>
+                      <div className="flex items-center text-sm">
+                        {user.email === 'No email available' ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="flex items-center text-amber-600">
+                                  <AlertCircle className="h-3 w-3 mr-1" />
+                                  <span className="italic">Missing email address</span>
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>This user has no associated email address</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         ) : (
-                          user.email
+                          <span className="text-gray-500">{user.email}</span>
                         )}
                       </div>
                     </div>
@@ -92,9 +106,10 @@ const UserList: React.FC<UserListProps> = ({ users }) => {
                 <TableCell>
                   <div className="flex items-center">
                     <div className={`h-2 w-2 rounded-full mr-2 ${
+                      user.email === 'No email available' ? 'bg-amber-500' : 
                       user.status === 'active' ? 'bg-inventory-green' : 'bg-gray-300'
                     }`} />
-                    <span className="capitalize">{user.status}</span>
+                    <span className="capitalize">{user.email === 'No email available' ? 'incomplete' : user.status}</span>
                   </div>
                 </TableCell>
                 <TableCell>
