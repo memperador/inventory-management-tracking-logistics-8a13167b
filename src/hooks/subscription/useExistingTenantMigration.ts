@@ -33,14 +33,22 @@ export const useExistingTenantMigration = () => {
     setIsLoading(true);
     
     try {
-      // Get current session access token
+      console.log(`Starting migration to existing tenant: ${tenantId} for user: ${targetUserId}`);
+      
+      // In webview or local dev, always try direct migration first
+      if (window.location.hostname.includes('webview') || process.env.NODE_ENV === 'development') {
+        console.log('Detected webview or development environment, using direct migration');
+        return await performDirectExistingMigration(tenantId, targetUserId);
+      }
+
+      // Get current session access token for production environment
       const accessToken = session?.access_token;
       
       if (!accessToken) {
         throw new Error("No access token available. Please log in again.");
       }
       
-      // Call the create-tenant edge function with the existing tenant ID - fixed for webview compatibility
+      // Call the create-tenant edge function with the existing tenant ID
       const functionUrl = `/functions/v1/create-tenant`;
       console.log(`Calling edge function for existing tenant migration:`, {
         tenantId,
@@ -61,9 +69,9 @@ export const useExistingTenantMigration = () => {
           })
         });
 
-        // If we get a 404, the edge function might not be deployed in development
-        if (response.status === 404) {
-          console.log('Edge function not found, falling back to direct migration');
+        // If we get a 404 or any other error, fall back to direct migration
+        if (!response.ok) {
+          console.log(`Edge function returned ${response.status}, falling back to direct migration`);
           return await performDirectExistingMigration(tenantId, targetUserId);
         }
         
@@ -130,6 +138,7 @@ export const useExistingTenantMigration = () => {
         .eq('id', userId);
         
       if (updateUserError) {
+        console.error('Failed to update user tenant:', updateUserError);
         return {
           success: false, 
           message: `Failed to update user's tenant: ${updateUserError.message}`

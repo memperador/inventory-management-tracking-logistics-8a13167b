@@ -34,7 +34,15 @@ export const useNewTenantMigration = () => {
     setIsLoading(true);
     
     try {
-      // Get current session access token
+      console.log(`Starting migration to new tenant: ${newTenantName} for user: ${targetUserId}`);
+      
+      // In webview or local dev, always try direct migration first
+      if (window.location.hostname.includes('webview') || process.env.NODE_ENV === 'development') {
+        console.log('Detected webview or development environment, using direct migration');
+        return await performDirectMigration(newTenantName, targetUserId);
+      }
+      
+      // Get current session access token for production environment
       const accessToken = session?.access_token;
       
       if (!accessToken) {
@@ -42,7 +50,6 @@ export const useNewTenantMigration = () => {
       }
       
       // Call the create-tenant edge function - fixed for webview compatibility
-      // Use relative URL to avoid cross-origin issues in webviews
       const functionUrl = `/functions/v1/create-tenant`;
       console.log(`Calling edge function at: ${functionUrl}`);
       
@@ -60,9 +67,9 @@ export const useNewTenantMigration = () => {
           })
         });
         
-        // If we get a 404, the edge function might not be deployed in development
-        if (response.status === 404) {
-          console.log('Edge function not found, falling back to direct migration');
+        // If we get any error response, fall back to direct migration
+        if (!response.ok) {
+          console.log(`Edge function returned ${response.status}, falling back to direct migration`);
           return await performDirectMigration(newTenantName, targetUserId);
         }
         
@@ -137,6 +144,7 @@ export const useNewTenantMigration = () => {
         .single();
         
       if (createError || !newTenantData) {
+        console.error('Failed to create new tenant:', createError);
         return {
           success: false,
           message: `Failed to create new tenant: ${createError?.message || 'No tenant data returned'}`
@@ -153,6 +161,7 @@ export const useNewTenantMigration = () => {
         .eq('id', userId);
         
       if (updateUserError) {
+        console.error('Failed to update user tenant:', updateUserError);
         return {
           success: false, 
           message: `Failed to update user's tenant: ${updateUserError.message}`
@@ -170,7 +179,12 @@ export const useNewTenantMigration = () => {
       }
       
       // Start a trial for the new tenant
-      await startUserTrial(newTenantId);
+      try {
+        await startUserTrial(newTenantId);
+        console.log('Started trial for new tenant:', newTenantId);
+      } catch (trialError) {
+        console.warn('Failed to start trial, but continuing:', trialError);
+      }
       
       const successResult = {
         success: true,
