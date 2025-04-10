@@ -28,11 +28,12 @@ export const AIAssistantProvider: React.FC<AIAssistantProviderProps> = ({ childr
   // Error tracking
   useEffect(() => {
     const originalConsoleError = console.error;
-    const errorHandler = (error: any) => {
+    const errorHandler = (...args: any[]) => {
       // Call the original console.error
-      originalConsoleError.apply(console, arguments);
+      originalConsoleError.apply(console, args);
       
       // Add to our error tracking
+      const error = args[0];
       if (typeof error === 'string') {
         setErrors(prev => [...prev.slice(-9), error]);
       } else if (error instanceof Error) {
@@ -41,7 +42,7 @@ export const AIAssistantProvider: React.FC<AIAssistantProviderProps> = ({ childr
     };
     
     // Override console.error
-    console.error = errorHandler;
+    console.error = errorHandler as typeof console.error;
     
     // Restore on cleanup
     return () => {

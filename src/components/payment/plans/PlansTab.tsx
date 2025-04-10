@@ -1,12 +1,9 @@
 
 import React from 'react';
-import PricingTiers from './PricingTiers';
-import PaymentOptions from './PaymentOptions';
-import SubscriptionSummary from './SubscriptionSummary';
-import FreeTrialBanner from './FreeTrialBanner';
-import EnterpriseContact from './EnterpriseContact';
-import SignupWelcomeBanner from './SignupWelcomeBanner';
 import { useSubscriptionPlans } from '@/hooks/subscription/useSubscriptionPlans';
+import EnterprisePlanSection from './EnterprisePlanSection';
+import StandardPlanSection from './StandardPlanSection';
+import PlanBanners from './PlanBanners';
 
 export const PlansTab: React.FC = () => {
   const {
@@ -27,53 +24,48 @@ export const PlansTab: React.FC = () => {
     handleStartTrial
   } = useSubscriptionPlans();
   
+  // Display banners
+  const renderBanners = () => (
+    <PlanBanners 
+      isNewSignup={isNewSignup}
+      onStartTrial={handleStartTrial}
+    />
+  );
+
   // If enterprise tier is selected, show enterprise contact form
   if (selectedTier === 'enterprise') {
     return (
       <>
-        <PricingTiers 
-          tiers={serviceTiers} 
+        {renderBanners()}
+        <EnterprisePlanSection 
+          serviceTiers={serviceTiers}
           selectedTier={selectedTier}
-          onTierChange={handleTierChange}
+          handleTierChange={handleTierChange}
           paymentType={paymentType}
-          onPaymentTypeChange={handlePaymentTypeChange}
+          handlePaymentTypeChange={handlePaymentTypeChange}
+          handleEnterpriseInquiry={handleEnterpriseInquiry}
         />
-        <EnterpriseContact onEnterpriseInquiry={handleEnterpriseInquiry} />
       </>
     );
   }
 
   return (
     <>
-      {isNewSignup && <SignupWelcomeBanner />}
-
-      {/* Free Trial Banner */}
-      <FreeTrialBanner onStartTrial={handleStartTrial} />
-
-      <PricingTiers 
-        tiers={serviceTiers} 
+      {renderBanners()}
+      <StandardPlanSection 
+        serviceTiers={serviceTiers}
         selectedTier={selectedTier}
-        onTierChange={handleTierChange}
+        selectedTierData={selectedTierData}
         paymentType={paymentType}
-        onPaymentTypeChange={handlePaymentTypeChange}
+        agreeToFees={agreeToFees}
+        isUpgrade={isUpgrade}
+        currentTenantTier={currentTenant?.subscription_tier}
+        handleTierChange={handleTierChange}
+        handlePaymentTypeChange={handlePaymentTypeChange}
+        setAgreeToFees={setAgreeToFees}
+        handleSuccess={handleSuccess}
+        handleError={handleError}
       />
-      
-      <div className="grid gap-6 md:grid-cols-2 mt-8">
-        <PaymentOptions
-          agreeToFees={agreeToFees}
-          setAgreeToFees={setAgreeToFees}
-        />
-        
-        <SubscriptionSummary
-          selectedTierData={selectedTierData}
-          paymentType={paymentType}
-          agreeToFees={agreeToFees}
-          isUpgrade={isUpgrade}
-          currentTier={currentTenant?.subscription_tier}
-          onSuccess={handleSuccess}
-          onError={handleError}
-        />
-      </div>
     </>
   );
 };

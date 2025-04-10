@@ -6,7 +6,6 @@ import AddOnServices from '@/components/payment/AddOnServices';
 import { Zap } from 'lucide-react';
 import BetaBanner from '@/components/common/BetaBanner';
 import { TrialBanner } from '@/components/subscription/TrialBanner'; 
-import FreeTrialBanner from '@/components/payment/plans/FreeTrialBanner';
 import { useSubscriptionPlans } from '@/hooks/subscription/useSubscriptionPlans';
 
 const PaymentPage = () => {
@@ -22,9 +21,6 @@ const PaymentPage = () => {
         <Zap className="mr-2 h-6 w-6 text-primary" />
         Choose Your Service Plan
       </h1>
-      
-      {/* Free Trial Banner */}
-      <FreeTrialBanner onStartTrial={handleStartTrial} />
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
         <TabsList className="grid grid-cols-2 w-[400px] mb-4">
