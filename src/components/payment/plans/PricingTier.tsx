@@ -1,12 +1,13 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, HelpCircle, Building, Zap } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Toggle } from '@/components/ui/toggle';
 
 interface TierLimit {
   assets: number | string;
@@ -24,6 +25,8 @@ interface PricingTierProps {
   isSelected: boolean;
   isPopular?: boolean;
   onSelect: (tierId: string) => void;
+  paymentType: string;
+  onPaymentTypeChange: (value: string) => void;
 }
 
 export const PricingTier: React.FC<PricingTierProps> = ({
@@ -37,13 +40,18 @@ export const PricingTier: React.FC<PricingTierProps> = ({
   isSelected,
   isPopular = false,
   onSelect,
+  paymentType,
+  onPaymentTypeChange,
 }) => {
   const navigate = useNavigate();
   
   const handleEnterpriseInquiry = () => {
-    // Call enterprise inquiry function, same as the original
     navigate('/payment');
   };
+
+  // Calculate annual price with 10% discount
+  const annualPrice = Math.round(price * 12 * 0.9);
+  const displayPrice = paymentType === 'annual' ? annualPrice / 12 : price;
 
   return (
     <Card 
@@ -59,28 +67,56 @@ export const PricingTier: React.FC<PricingTierProps> = ({
       <CardHeader>
         <CardTitle>{name}</CardTitle>
         <CardDescription>{description}</CardDescription>
-        <div className="mt-2">
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex justify-center mb-4">
+          <div className="bg-slate-100 rounded-lg p-1 flex text-sm">
+            <button 
+              onClick={() => onPaymentTypeChange('subscription')}
+              className={`px-4 py-1.5 font-medium rounded-md transition-colors ${
+                paymentType === 'subscription' ? 'bg-white shadow-sm' : 'text-slate-600'
+              }`}
+            >
+              Monthly
+            </button>
+            <button 
+              onClick={() => onPaymentTypeChange('annual')}
+              className={`px-4 py-1.5 font-medium rounded-md transition-colors ${
+                paymentType === 'annual' ? 'bg-white shadow-sm' : 'text-slate-600'
+              }`}
+            >
+              Annual <span className="text-emerald-600 text-xs ml-1">10% off</span>
+            </button>
+          </div>
+        </div>
+        
+        <div className="mt-2 text-center">
           {id === 'enterprise' ? (
             <span className="text-lg font-medium">Custom Pricing</span>
           ) : (
             <>
-              <span className="text-3xl font-bold">${(price / 100).toFixed(2)}</span>
+              <span className="text-3xl font-bold">${(displayPrice / 100).toFixed(2)}</span>
               <span className="text-muted-foreground">/month</span>
+              {paymentType === 'annual' && (
+                <div className="text-xs text-emerald-600 mt-1">Billed annually (${(annualPrice / 100).toFixed(2)}/year)</div>
+              )}
             </>
           )}
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+        
         {id !== 'enterprise' && (
-          <RadioGroup value={isSelected ? id : undefined} onValueChange={() => onSelect(id)}>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value={id} id={`radio-${id}`} />
-              <Label htmlFor={`radio-${id}`}>Select Plan</Label>
-            </div>
-          </RadioGroup>
+          <div className="pt-3">
+            <Button 
+              className="w-full"
+              onClick={() => onSelect(id)}
+              variant={isSelected ? "outline" : "default"}
+            >
+              {isSelected ? "Selected" : "Select Plan"}
+            </Button>
+          </div>
         )}
         
-        <div className="space-y-2">
+        <div className="space-y-2 pt-4">
           <div className="flex items-center justify-between">
             <h4 className="font-medium">Features</h4>
             {typeof limits.assets !== 'string' && (

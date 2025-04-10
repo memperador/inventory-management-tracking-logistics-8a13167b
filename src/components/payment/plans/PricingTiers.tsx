@@ -19,12 +19,16 @@ interface PricingTiersProps {
   tiers: ServiceTier[];
   selectedTier: string;
   onTierChange: (tierId: string) => void;
+  paymentType: string;
+  onPaymentTypeChange: (type: string) => void;
 }
 
 export const PricingTiers: React.FC<PricingTiersProps> = ({
   tiers,
   selectedTier,
-  onTierChange
+  onTierChange,
+  paymentType,
+  onPaymentTypeChange
 }) => {
   return (
     <div className="grid gap-6 lg:grid-cols-4 mb-12">
@@ -41,6 +45,8 @@ export const PricingTiers: React.FC<PricingTiersProps> = ({
           isSelected={selectedTier === tier.id}
           isPopular={tier.id === 'premium'}
           onSelect={onTierChange}
+          paymentType={paymentType}
+          onPaymentTypeChange={onPaymentTypeChange}
         />
       ))}
     </div>

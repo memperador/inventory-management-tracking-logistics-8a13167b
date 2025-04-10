@@ -117,7 +117,23 @@ export const PlansTab: React.FC = () => {
     setSelectedTier(tierId);
     const tier = serviceTiers.find(t => t.id === tierId);
     if (tier) {
-      setPaymentAmount(tier.price);
+      if (paymentType === 'annual') {
+        setPaymentAmount(Math.round(tier.price * 12 * 0.9));
+      } else {
+        setPaymentAmount(tier.price);
+      }
+    }
+  };
+
+  const handlePaymentTypeChange = (type: string) => {
+    setPaymentType(type);
+    const tier = serviceTiers.find(t => t.id === selectedTier);
+    if (tier) {
+      if (type === 'annual') {
+        setPaymentAmount(Math.round(tier.price * 12 * 0.9));
+      } else {
+        setPaymentAmount(tier.price);
+      }
     }
   };
 
@@ -264,6 +280,8 @@ export const PlansTab: React.FC = () => {
           tiers={serviceTiers} 
           selectedTier={selectedTier}
           onTierChange={handleTierChange}
+          paymentType={paymentType}
+          onPaymentTypeChange={handlePaymentTypeChange}
         />
         <div className="text-center p-8 border rounded-lg bg-slate-50">
           <h3 className="text-xl font-semibold mb-4">Contact Our Enterprise Sales Team</h3>
@@ -312,12 +330,14 @@ export const PlansTab: React.FC = () => {
         tiers={serviceTiers} 
         selectedTier={selectedTier}
         onTierChange={handleTierChange}
+        paymentType={paymentType}
+        onPaymentTypeChange={handlePaymentTypeChange}
       />
       
       <div className="grid gap-6 md:grid-cols-2">
         <PaymentOptions
           paymentType={paymentType}
-          setPaymentType={setPaymentType}
+          setPaymentType={handlePaymentTypeChange}
           agreeToFees={agreeToFees}
           setAgreeToFees={setAgreeToFees}
         />

@@ -3,7 +3,6 @@ import React from 'react';
 import { InventoryTabType } from '@/components/inventory/hooks/useInventoryTabs';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LayoutGrid, ShoppingCart, QrCode, Map, ActivitySquare, Bell, FileText } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
 
 interface InventoryTabListProps {
   activeTab: InventoryTabType;
@@ -26,21 +25,22 @@ export const InventoryTabList: React.FC<InventoryTabListProps> = ({
   ];
 
   return (
-    <div className="mb-4 bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
-      <TabsList className="w-full overflow-x-auto flex-nowrap justify-start px-1 py-1 bg-slate-50">
-        {tabs.map(tab => (
-          <TabsTrigger
-            key={tab.id}
-            value={tab.id}
-            className="flex items-center gap-1 flex-shrink-0"
-            onClick={() => onTabChange(tab.id)}
-          >
-            {tab.icon}
-            <span className="hidden sm:inline">{tab.label}</span>
-            <span className="sm:hidden">{tab.id === 'procurement' ? 'Orders' : tab.label}</span>
-          </TabsTrigger>
-        ))}
-      </TabsList>
+    <div className="mb-6 sticky top-0 z-10">
+      <div className="bg-white rounded-md shadow border border-slate-200 overflow-hidden">
+        <TabsList className="w-full flex-nowrap justify-start px-1 py-2 bg-gradient-to-r from-slate-50 to-white">
+          {tabs.map(tab => (
+            <TabsTrigger
+              key={tab.id}
+              value={tab.id}
+              className="flex items-center gap-1.5 flex-shrink-0 px-4 py-2 font-medium"
+              onClick={() => onTabChange(tab.id)}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </div>
     </div>
   );
 };

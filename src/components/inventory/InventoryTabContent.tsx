@@ -42,11 +42,11 @@ export const InventoryTabContent: React.FC<InventoryTabContentProps> = ({
     >
       <div className="flex justify-between items-center mb-4">
         <TabsList className="flex-grow-0 bg-white shadow-sm">
-          <TabsTrigger value="list" className="flex items-center gap-2">
+          <TabsTrigger value="list" className="flex items-center gap-2 px-4 py-2">
             <LayoutGrid className="h-4 w-4" />
             List View
           </TabsTrigger>
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
+          <TabsTrigger value="dashboard" className="flex items-center gap-2 px-4 py-2">
             <LineChart className="h-4 w-4" />
             Analytics View
           </TabsTrigger>

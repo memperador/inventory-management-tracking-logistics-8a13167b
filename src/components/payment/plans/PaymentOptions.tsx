@@ -2,8 +2,8 @@
 import React from 'react';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 interface PaymentOptionsProps {
   paymentType: string;
@@ -26,19 +26,22 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="payment-type">Payment Period</Label>
-          <Select
-            value={paymentType}
-            onValueChange={setPaymentType}
+          <Label>Payment Period</Label>
+          <ToggleGroup 
+            type="single" 
+            value={paymentType} 
+            onValueChange={(value) => {
+              if (value) setPaymentType(value);
+            }}
+            className="flex justify-start bg-slate-100 p-1 rounded-lg"
           >
-            <SelectTrigger id="payment-type">
-              <SelectValue placeholder="Select payment period" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="subscription">Monthly Subscription</SelectItem>
-              <SelectItem value="annual">Annual (Save 10%)</SelectItem>
-            </SelectContent>
-          </Select>
+            <ToggleGroupItem value="subscription" className="flex-1 data-[state=on]:bg-white data-[state=on]:shadow-sm">
+              Monthly
+            </ToggleGroupItem>
+            <ToggleGroupItem value="annual" className="flex-1 data-[state=on]:bg-white data-[state=on]:shadow-sm">
+              Annual <span className="text-emerald-600 text-xs ml-1">10% off</span>
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
         
         <div className="flex items-top space-x-2 pt-4">
