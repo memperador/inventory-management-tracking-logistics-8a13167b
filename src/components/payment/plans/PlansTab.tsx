@@ -283,7 +283,7 @@ export const PlansTab: React.FC = () => {
           paymentType={paymentType}
           onPaymentTypeChange={handlePaymentTypeChange}
         />
-        <div className="text-center p-8 border rounded-lg bg-slate-50">
+        <div className="text-center p-8 border rounded-lg bg-slate-50 mt-8">
           <h3 className="text-xl font-semibold mb-4">Contact Our Enterprise Sales Team</h3>
           <p className="mb-4">Please reach out for custom pricing and implementation details for our Enterprise plan.</p>
           <Button onClick={handleEnterpriseInquiry} className="bg-slate-800 hover:bg-slate-900">
@@ -334,10 +334,8 @@ export const PlansTab: React.FC = () => {
         onPaymentTypeChange={handlePaymentTypeChange}
       />
       
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 mt-8">
         <PaymentOptions
-          paymentType={paymentType}
-          setPaymentType={handlePaymentTypeChange}
           agreeToFees={agreeToFees}
           setAgreeToFees={setAgreeToFees}
         />

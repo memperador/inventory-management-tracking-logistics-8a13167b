@@ -79,8 +79,8 @@ export const PricingTier: React.FC<PricingTierProps> = ({
           )}
         </div>
         
-        {id !== 'enterprise' && (
-          <div className="pt-3">
+        <div className="pt-3">
+          {id !== 'enterprise' ? (
             <Button 
               className="w-full"
               onClick={() => onSelect(id)}
@@ -88,8 +88,16 @@ export const PricingTier: React.FC<PricingTierProps> = ({
             >
               {isSelected ? "Selected" : "Select Plan"}
             </Button>
-          </div>
-        )}
+          ) : (
+            <Button 
+              className="w-full bg-slate-800 hover:bg-slate-900"
+              onClick={handleEnterpriseInquiry}
+            >
+              <Building className="mr-2 h-4 w-4" />
+              Contact Sales
+            </Button>
+          )}
+        </div>
         
         <div className="space-y-2 pt-4">
           <div className="flex items-center justify-between">
@@ -133,16 +141,6 @@ export const PricingTier: React.FC<PricingTierProps> = ({
             <span className="text-sm">{ai}</span>
           </div>
         </div>
-        
-        {id === 'enterprise' && (
-          <Button 
-            className="w-full mt-4 bg-slate-800 hover:bg-slate-900"
-            onClick={handleEnterpriseInquiry}
-          >
-            <Building className="mr-2 h-4 w-4" />
-            Contact Sales
-          </Button>
-        )}
       </CardContent>
     </Card>
   );
