@@ -26,22 +26,36 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   
   // Log the authentication status and current path for debugging
   useEffect(() => {
+    console.log('[PROTECTED-ROUTE] ProtectedRoute status check', {
+      path: location.pathname,
+      authLoading: loading,
+      tenantLoading,
+      roleLoading: isRoleLoading,
+      isAuthenticated: !!user,
+      userId: user?.id || 'none',
+      hasActiveTenant: !!currentTenant,
+      tenantId: currentTenant?.id || 'none',
+      requiredRoles: requiredRoles.length > 0 ? requiredRoles : ['none'],
+      timestamp: new Date().toISOString()
+    });
+    
     if (loading || tenantLoading) {
-      console.log("Auth or tenant data loading, waiting...");
+      console.log("[PROTECTED-ROUTE] Auth or tenant data loading, waiting...");
     } else if (!user) {
-      console.log("Unauthorized access attempt to:", location.pathname, "- Redirecting to auth");
+      console.log("[PROTECTED-ROUTE] Unauthorized access attempt to:", location.pathname, "- Redirecting to auth");
     } else {
-      console.log("User authenticated, allowing access to:", location.pathname);
+      console.log("[PROTECTED-ROUTE] User authenticated, allowing access to:", location.pathname);
       
       // Check if user needs to select a subscription plan
       const needsSubscription = user.user_metadata?.needs_subscription === true;
       if (needsSubscription && location.pathname !== '/payment') {
-        console.log("User needs subscription, redirecting to payment page");
+        console.log("[PROTECTED-ROUTE] User needs subscription, redirecting to payment page");
       }
     }
-  }, [user, loading, location.pathname, tenantLoading]);
+  }, [user, loading, location.pathname, tenantLoading, currentTenant, isRoleLoading, requiredRoles]);
   
   if (loading || isRoleLoading || tenantLoading) {
+    console.log('[PROTECTED-ROUTE] Still loading, showing loading indicator');
     return (
       <div className="flex h-screen items-center justify-center bg-gray-100">
         <div className="flex flex-col items-center gap-4">
@@ -56,7 +70,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (!user) {
     // Store the full URL including the pathname and search params for redirect after login
     const currentPath = encodeURIComponent(location.pathname + location.search);
-    console.log(`Redirecting unauthenticated user to ${redirectTo}?returnTo=${currentPath}`);
+    console.log(`[PROTECTED-ROUTE] Redirecting unauthenticated user to ${redirectTo}?returnTo=${currentPath}`);
     return <Navigate to={`${redirectTo}?returnTo=${currentPath}`} replace />;
   }
   
@@ -67,21 +81,31 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
                               (!currentTenant.trial_ends_at || new Date(currentTenant.trial_ends_at) < new Date());
                               
   if ((needsSubscription || noActiveSubscription) && location.pathname !== '/payment') {
-    console.log("Redirecting user to payment page to select a plan");
+    console.log(`[PROTECTED-ROUTE] Redirecting user ${user.id} to payment page to select a plan`, {
+      needsSubscription,
+      hasActiveTenant: !!currentTenant,
+      currentPath: location.pathname,
+      subscriptionStatus: currentTenant?.subscription_status || 'none',
+      trialEndsAt: currentTenant?.trial_ends_at || 'none',
+      hasExpiredTrial: currentTenant?.trial_ends_at ? new Date(currentTenant.trial_ends_at) < new Date() : false
+    });
     return <Navigate to="/payment" replace />;
   }
   
   // If no specific roles are required, just being authenticated is enough
   if (requiredRoles.length === 0) {
+    console.log('[PROTECTED-ROUTE] No specific roles required, rendering content');
     return children ? <>{children}</> : <Outlet />;
   }
   
   // If user doesn't have the required role, show unauthorized message or redirect
   if (!hasPermission(requiredRoles)) {
+    console.log(`[PROTECTED-ROUTE] User ${user.id} doesn't have required roles (${requiredRoles.join(', ')}), redirecting to unauthorized`);
     return <Navigate to="/unauthorized" replace />;
   }
   
   // User has the required role, render the child routes
+  console.log(`[PROTECTED-ROUTE] User ${user.id} has required permissions, rendering content`);
   return children ? <>{children}</> : <Outlet />;
 };
 

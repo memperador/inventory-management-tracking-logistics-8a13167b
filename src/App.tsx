@@ -32,7 +32,8 @@ import { RoleProvider } from '@/contexts/RoleContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Create a new query client
 const queryClient = new QueryClient();
@@ -43,66 +44,114 @@ const ProjectRedirect = () => {
 };
 
 const RootRedirect = () => {
+  console.log('[APP] RootRedirect component rendering');
   // Check if user is already logged in
   const hasSession = localStorage.getItem('supabase.auth.token') !== null;
   
   // If session exists, redirect to dashboard, otherwise to auth
+  const targetPath = hasSession ? '/dashboard' : '/auth';
+  console.log(`[APP] RootRedirect - User ${hasSession ? 'has' : 'does not have'} a session, redirecting to ${targetPath}`);
   return hasSession ? 
     <Navigate to="/dashboard" replace /> : 
     <Navigate to="/auth" replace />;
 };
 
+// Log uncaught errors
+const logError = (error: any, info: any) => {
+  console.error('[APP-ERROR] Uncaught error:', error);
+  console.error('[APP-ERROR] Component stack:', info.componentStack);
+};
+
 function App() {
   // Using state to hold user ID to pass to TenantProvider
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Log app initialization
+  useEffect(() => {
+    console.log('[APP] Initializing App component', {
+      timestamp: new Date().toISOString(),
+      currentPath: window.location.pathname,
+      url: window.location.href
+    });
+    
+    // Log any navigation state in the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const returnTo = urlParams.get('returnTo');
+    if (returnTo) {
+      console.log(`[APP] Return URL detected in query params: ${returnTo}`);
+    }
+    
+    // Log any auth-related URL parameters
+    const authParams = [
+      'email_confirmed', 'token', 'error_code', 'error_description', 
+      'type', 'access_token', 'refresh_token'
+    ];
+    
+    const foundAuthParams: Record<string, string> = {};
+    authParams.forEach(param => {
+      const value = urlParams.get(param);
+      if (value) {
+        foundAuthParams[param] = param.includes('token') ? 'REDACTED' : value;
+      }
+    });
+    
+    if (Object.keys(foundAuthParams).length > 0) {
+      console.log('[APP] Auth-related URL parameters detected:', foundAuthParams);
+    }
+  }, []);
   
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <AuthProvider onUserChange={(userId) => setCurrentUserId(userId)}>
-          <TenantProvider userId={currentUserId}>
-            <ThemeProvider>
-              <RoleProvider>
-                <NotificationProvider>
-                  <Routes>
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/auth/reset-password" element={<ResetPassword />} />
-                    <Route path="/auth/two-factor" element={<TwoFactorAuth />} />
-                    <Route path="/unauthorized" element={<Unauthorized />} />
-                    <Route path="/login" element={<Navigate to="/auth" replace />} />
-                    <Route path="/" element={<RootRedirect />} />
-                    <Route path="/404" element={<NotFound />} />
-                    <Route path="/onboarding" element={<ProtectedRoute redirectTo="/auth"><Onboarding /></ProtectedRoute>} />
-                    <Route path="/project/:projectId" element={<ProjectRedirect />} />
-                    <Route path="/payment" element={<PaymentPage />} />
-                    <Route element={<ProtectedRoute redirectTo="/auth"><AppLayout /></ProtectedRoute>}>
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/projects" element={<Projects />} />
-                      <Route path="/projects/:projectId" element={<ProjectDetail />} />
-                      <Route path="/inventory" element={<Inventory />} />
-                      <Route path="/account" element={<AccountPage />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="/gps" element={<GPSIntegration />} />
-                      <Route path="/notifications" element={<Notifications />} />
-                      <Route path="/requests" element={<RequestManagement />} />
-                      <Route path="/requests/:requestId" element={<RFIDetail />} />
-                      <Route path="/analytics" element={<Analytics />} />
-                      <Route path="/users" element={<Users />} />
-                      <Route path="/ai-assistant" element={<AIAssistant />} />
-                      <Route path="/workflow" element={<WorkflowPage />} />
-                    </Route>
-                    <Route path="*" element={<NotFound />} />
-                    <Route path="/terms-of-service" element={<TermsOfService />} />
-                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                  </Routes>
-                  <Toaster />
-                </NotificationProvider>
-              </RoleProvider>
-            </ThemeProvider>
-          </TenantProvider>
-        </AuthProvider>
-      </Router>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <AuthProvider onUserChange={(userId) => {
+            console.log(`[APP] Auth user change detected, userId: ${userId || 'null'}`);
+            setCurrentUserId(userId);
+          }}>
+            <TenantProvider userId={currentUserId}>
+              <ThemeProvider>
+                <RoleProvider>
+                  <NotificationProvider>
+                    <Routes>
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/auth/reset-password" element={<ResetPassword />} />
+                      <Route path="/auth/two-factor" element={<TwoFactorAuth />} />
+                      <Route path="/unauthorized" element={<Unauthorized />} />
+                      <Route path="/login" element={<Navigate to="/auth" replace />} />
+                      <Route path="/" element={<RootRedirect />} />
+                      <Route path="/404" element={<NotFound />} />
+                      <Route path="/onboarding" element={<ProtectedRoute redirectTo="/auth"><Onboarding /></ProtectedRoute>} />
+                      <Route path="/project/:projectId" element={<ProjectRedirect />} />
+                      <Route path="/payment" element={<PaymentPage />} />
+                      <Route element={<ProtectedRoute redirectTo="/auth"><AppLayout /></ProtectedRoute>}>
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/projects" element={<Projects />} />
+                        <Route path="/projects/:projectId" element={<ProjectDetail />} />
+                        <Route path="/inventory" element={<Inventory />} />
+                        <Route path="/account" element={<AccountPage />} />
+                        <Route path="/settings" element={<Settings />} />
+                        <Route path="/gps" element={<GPSIntegration />} />
+                        <Route path="/notifications" element={<Notifications />} />
+                        <Route path="/requests" element={<RequestManagement />} />
+                        <Route path="/requests/:requestId" element={<RFIDetail />} />
+                        <Route path="/analytics" element={<Analytics />} />
+                        <Route path="/users" element={<Users />} />
+                        <Route path="/ai-assistant" element={<AIAssistant />} />
+                        <Route path="/workflow" element={<WorkflowPage />} />
+                      </Route>
+                      <Route path="*" element={<NotFound />} />
+                      <Route path="/terms-of-service" element={<TermsOfService />} />
+                      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                    </Routes>
+                    <Toaster />
+                  </NotificationProvider>
+                </RoleProvider>
+              </ThemeProvider>
+            </TenantProvider>
+          </AuthProvider>
+        </Router>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

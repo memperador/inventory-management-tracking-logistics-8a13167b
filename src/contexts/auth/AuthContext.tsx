@@ -30,12 +30,15 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
+    console.log('[AUTH] AuthProvider initializing...');
     // Track the last auth event to prevent duplicate processing
     let lastAuthEvent = '';
     let lastAuthTime = 0;
     let lastAuthUserId = '';
     
     // Clear any existing session storage that might cause loops
+    console.log('[AUTH] Clearing any previous session storage items that might cause loops');
+    const keysToRemove = [];
     for (let i = 0; i < sessionStorage.length; i++) {
       const key = sessionStorage.key(i);
       if (key && (
@@ -43,14 +46,26 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
         key.startsWith('processing_') || 
         key === 'login_toast_shown'
       )) {
-        sessionStorage.removeItem(key);
+        keysToRemove.push(key);
       }
     }
     
+    // Remove items in a separate loop to avoid index issues
+    keysToRemove.forEach(key => {
+      console.log(`[AUTH] Removing session storage key: ${key}`);
+      sessionStorage.removeItem(key);
+    });
+    
     // First set up the auth state change listener
+    console.log('[AUTH] Setting up auth state change listener');
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
-        console.log('Auth state changed:', event);
+        console.log(`[AUTH] Auth state changed: ${event}`, {
+          hasSession: !!currentSession,
+          userId: currentSession?.user?.id || 'none',
+          currentPath: window.location.pathname,
+          timestamp: new Date().toISOString()
+        });
         
         // Skip duplicate events for the same user within a short timeframe
         const currentUserId = currentSession?.user?.id || '';
@@ -58,10 +73,11 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
         const eventKey = `${event}-${currentUserId}`;
         
         if (eventKey === lastAuthEvent && currentTime - lastAuthTime < 3000) {
-          console.log('Skipping duplicate auth event:', event);
+          console.log(`[AUTH] Skipping duplicate auth event: ${event} for user: ${currentUserId.substring(0, 8)}... (${currentTime - lastAuthTime}ms since last event)`);
           return;
         }
         
+        console.log(`[AUTH] Processing auth event: ${event} for user: ${currentUserId.substring(0, 8) || 'none'}`);
         lastAuthEvent = eventKey;
         lastAuthTime = currentTime;
         lastAuthUserId = currentUserId;
@@ -72,13 +88,16 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
         
         // Call the onUserChange callback with the user ID
         if (onUserChange) {
+          console.log(`[AUTH] Calling onUserChange with userId: ${newUser?.id || 'null'}`);
           onUserChange(newUser?.id || null);
         }
         
         // Handle navigation based on auth events using our extracted handler
         if (event === 'SIGNED_IN') {
+          console.log('[AUTH] SIGNED_IN event detected - handling navigation');
           handleAuthStateChange(event, currentSession);
         } else if (event === 'SIGNED_OUT') {
+          console.log('[AUTH] SIGNED_OUT event detected - cleaning up and navigating to /auth');
           // Clean up any session storage keys that might cause redirect loops
           for (let i = 0; i < sessionStorage.length; i++) {
             const key = sessionStorage.key(i);
@@ -87,6 +106,7 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
               key.startsWith('processing_') || 
               key === 'login_toast_shown'
             )) {
+              console.log(`[AUTH] Removing session storage key on signout: ${key}`);
               sessionStorage.removeItem(key);
             }
           }
@@ -95,29 +115,40 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
             title: 'Signed out',
             description: 'You have been signed out successfully.',
           });
+          console.log('[AUTH] Redirecting to /auth after signout');
           window.location.href = '/auth';
         } else if (event === 'PASSWORD_RECOVERY') {
+          console.log('[AUTH] PASSWORD_RECOVERY event detected - navigating to /auth/reset-password');
           window.location.href = '/auth/reset-password';
+        } else if (event === 'INITIAL_SESSION') {
+          console.log('[AUTH] INITIAL_SESSION event detected');
         }
       }
     );
 
     // Then get the initial session
+    console.log('[AUTH] Checking for initial session');
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      console.log('Initial session check:', initialSession ? 'Authenticated' : 'Not authenticated');
+      console.log('[AUTH] Initial session check:', initialSession ? 'Authenticated' : 'Not authenticated', {
+        userId: initialSession?.user?.id || 'none',
+        currentPath: window.location.pathname
+      });
       setSession(initialSession);
       const currentUser = initialSession?.user ?? null;
       setUser(currentUser);
       
       // Call the onUserChange callback with the user ID
       if (onUserChange) {
+        console.log(`[AUTH] Initial session - calling onUserChange with userId: ${currentUser?.id || 'null'}`);
         onUserChange(currentUser?.id || null);
       }
       
+      console.log('[AUTH] AuthProvider initialization complete');
       setLoading(false);
     });
 
     return () => {
+      console.log('[AUTH] Cleaning up auth subscription');
       subscription.unsubscribe();
     };
   }, [onUserChange]);
@@ -129,22 +160,28 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
     lastName: string, 
     companyName: string
   ) => {
+    console.log(`[AUTH] Sign up initiated for email: ${email}`);
     return await signUp(email, password, firstName, lastName, companyName);
   };
 
   const refreshSessionWrapper = async () => {
+    console.log('[AUTH] Refreshing session');
     try {
       const data = await refreshSessionUtil();
       
+      console.log('[AUTH] Session refreshed successfully', {
+        userId: data.session?.user?.id || 'none'
+      });
       setSession(data.session);
       setUser(data.session?.user ?? null);
       
       // Call the onUserChange callback with the user ID
       if (onUserChange && data.session?.user) {
+        console.log(`[AUTH] After refresh - calling onUserChange with userId: ${data.session.user.id}`);
         onUserChange(data.session.user.id);
       }
     } catch (error) {
-      console.error("Failed to refresh session:", error);
+      console.error("[AUTH] Failed to refresh session:", error);
       throw error;
     }
   };
