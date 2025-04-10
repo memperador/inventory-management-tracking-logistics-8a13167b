@@ -48,6 +48,8 @@ const StandardPlanSection: React.FC<StandardPlanSectionProps> = ({
         <PaymentOptions
           agreeToFees={agreeToFees}
           setAgreeToFees={setAgreeToFees}
+          currentTier={currentTenantTier}
+          isUpgrade={isUpgrade}
         />
         
         <SubscriptionSummary

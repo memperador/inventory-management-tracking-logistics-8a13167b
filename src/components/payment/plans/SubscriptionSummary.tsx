@@ -6,8 +6,6 @@ import { StripeProvider } from '@/components/payment/StripeProvider';
 import PaymentForm from '@/components/payment/PaymentForm';
 import { ServiceTier } from './PricingTiers';
 import { PlanHeader } from './summary/PlanHeader';
-import { UpgradeNotice } from './summary/UpgradeNotice';
-import { PlanFooter } from './summary/PlanFooter';
 
 interface SubscriptionSummaryProps {
   selectedTierData: ServiceTier;
@@ -45,8 +43,6 @@ export const SubscriptionSummary: React.FC<SubscriptionSummaryProps> = ({
       />
       
       <CardContent>
-        {isUpgrade && <UpgradeNotice currentTier={currentTier} />}
-        
         <ErrorBoundary>
           <StripeProvider>
             <PaymentForm 
@@ -60,8 +56,6 @@ export const SubscriptionSummary: React.FC<SubscriptionSummaryProps> = ({
           </StripeProvider>
         </ErrorBoundary>
       </CardContent>
-      
-      <PlanFooter />
     </Card>
   );
 };
