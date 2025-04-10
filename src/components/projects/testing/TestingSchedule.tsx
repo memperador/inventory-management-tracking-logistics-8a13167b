@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -10,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { CheckSquare, FileText, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from '@/utils/uuid';
+import { Badge } from '@/components/projects/testing/Badge';
 
 interface TestCase {
   id: string;
@@ -214,7 +214,7 @@ const TestingSchedule: React.FC<TestingScheduleProps> = ({ projectId }) => {
                         Pending
                       </Button>
                       <Button
-                        variant={testCase.status === 'passed' ? "success" : "outline"}
+                        variant={testCase.status === 'passed' ? "default" : "outline"}
                         size="sm"
                         className={testCase.status === 'passed' ? "bg-green-500 hover:bg-green-600 text-white" : ""}
                         onClick={() => handleToggleStatus(testCase.id, 'passed')}

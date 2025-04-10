@@ -1,4 +1,3 @@
-
 export interface Equipment {
   id: string;
   name: string;
@@ -83,6 +82,8 @@ export interface ProjectType {
   geofence_coordinates?: any;
   electrical_category?: string;
   permit_number?: string;
+  description?: string;
+  geofence?: any;
 }
 
 export type InventoryCategory = 
