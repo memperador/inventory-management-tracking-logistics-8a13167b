@@ -21,6 +21,7 @@ interface AuthCardProps {
   emailProvider: string | null;
   setVerificationSent: (sent: boolean) => void;
   setVerificationEmail: (email: string) => void;
+  onSignupComplete?: (email: string) => void;
 }
 
 const AuthCard: React.FC<AuthCardProps> = ({
@@ -33,7 +34,8 @@ const AuthCard: React.FC<AuthCardProps> = ({
   setIsResendingVerification,
   emailProvider,
   setVerificationSent,
-  setVerificationEmail
+  setVerificationEmail,
+  onSignupComplete
 }) => {
   const [activeTab, setActiveTab] = useState("login");
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
@@ -70,11 +72,7 @@ const AuthCard: React.FC<AuthCardProps> = ({
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             onForgotPassword={() => setResetPasswordDialogOpen(true)}
-            onSignupComplete={(email) => {
-              console.log(`Signup complete for ${email}, showing verification notice`);
-              setVerificationEmail(email);
-              setVerificationSent(true);
-            }}
+            onSignupComplete={onSignupComplete}
           />
         )}
         
