@@ -3,9 +3,11 @@ import React from 'react';
 import PageHeader from '@/components/common/PageHeader';
 import AccountForm from '@/components/account/AccountForm';
 import TenantManagementSection from '@/components/account/TenantManagementSection';
+import SuperadminUserManagement from '@/components/account/SuperadminUserManagement';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/auth';
 import { useRole } from '@/hooks/useRoleContext';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const AccountPage = () => {
   const { user } = useAuth();
@@ -23,16 +25,35 @@ const AccountPage = () => {
         description="View and update your profile information"
       />
       
-      <div className="mt-6">
-        <Card>
-          <CardContent className="pt-6">
-            <AccountForm />
-          </CardContent>
-        </Card>
-      </div>
+      <Tabs defaultValue="profile" className="mt-6">
+        <TabsList>
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          {showTenantManagement && <TabsTrigger value="tenant-management">Tenant Management</TabsTrigger>}
+          {isSuperAdmin && <TabsTrigger value="user-management">User Management</TabsTrigger>}
+        </TabsList>
       
-      {/* Show tenant management tools for superadmins only or in dev mode */}
-      {showTenantManagement && <TenantManagementSection />}
+        <TabsContent value="profile" className="mt-6">
+          <Card>
+            <CardContent className="pt-6">
+              <AccountForm />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      
+        {/* Show tenant management tools for superadmins or in dev mode */}
+        {showTenantManagement && (
+          <TabsContent value="tenant-management">
+            <TenantManagementSection />
+          </TabsContent>
+        )}
+        
+        {/* Show user management only for superadmins */}
+        {isSuperAdmin && (
+          <TabsContent value="user-management">
+            <SuperadminUserManagement />
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 };

@@ -5,7 +5,8 @@ import { useRole } from '@/hooks/useRoleContext';
 import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import AIConfigurationPanel from '@/components/ai/admin/AIConfigurationPanel';
-import { Shield } from 'lucide-react';
+import SuperadminUserManagement from '@/components/account/SuperadminUserManagement';
+import { Shield, Users } from 'lucide-react';
 
 const SuperAdminSettings: React.FC = () => {
   const { userRole } = useRole();
@@ -47,6 +48,7 @@ const SuperAdminSettings: React.FC = () => {
       
       <div className="mt-6 grid gap-8">
         <AIConfigurationPanel />
+        <SuperadminUserManagement />
       </div>
     </div>
   );
