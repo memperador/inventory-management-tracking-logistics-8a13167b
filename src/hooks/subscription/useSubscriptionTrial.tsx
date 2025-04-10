@@ -81,13 +81,15 @@ export const useSubscriptionTrial = () => {
       // Navigate to dashboard
       navigate('/dashboard');
     } catch (error) {
+      // Fix for TypeScript error - ensure data is always a Record<string, any>
+      const errorData: Record<string, any> = error instanceof Error 
+        ? { message: error.message, stack: error.stack }
+        : { stringError: String(error) };
+      
       logAuth('TRIAL_ERROR', 'Failed to start trial', {
         level: AUTH_LOG_LEVELS.ERROR,
         force: true,
-        data: error instanceof Error ? {
-          message: error.message,
-          stack: error.stack
-        } : String(error)
+        data: errorData
       });
       
       toast({
