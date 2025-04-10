@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FileUpload, FileX, Upload } from 'lucide-react';
+import { Upload, File, X } from 'lucide-react';
 import { useFileUploadWithPreview } from '@/hooks/useFileUploadWithPreview';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from '@/utils/uuid';
@@ -65,9 +64,6 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
 
     const file = files[0];
     
-    // In a real implementation, you would upload to Supabase storage here
-    // For now we'll simulate a successful upload
-    
     const newDocument: DocumentAttachment = {
       id: uuidv4(),
       name: documentName,
@@ -75,7 +71,7 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
       uploadDate: new Date().toISOString(),
       uploadedBy: "Current User",
       fileSize: formatFileSize(file.size),
-      fileUrl: URL.createObjectURL(file) // This is temporary and will be revoked when the page refreshes
+      fileUrl: URL.createObjectURL(file)
     };
     
     onDocumentAdded(newDocument);
@@ -84,7 +80,6 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
       description: `${documentName} has been added successfully`
     });
     
-    // Reset form
     setDocumentName('');
     onOpenChange(false);
   };
@@ -151,7 +146,7 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
                   onClick={() => document.getElementById('file-upload')?.click()}
                   disabled={isUploading}
                 >
-                  <FileUpload className="h-4 w-4 mr-2" />
+                  <Upload className="h-4 w-4 mr-2" />
                   {isUploading ? 'Uploading...' : 'Select File'}
                 </Button>
               </div>
@@ -165,7 +160,7 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
-                      <FileUpload className="h-4 w-4 text-primary" />
+                      <File className="h-4 w-4 text-primary" />
                     </div>
                     <div className="text-sm">
                       <p className="font-medium truncate max-w-[200px]">{files[0].name}</p>
@@ -178,7 +173,7 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
                     onClick={() => removeFile(0)}
                     disabled={isUploading}
                   >
-                    <FileX className="h-4 w-4" />
+                    <X className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
