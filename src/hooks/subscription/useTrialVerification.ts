@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useTenant } from '@/hooks/useTenantContext';
-import { verifyTrialPeriod } from '@/utils/subscription/tenantVerification';
+import { verifyTenantTrialPeriod } from '@/utils/subscription/tenantVerification';
 
 export const useTrialVerification = () => {
   const { toast } = useToast();
@@ -28,7 +28,7 @@ export const useTrialVerification = () => {
     setIsLoading(true);
     
     try {
-      const result = await verifyTrialPeriod(targetTenantId);
+      const result = await verifyTenantTrialPeriod(targetTenantId);
       setTrialVerificationResult(result);
       
       toast({

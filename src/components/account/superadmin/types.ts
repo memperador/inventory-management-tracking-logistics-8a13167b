@@ -2,6 +2,7 @@
 export interface UserLookupResult {
   userId: string;
   email: string;
+  displayName: string;
 }
 
 export interface TenantMigrationUser {

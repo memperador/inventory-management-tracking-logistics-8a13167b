@@ -5,6 +5,8 @@ import { checkTrialStatus, calculateTrialDaysLeft } from './trialUtils';
 
 /**
  * Verify that trial periods are correctly working for a tenant
+ * This function is specifically for tenant verification, not to be confused with
+ * the general verifyTrialPeriod in trialUtils
  */
 export async function verifyTrialPeriod(tenantId: string): Promise<{
   isValid: boolean;
@@ -77,3 +79,6 @@ export async function verifyTrialPeriod(tenantId: string): Promise<{
     };
   }
 }
+
+// Export the renamed function to avoid name conflict
+export { verifyTrialPeriod as verifyTenantTrialPeriod };
