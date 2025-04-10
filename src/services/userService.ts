@@ -19,7 +19,7 @@ export const fetchUsers = async (): Promise<User[]> => {
         name: 'User', // Will be updated when profiles are fetched
         email: `user-${user.id.substring(0, 5)}@example.com`, // Placeholder email
         role: user.role,
-        status: 'active', // Default to active
+        status: 'active' as const, // Fixed typing by using const assertion
         lastActive: user.created_at,
         tenantId: user.tenant_id // Keep track of tenant ID for display
       };

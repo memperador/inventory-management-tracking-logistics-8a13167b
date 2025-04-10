@@ -34,10 +34,12 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
       try {
         // Find user by email if provided
         if (email) {
-          // Using a simpler approach to find users since auth.users isn't directly accessible
-          const { data: userData, error: userError } = await supabase.rpc('get_user_by_email', { email_param: email });
+          // Call the edge function to get user by email
+          const { data: userData, error: functionError } = await supabase.functions.invoke('get-user-by-email', {
+            body: { email }
+          });
           
-          if (userError || !userData) {
+          if (functionError || !userData) {
             // Fallback approach - check directly in users table
             const { data: usersData, error: usersQueryError } = await supabase
               .from('users')
@@ -56,7 +58,7 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
             setUserInfo(userData);
           }
           
-          if (!userInfo || !userInfo.id) {
+          if (!userInfo?.id) {
             setLoading(false);
             return;
           }
@@ -112,7 +114,7 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
     };
     
     checkUserAndTenant();
-  }, [email, userInfo?.id]);
+  }, [email]);
 
   if (loading) {
     return <div className="text-center p-4">Checking migration status...</div>;

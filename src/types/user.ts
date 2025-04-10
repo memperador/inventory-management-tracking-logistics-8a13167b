@@ -6,7 +6,7 @@ export type User = {
   name: string;
   email: string;
   role: UserRole;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | string;
   lastActive: string;
   tenantId?: string;
   tenantName?: string;

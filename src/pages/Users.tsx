@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { Plus, UserPlus, Users as UsersIcon, RefreshCw } from 'lucide-react';
+import { Plus, UserPlus, RefreshCw } from 'lucide-react';
+import { UsersIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import Permission from '@/components/auth/Permission';
