@@ -59,6 +59,7 @@ export const SubscriptionSummary: React.FC<SubscriptionSummaryProps> = ({
             <PaymentForm 
               amount={amount}
               disabled={!agreeToFees}
+              paymentType={paymentType}
               onSuccess={onSuccess}
               onError={onError}
               selectedTier={selectedTierData.id}

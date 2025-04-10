@@ -14,6 +14,7 @@ interface PaymentFormProps {
   amount: number;
   selectedTier?: string;
   disabled?: boolean;
+  paymentType: string; // Add the missing paymentType prop
   onSuccess?: (paymentIntent: any) => void;
   onError?: (error: Error) => void;
 }
@@ -22,6 +23,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   amount, 
   selectedTier,
   disabled = false,
+  paymentType, // Add it to the destructuring
   onSuccess, 
   onError 
 }) => {
