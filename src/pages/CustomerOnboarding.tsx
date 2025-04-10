@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '@/components/common/PageHeader';
 import OnboardingAssistant from '@/components/onboarding/OnboardingAssistant';
@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/button';
 import { useOnboardingState } from '@/components/onboarding/hooks/useOnboardingState';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import OnboardingWorkflow from '@/components/onboarding/OnboardingWorkflow';
+import { useAuth } from '@/hooks/useAuthContext';
+import { useTenant } from '@/hooks/useTenantContext';
+import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 
 const CustomerOnboarding: React.FC = () => {
   const { onboardingState } = useOnboardingState();
@@ -16,6 +19,24 @@ const CustomerOnboarding: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>('guide');
+  const { user } = useAuth();
+  const { currentTenant } = useTenant();
+  
+  // Check if this is a first-time setup
+  useEffect(() => {
+    if (user && currentTenant) {
+      logAuth('ONBOARDING', 'User accessed onboarding page', {
+        level: AUTH_LOG_LEVELS.INFO,
+        force: true,
+        data: {
+          userId: user.id,
+          tenantId: currentTenant.id,
+          tenantName: currentTenant.name,
+          isFirstVisit: !currentTenant.onboarding_completed
+        }
+      });
+    }
+  }, [user, currentTenant]);
   
   // Function to be passed to OnboardingAssistant to set AI prompt
   const handleOpenAIAssistant = (prompt?: string) => {
@@ -30,6 +51,15 @@ const CustomerOnboarding: React.FC = () => {
 
   // When onboarding is complete
   const handleOnboardingComplete = () => {
+    logAuth('ONBOARDING', 'User completed onboarding', {
+      level: AUTH_LOG_LEVELS.INFO,
+      force: true,
+      data: {
+        userId: user?.id,
+        tenantId: currentTenant?.id
+      }
+    });
+    
     toast({
       title: "Onboarding Complete!",
       description: "You've successfully completed the onboarding process. Enjoy using our platform!",

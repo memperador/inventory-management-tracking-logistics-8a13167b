@@ -15,7 +15,7 @@ BEGIN
   RETURNING id INTO new_tenant_id;
 
   -- Update the user record to point to the new tenant
-  UPDATE public.users SET tenant_id = new_tenant_id 
+  UPDATE public.users SET tenant_id = new_tenant_id, role = 'admin'
   WHERE id = p_user_id;
   
   -- Also update the user's profile if it exists

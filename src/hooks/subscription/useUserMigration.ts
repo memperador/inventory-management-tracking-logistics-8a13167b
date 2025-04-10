@@ -67,7 +67,8 @@ export const useUserMigration = () => {
       }
       
       // Get current user details
-      const currentUserId = user?.id;
+      const { user: currentUser } = useAuth();
+      const currentUserId = currentUser?.id;
       let currentUserData = null;
       let currentUserTenant = null;
       

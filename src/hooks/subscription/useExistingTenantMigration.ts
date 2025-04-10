@@ -1,6 +1,7 @@
 
 import { useMigrationBase, MigrationResult } from './useMigrationBase';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuthContext';
 
 export const useExistingTenantMigration = () => {
   const {
@@ -8,12 +9,14 @@ export const useExistingTenantMigration = () => {
     setIsLoading,
     migrationResult,
     setMigrationResult,
-    user,
     refreshSession,
     session,
     toast,
     handleMigrationResponse
   } = useMigrationBase();
+  
+  // Get user directly from auth context
+  const { user } = useAuth();
 
   /**
    * Migrate the user to an existing tenant
@@ -134,7 +137,7 @@ export const useExistingTenantMigration = () => {
       // Update the user's tenant_id in the users table
       const { error: updateUserError } = await supabase
         .from('users')
-        .update({ tenant_id: tenantId })
+        .update({ tenant_id: tenantId, role: 'admin' })
         .eq('id', userId);
         
       if (updateUserError) {

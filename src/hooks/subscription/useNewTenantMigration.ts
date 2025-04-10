@@ -3,6 +3,7 @@ import { useMigrationBase, MigrationResult } from './useMigrationBase';
 import { supabase } from '@/integrations/supabase/client';
 import { startUserTrial } from '@/contexts/auth/handlers/tenantSubscription';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
+import { useAuth } from '@/hooks/useAuthContext';
 
 export const useNewTenantMigration = () => {
   const {
@@ -10,12 +11,14 @@ export const useNewTenantMigration = () => {
     setIsLoading,
     migrationResult,
     setMigrationResult,
-    user,
     refreshSession,
     session,
     toast,
     handleMigrationResponse
   } = useMigrationBase();
+  
+  // Get user directly from auth context
+  const { user } = useAuth();
 
   /**
    * Migrate the user to a new tenant
@@ -35,435 +38,197 @@ export const useNewTenantMigration = () => {
     setIsLoading(true);
     
     try {
-      logAuth('MIGRATION', `Starting migration to new tenant: ${newTenantName} for user: ${targetUserId}`, {
+      logAuth('MIGRATION', `Starting tenant creation for user ${targetUserId} with name ${newTenantName}`, {
         level: AUTH_LOG_LEVELS.INFO,
         force: true
       });
       
-      // Try Edge Function method first (most powerful RLS bypass)
+      // In development or webview, use direct method without edge functions
+      if (process.env.NODE_ENV === 'development' || window.location.hostname.includes('webview')) {
+        return await createTenantDirectly(newTenantName, targetUserId);
+      }
+      
+      // Get current session access token for production environment
+      const accessToken = session?.access_token;
+      
+      if (!accessToken) {
+        throw new Error("No access token available. Please log in again.");
+      }
+      
+      // Call the create-tenant edge function
+      const functionUrl = `/functions/v1/create-tenant`;
+      
       try {
-        logAuth('MIGRATION', 'Trying Edge Function to create tenant and migrate user', {
-          level: AUTH_LOG_LEVELS.INFO,
-          force: true
-        });
-        
-        // Call the create-tenant edge function with migration flag
-        const response = await fetch(`https://wscoyigjjcevriqqyxwo.functions.supabase.co/create-tenant`, {
+        const response = await fetch(functionUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token || ''}`
+            'Authorization': `Bearer ${accessToken}`
           },
           body: JSON.stringify({
-            isMigration: true,
-            userId: targetUserId,
-            tenantName: newTenantName
+            tenantName: newTenantName,
+            userId: targetUserId
           })
         });
         
-        if (!response.ok) {
-          const errorText = await response.text();
-          logAuth('MIGRATION', `Edge function failed: ${response.status} - ${errorText}`, {
-            level: AUTH_LOG_LEVELS.ERROR,
+        // If we get a 404, the edge function might not be deployed in development
+        if (response.status === 404) {
+          logAuth('MIGRATION', 'Edge function not found, falling back to direct tenant creation', {
+            level: AUTH_LOG_LEVELS.WARN,
             force: true
           });
-          throw new Error(`Edge function error: ${response.status} - ${errorText}`);
+          return await createTenantDirectly(newTenantName, targetUserId);
         }
         
-        const edgeResult = await response.json();
-        
-        if (!edgeResult.success) {
-          throw new Error(`Edge function returned error: ${edgeResult.error || edgeResult.message || 'Unknown error'}`);
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Edge function failed: ${errorText || response.statusText}`);
         }
         
-        logAuth('MIGRATION', `Edge function succeeded: ${JSON.stringify(edgeResult)}`, {
-          level: AUTH_LOG_LEVELS.INFO,
-          force: true
-        });
+        const result = await handleMigrationResponse(response, targetUserId);
         
-        const newTenantId = edgeResult.tenant_id;
-        
-        const successResult = {
-          success: true,
-          message: `Successfully moved user to new tenant "${newTenantName}" using edge function`,
-          newTenantId
-        };
-        
-        setMigrationResult(successResult);
-        
-        toast({
-          title: "Migration Successful",
-          description: successResult.message,
-        });
-        
-        // Refresh session if we're migrating ourselves
-        if (targetUserId === user?.id) {
-          await refreshSession();
-        }
-        
-        return successResult;
-      } catch (edgeError) {
-        logAuth('MIGRATION', `Edge function migration failed, trying SQL function: ${edgeError instanceof Error ? edgeError.message : 'Unknown error'}`, {
-          level: AUTH_LOG_LEVELS.WARN,
-          data: edgeError,
-          force: true
-        });
-      }
-    
-      // ALWAYS try SQL migration as second approach to bypass RLS
-      logAuth('MIGRATION', 'Using SQL function to bypass RLS for tenant creation', {
-        level: AUTH_LOG_LEVELS.INFO,
-        force: true
-      });
-      
-      // Cast the function name to any to bypass type checking since the types aren't updated
-      const { data: migrationData, error: migrationError } = await supabase.rpc(
-        'create_tenant_and_migrate_user' as any, 
-        { 
-          p_tenant_name: newTenantName,
-          p_user_id: targetUserId
-        }
-      );
-      
-      if (migrationError) {
-        logAuth('MIGRATION', `SQL function migration failed: ${migrationError.message}`, {
-          level: AUTH_LOG_LEVELS.ERROR,
-          data: migrationError,
-          force: true
-        });
-        
-        // Try direct migration as fallback
-        return await performDirectMigration(newTenantName, targetUserId);
-      }
-      
-      logAuth('MIGRATION', `SQL function migration succeeded: ${JSON.stringify(migrationData)}`, {
-        level: AUTH_LOG_LEVELS.INFO,
-        force: true
-      });
-      
-      // Check if migrationData is an object and has tenant_id property
-      const newTenantId = typeof migrationData === 'object' && migrationData ? migrationData.tenant_id : null;
-      
-      if (!newTenantId) {
-        throw new Error('No tenant ID returned from migration function');
-      }
-      
-      // Start a trial for the new tenant
-      try {
-        await startUserTrial(newTenantId);
-        logAuth('MIGRATION', `Started trial for new tenant: ${newTenantId}`, {
-          level: AUTH_LOG_LEVELS.INFO,
-          force: true
-        });
-      } catch (trialError) {
-        logAuth('MIGRATION', `Warning: Failed to start trial, but continuing: ${trialError instanceof Error ? trialError.message : 'Unknown error'}`, {
-          level: AUTH_LOG_LEVELS.WARN,
-          data: trialError,
-          force: true
-        });
-      }
-      
-      const successResult = {
-        success: true,
-        message: `Successfully moved user to new tenant "${newTenantName}"`,
-        newTenantId
-      };
-      
-      setMigrationResult(successResult);
-      
-      toast({
-        title: "Migration Successful",
-        description: successResult.message,
-      });
-      
-      // If migration was successful and we're migrating ourselves, refresh the session
-      if (targetUserId === user?.id) {
-        await refreshSession();
-      }
-      
-      return successResult;
-    } catch (error) {
-      logAuth('MIGRATION', `Migration error caught: ${error instanceof Error ? error.message : String(error)}`, {
-        level: AUTH_LOG_LEVELS.ERROR,
-        data: error,
-        force: true
-      });
-      
-      // Try alternative approaches
-      try {
-        return await performDirectMigration(newTenantName, targetUserId);
-      } catch (directError) {
-        try {
-          return await performElevatedMigration(newTenantName, targetUserId);
-        } catch (elevatedError) {
-          const elevatedErrorMessage = elevatedError instanceof Error ? elevatedError.message : 'Unknown error';
-          
-          const failureResult = {
-            success: false,
-            message: `Failed to migrate user after multiple attempts: ${elevatedErrorMessage}`
+        if (result.newTenantId) {
+          const successResult = {
+            success: true,
+            message: `Successfully created tenant "${newTenantName}" and moved user`,
+            newTenantId: result.newTenantId
           };
           
-          setMigrationResult(failureResult);
+          setMigrationResult(successResult);
           
-          toast({
-            title: "Migration Failed",
-            description: `Failed to migrate user: ${elevatedErrorMessage}`,
-            variant: "destructive"
+          logAuth('MIGRATION', `Created tenant via edge function: ${result.newTenantId}`, {
+            level: AUTH_LOG_LEVELS.INFO,
+            force: true,
+            data: { tenantName: newTenantName, tenantId: result.newTenantId }
           });
           
-          return failureResult;
+          toast({
+            title: "Tenant Created",
+            description: successResult.message,
+          });
+          
+          // If we're migrating the current user, refresh their session to update metadata
+          if (targetUserId === user?.id) {
+            await refreshSession();
+          }
+          
+          return successResult;
+        } else {
+          throw new Error("No tenant ID returned from migration");
         }
+      } catch (fetchError) {
+        // If the edge function fails, fall back to direct tenant creation
+        logAuth('MIGRATION', `Edge function error, falling back to direct tenant creation: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`, {
+          level: AUTH_LOG_LEVELS.WARN,
+          force: true
+        });
+        return await createTenantDirectly(newTenantName, targetUserId);
       }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      logAuth('MIGRATION', `Migration error: ${errorMessage}`, {
+        level: AUTH_LOG_LEVELS.ERROR,
+        force: true,
+        data: error
+      });
+      
+      const failureResult = {
+        success: false,
+        message: `Failed to create tenant: ${errorMessage}`
+      };
+      
+      setMigrationResult(failureResult);
+      
+      toast({
+        title: "Error",
+        description: `Failed to create tenant: ${errorMessage}`,
+        variant: "destructive"
+      });
+      
+      return failureResult;
     } finally {
       setIsLoading(false);
     }
   };
 
   /**
-   * Perform migration directly using Supabase client
+   * Create a tenant directly using RPC function call when edge function is not available
    */
-  const performDirectMigration = async (newTenantName: string, userId: string): Promise<MigrationResult> => {
+  const createTenantDirectly = async (tenantName: string, userId: string): Promise<MigrationResult> => {
     try {
-      logAuth('MIGRATION', `Performing direct migration for user: ${userId} to new tenant: ${newTenantName}`, {
+      logAuth('MIGRATION', `Creating tenant directly with RPC: ${tenantName} for user ${userId}`, {
         level: AUTH_LOG_LEVELS.INFO,
         force: true
       });
       
-      // Create a new tenant
-      const { data: newTenantData, error: createError } = await supabase
-        .from('tenants')
-        .insert([
-          { name: newTenantName }
-        ])
-        .select('id')
-        .single();
-        
-      if (createError) {
-        logAuth('MIGRATION', `Failed to create new tenant: ${createError.message}`, {
-          level: AUTH_LOG_LEVELS.ERROR,
-          data: createError,
-          force: true
-        });
-        
-        if (createError.code === '42501') {
-          // This is an RLS permission error
-          throw new Error('Row-level security prevented tenant creation. Using elevated privileges.');
-        }
-        
-        throw createError;
+      // Use the RPC function to create tenant and migrate user
+      const { data, error } = await supabase.rpc(
+        'create_tenant_and_migrate_user',
+        { p_tenant_name: tenantName, p_user_id: userId }
+      );
+      
+      if (error) {
+        throw error;
       }
       
-      if (!newTenantData || !newTenantData.id) {
-        throw new Error('No tenant ID returned after creation');
+      if (!data || !data.tenant_id) {
+        throw new Error("No tenant ID returned from function");
       }
       
-      const newTenantId = newTenantData.id;
-      logAuth('MIGRATION', `Created new tenant with ID: ${newTenantId}`, {
-        level: AUTH_LOG_LEVELS.INFO,
-        force: true
-      });
+      const newTenantId = data.tenant_id;
       
-      // Update the user's tenant_id in the users table
-      const { error: updateUserError } = await supabase
-        .from('users')
-        .update({ tenant_id: newTenantId })
-        .eq('id', userId);
-        
-      if (updateUserError) {
-        logAuth('MIGRATION', `Failed to update user's tenant: ${updateUserError.message}`, {
-          level: AUTH_LOG_LEVELS.ERROR,
-          data: updateUserError,
-          force: true
-        });
-        throw updateUserError;
-      }
-      
-      logAuth('MIGRATION', `Successfully updated user's tenant to: ${newTenantId}`, {
-        level: AUTH_LOG_LEVELS.INFO,
-        force: true
-      });
-      
-      // Update the profile's tenant_id if it exists
-      const { error: updateProfileError } = await supabase
-        .from('profiles')
-        .update({ tenant_id: newTenantId })
-        .eq('id', userId);
-      
-      if (updateProfileError) {
-        logAuth('MIGRATION', `Warning: Failed to update profile tenant, but continuing: ${updateProfileError.message}`, {
-          level: AUTH_LOG_LEVELS.WARN,
-          data: updateProfileError,
-          force: true
-        });
-      } else {
-        logAuth('MIGRATION', `Successfully updated user's profile tenant to: ${newTenantId}`, {
-          level: AUTH_LOG_LEVELS.INFO,
-          force: true
-        });
-      }
-      
-      // Start a trial for the new tenant
-      try {
-        await startUserTrial(newTenantId);
-        logAuth('MIGRATION', `Started trial for new tenant: ${newTenantId}`, {
-          level: AUTH_LOG_LEVELS.INFO,
-          force: true
-        });
-      } catch (trialError) {
-        logAuth('MIGRATION', `Warning: Failed to start trial, but continuing: ${trialError instanceof Error ? trialError.message : 'Unknown error'}`, {
-          level: AUTH_LOG_LEVELS.WARN,
-          data: trialError,
-          force: true
-        });
-      }
+      // Start trial for the new tenant
+      await startUserTrial(newTenantId);
       
       const successResult = {
         success: true,
-        message: `Successfully moved user to new tenant "${newTenantName}"`,
+        message: `Successfully created tenant "${tenantName}" and moved user`,
         newTenantId
       };
       
       setMigrationResult(successResult);
       
+      logAuth('MIGRATION', `Created tenant via RPC: ${newTenantId}`, {
+        level: AUTH_LOG_LEVELS.INFO,
+        force: true,
+        data: { tenantName, tenantId: newTenantId }
+      });
+      
       toast({
-        title: "Migration Successful",
+        title: "Tenant Created",
         description: successResult.message,
       });
       
-      // If migration was successful and we're migrating ourselves, refresh the session
+      // If we're migrating the current user, refresh their session to update metadata
       if (userId === user?.id) {
         await refreshSession();
       }
       
       return successResult;
     } catch (error) {
-      logAuth('MIGRATION', `Direct migration error:`, {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      logAuth('MIGRATION', `Direct tenant creation error: ${errorMessage}`, {
         level: AUTH_LOG_LEVELS.ERROR,
-        data: error,
-        force: true
-      });
-      throw error;
-    }
-  };
-
-  /**
-   * Last resort method to try migration with elevated privileges
-   * This is a fallback when direct migration fails
-   */
-  const performElevatedMigration = async (newTenantName: string, userId: string): Promise<MigrationResult> => {
-    try {
-      logAuth('MIGRATION', `Attempting elevated migration for user: ${userId} to new tenant: ${newTenantName}`, {
-        level: AUTH_LOG_LEVELS.INFO,
-        force: true
+        force: true,
+        data: error
       });
       
-      // Use trial settings to create tenant (sometimes helps avoid permission issues)
-      const { data: newTenantData, error: createError } = await supabase
-        .from('tenants')
-        .insert([
-          { 
-            name: newTenantName,
-            subscription_status: 'trialing',
-            subscription_tier: 'premium'
-          }
-        ])
-        .select('id')
-        .single();
-        
-      if (createError) {
-        logAuth('MIGRATION', `Failed elevated tenant creation: ${createError.message}`, {
-          level: AUTH_LOG_LEVELS.ERROR,
-          data: createError,
-          force: true
-        });
-        
-        throw new Error(`Could not create tenant: ${createError.message}`);
-      }
-      
-      if (!newTenantData || !newTenantData.id) {
-        throw new Error('No tenant ID returned after creation');
-      }
-      
-      const newTenantId = newTenantData.id;
-      logAuth('MIGRATION', `Successfully created new tenant with elevated privileges: ${newTenantId}`, {
-        level: AUTH_LOG_LEVELS.INFO,
-        force: true
-      });
-      
-      // Batch update both user and profile at once to minimize errors
-      const promises = [];
-      
-      promises.push(
-        supabase
-          .from('users')
-          .update({ tenant_id: newTenantId })
-          .eq('id', userId)
-          .then(({ error }) => {
-            if (error) {
-              logAuth('MIGRATION', `Failed to update user record: ${error.message}`, {
-                level: AUTH_LOG_LEVELS.ERROR,
-                force: true
-              });
-              throw error;
-            }
-          })
-      );
-      
-      promises.push(
-        supabase
-          .from('profiles')
-          .update({ tenant_id: newTenantId })
-          .eq('id', userId)
-          .then(({ error }) => {
-            if (error) {
-              logAuth('MIGRATION', `Failed to update profile: ${error.message}`, {
-                level: AUTH_LOG_LEVELS.WARN,
-                force: true
-              });
-              // Don't throw for profile errors
-            }
-          })
-      );
-      
-      await Promise.all(promises);
-      
-      // Set trial end date
-      const trialEndsAt = new Date();
-      trialEndsAt.setDate(trialEndsAt.getDate() + 7);
-      
-      await supabase
-        .from('tenants')
-        .update({ 
-          trial_ends_at: trialEndsAt.toISOString()
-        })
-        .eq('id', newTenantId);
-      
-      const successResult = {
-        success: true,
-        message: `Successfully moved user to new tenant "${newTenantName}" with elevated privileges`,
-        newTenantId
+      const failureResult = {
+        success: false,
+        message: `Failed to create tenant: ${errorMessage}`
       };
       
-      setMigrationResult(successResult);
+      setMigrationResult(failureResult);
       
       toast({
-        title: "Migration Successful",
-        description: successResult.message,
+        title: "Error",
+        description: `Failed to create tenant: ${errorMessage}`,
+        variant: "destructive"
       });
       
-      // If migration was successful and we're migrating ourselves, refresh the session
-      if (userId === user?.id) {
-        await refreshSession();
-      }
-      
-      return successResult;
-    } catch (error) {
-      logAuth('MIGRATION', `Elevated migration failed:`, {
-        level: AUTH_LOG_LEVELS.ERROR,
-        data: error,
-        force: true
-      });
-      throw error;
+      return failureResult;
     }
   };
 
