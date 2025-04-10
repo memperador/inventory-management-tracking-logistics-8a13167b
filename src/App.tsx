@@ -29,6 +29,7 @@ import { AuthProvider } from '@/contexts/auth/AuthContext';
 import { TenantProvider } from '@/contexts/TenantContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { RoleProvider } from '@/contexts/RoleContext';
+import { AIAssistantProvider } from '@/components/layout/AIAssistantProvider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -112,38 +113,40 @@ function App() {
               <ThemeProvider>
                 <RoleProvider>
                   <NotificationProvider>
-                    <Routes>
-                      <Route path="/auth" element={<Auth />} />
-                      <Route path="/auth/reset-password" element={<ResetPassword />} />
-                      <Route path="/auth/two-factor" element={<TwoFactorAuth />} />
-                      <Route path="/unauthorized" element={<Unauthorized />} />
-                      <Route path="/login" element={<Navigate to="/auth" replace />} />
-                      <Route path="/" element={<RootRedirect />} />
-                      <Route path="/404" element={<NotFound />} />
-                      <Route path="/onboarding" element={<ProtectedRoute redirectTo="/auth"><Onboarding /></ProtectedRoute>} />
-                      <Route path="/project/:projectId" element={<ProjectRedirect />} />
-                      <Route path="/payment" element={<PaymentPage />} />
-                      <Route element={<ProtectedRoute redirectTo="/auth"><AppLayout /></ProtectedRoute>}>
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/projects" element={<Projects />} />
-                        <Route path="/projects/:projectId" element={<ProjectDetail />} />
-                        <Route path="/inventory" element={<Inventory />} />
-                        <Route path="/account" element={<AccountPage />} />
-                        <Route path="/settings" element={<Settings />} />
-                        <Route path="/gps" element={<GPSIntegration />} />
-                        <Route path="/notifications" element={<Notifications />} />
-                        <Route path="/requests" element={<RequestManagement />} />
-                        <Route path="/requests/:requestId" element={<RFIDetail />} />
-                        <Route path="/analytics" element={<Analytics />} />
-                        <Route path="/users" element={<Users />} />
-                        <Route path="/ai-assistant" element={<AIAssistant />} />
-                        <Route path="/workflow" element={<WorkflowPage />} />
-                      </Route>
-                      <Route path="*" element={<NotFound />} />
-                      <Route path="/terms-of-service" element={<TermsOfService />} />
-                      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                    </Routes>
-                    <Toaster />
+                    <AIAssistantProvider>
+                      <Routes>
+                        <Route path="/auth" element={<Auth />} />
+                        <Route path="/auth/reset-password" element={<ResetPassword />} />
+                        <Route path="/auth/two-factor" element={<TwoFactorAuth />} />
+                        <Route path="/unauthorized" element={<Unauthorized />} />
+                        <Route path="/login" element={<Navigate to="/auth" replace />} />
+                        <Route path="/" element={<RootRedirect />} />
+                        <Route path="/404" element={<NotFound />} />
+                        <Route path="/onboarding" element={<ProtectedRoute redirectTo="/auth"><Onboarding /></ProtectedRoute>} />
+                        <Route path="/project/:projectId" element={<ProjectRedirect />} />
+                        <Route path="/payment" element={<PaymentPage />} />
+                        <Route element={<ProtectedRoute redirectTo="/auth"><AppLayout /></ProtectedRoute>}>
+                          <Route path="/dashboard" element={<Dashboard />} />
+                          <Route path="/projects" element={<Projects />} />
+                          <Route path="/projects/:projectId" element={<ProjectDetail />} />
+                          <Route path="/inventory" element={<Inventory />} />
+                          <Route path="/account" element={<AccountPage />} />
+                          <Route path="/settings" element={<Settings />} />
+                          <Route path="/gps" element={<GPSIntegration />} />
+                          <Route path="/notifications" element={<Notifications />} />
+                          <Route path="/requests" element={<RequestManagement />} />
+                          <Route path="/requests/:requestId" element={<RFIDetail />} />
+                          <Route path="/analytics" element={<Analytics />} />
+                          <Route path="/users" element={<Users />} />
+                          <Route path="/ai-assistant" element={<AIAssistant />} />
+                          <Route path="/workflow" element={<WorkflowPage />} />
+                        </Route>
+                        <Route path="*" element={<NotFound />} />
+                        <Route path="/terms-of-service" element={<TermsOfService />} />
+                        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                      </Routes>
+                      <Toaster />
+                    </AIAssistantProvider>
                   </NotificationProvider>
                 </RoleProvider>
               </ThemeProvider>

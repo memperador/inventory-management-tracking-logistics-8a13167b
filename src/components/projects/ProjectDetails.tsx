@@ -3,11 +3,12 @@ import React from 'react';
 import { ProjectType } from '@/components/equipment/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Building, Calendar, FileText, Zap, MapPin, ClipboardCheck } from 'lucide-react';
+import { Building, Calendar, FileText, Zap, MapPin, ClipboardCheck, TestTube } from 'lucide-react';
 import { getStatusColor } from './projectUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ProjectAssets from './ProjectAssets';
 import PreConstructionPlanComponent from './preconstruction/PreConstructionPlan';
+import TestingSchedule from './testing/TestingSchedule';
 
 interface ProjectDetailsProps {
   project: ProjectType;
@@ -68,7 +69,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project }) => {
       </Card>
       
       <Tabs defaultValue="pre-construction" className="w-full">
-        <TabsList className="grid grid-cols-3 w-[600px]">
+        <TabsList className="grid grid-cols-4 w-full max-w-[800px]">
           <TabsTrigger value="pre-construction">
             <ClipboardCheck className="h-4 w-4 mr-2" />
             Pre-Construction
@@ -76,6 +77,10 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project }) => {
           <TabsTrigger value="assets">
             <Building className="h-4 w-4 mr-2" />
             Assets
+          </TabsTrigger>
+          <TabsTrigger value="testing">
+            <TestTube className="h-4 w-4 mr-2" />
+            Testing
           </TabsTrigger>
           <TabsTrigger value="details">
             <FileText className="h-4 w-4 mr-2" />
@@ -95,6 +100,10 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project }) => {
           </Card>
         </TabsContent>
         
+        <TabsContent value="testing">
+          <TestingSchedule projectId={project.id} />
+        </TabsContent>
+        
         <TabsContent value="details">
           <Card>
             <CardContent className="py-4">
@@ -102,7 +111,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project }) => {
                 <div>
                   <h3 className="font-medium mb-2">Project Description</h3>
                   <p className="text-sm text-muted-foreground">
-                    No description available.
+                    {project.description || 'No description available.'}
                   </p>
                 </div>
                 
@@ -114,7 +123,7 @@ export const ProjectDetails: React.FC<ProjectDetailsProps> = ({ project }) => {
                       {project.site_address || 'No address provided'}
                     </div>
                     <div className="mt-2">
-                      No geofence coordinates available.
+                      {project.geofence ? 'Geofence configured.' : 'No geofence coordinates available.'}
                     </div>
                   </div>
                 </div>
