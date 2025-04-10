@@ -55,9 +55,11 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
             // Use the first user found for demonstration
             setUserInfo({ id: usersData[0].id, email });
           } else {
+            // Set the user info from the edge function response
             setUserInfo(userData);
           }
           
+          // We need to check if userInfo is available
           if (!userInfo?.id) {
             setLoading(false);
             return;
@@ -115,6 +117,47 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
     
     checkUserAndTenant();
   }, [email]);
+
+  // Once an email is searched, we watch for userInfo changes to get tenant
+  useEffect(() => {
+    if (email && userInfo?.id) {
+      const getTenantInfo = async () => {
+        try {
+          // Get user's tenant
+          const { data: tenantUserData, error: tenantUserError } = await supabase
+            .from('users')
+            .select('tenant_id')
+            .eq('id', userInfo.id)
+            .single();
+            
+          if (tenantUserError) {
+            setError(`User tenant info not found: ${tenantUserError.message}`);
+            return;
+          }
+          
+          // Get tenant details
+          const tenantId = tenantUserData.tenant_id;
+          if (tenantId) {
+            const { data: tenantData, error: tenantError } = await supabase
+              .from('tenants')
+              .select('id, name, created_at')
+              .eq('id', tenantId)
+              .single();
+              
+            if (tenantError) {
+              setError(`Tenant not found: ${tenantError.message}`);
+            } else {
+              setTenantInfo(tenantData);
+            }
+          }
+        } catch (err) {
+          setError(`Error fetching tenant: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      };
+      
+      getTenantInfo();
+    }
+  }, [email, userInfo]);
 
   if (loading) {
     return <div className="text-center p-4">Checking migration status...</div>;

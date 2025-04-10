@@ -4,24 +4,59 @@ import { User } from '@/types/user';
 
 export const fetchUsers = async (): Promise<User[]> => {
   try {
-    // First fetch users
+    // First fetch users with their roles
     const { data: usersData, error: usersError } = await supabase
       .from('users')
       .select('id, role, created_at, tenant_id');
     
     if (usersError) throw usersError;
     
-    // Try to get user emails another way (since we can't access auth.users directly)
-    // This is a simplified approach for demonstration purposes
+    // Then try to get profile data to get real names
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, tenant_id');
+    
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+    }
+    
+    // Get real user emails via the edge function
+    const { data: authUsersData, error: authUsersError } = await supabase.functions.invoke('get-user-by-email');
+    
+    if (authUsersError) {
+      console.error('Error fetching auth users:', authUsersError);
+    }
+    
+    // Map auth user emails to our users
+    const emailMap = new Map();
+    if (authUsersData && Array.isArray(authUsersData)) {
+      authUsersData.forEach(user => {
+        if (user && user.id && user.email) {
+          emailMap.set(user.id, user.email);
+        }
+      });
+    }
+    
     const usersWithData = usersData.map(user => {
+      // Find profile for this user
+      const profile = profilesData?.find(p => p.id === user.id);
+      
+      // Get real name from profile or use default
+      const firstName = profile?.first_name || '';
+      const lastName = profile?.last_name || '';
+      const name = `${firstName} ${lastName}`.trim() || 'Unknown User';
+      
+      // Get real email from auth data or use placeholder
+      const email = emailMap.get(user.id) || `user-${user.id.substring(0, 5)}@example.com`;
+      
       return {
         id: user.id,
-        name: 'User', // Will be updated when profiles are fetched
-        email: `user-${user.id.substring(0, 5)}@example.com`, // Placeholder email
+        name,
+        email,
         role: user.role,
-        status: 'active' as const, // Fixed typing by using const assertion
+        status: 'active' as const,
         lastActive: user.created_at,
-        tenantId: user.tenant_id // Keep track of tenant ID for display
+        tenantId: user.tenant_id
       };
     });
     

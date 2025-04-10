@@ -50,4 +50,5 @@ port = 54327
 
 # Add new function with service role access
 [functions.get-user-by-email]
-verify_jwt = true
+verify_jwt = false
+

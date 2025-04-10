@@ -19,34 +19,51 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get email from request
-    const { email } = await req.json();
+    // Parse request body (optional email parameter)
+    const requestData = await req.json().catch(() => ({}));
+    const { email } = requestData;
     
-    if (!email) {
+    if (email) {
+      // If email is provided, search for specific user
+      const { data: user, error } = await supabaseClient.auth.admin.getUserByEmail(email);
+
+      if (error) {
+        return new Response(
+          JSON.stringify({ error: error.message }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
+      }
+
       return new Response(
-        JSON.stringify({ error: 'Email parameter is required' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        JSON.stringify({
+          id: user?.id,
+          email: user?.email,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } else {
+      // If no email provided, return all users (for admin purposes)
+      const { data: users, error } = await supabaseClient.auth.admin.listUsers();
+
+      if (error) {
+        return new Response(
+          JSON.stringify({ error: error.message }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
+      }
+
+      // Map to safe fields only
+      const safeUsers = users.users.map(user => ({
+        id: user.id,
+        email: user.email,
+        createdAt: user.created_at
+      }));
+
+      return new Response(
+        JSON.stringify(safeUsers),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Search for user by email (requires service role key)
-    const { data: user, error } = await supabaseClient.auth.admin.getUserByEmail(email);
-
-    if (error) {
-      return new Response(
-        JSON.stringify({ error: error.message }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
-    }
-
-    // Return the user data (only safe fields)
-    return new Response(
-      JSON.stringify({
-        id: user?.id,
-        email: user?.email,
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
   } catch (error) {
     return new Response(
       JSON.stringify({ error: error.message }),
