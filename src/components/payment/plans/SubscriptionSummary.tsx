@@ -1,11 +1,13 @@
 
 import React from 'react';
-import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { StripeProvider } from '@/components/payment/StripeProvider';
 import PaymentForm from '@/components/payment/PaymentForm';
-import { ShieldCheck } from 'lucide-react';
 import { ServiceTier } from './PricingTiers';
+import { PlanHeader } from './summary/PlanHeader';
+import { UpgradeNotice } from './summary/UpgradeNotice';
+import { PlanFooter } from './summary/PlanFooter';
 
 interface SubscriptionSummaryProps {
   selectedTierData: ServiceTier;
@@ -31,28 +33,19 @@ export const SubscriptionSummary: React.FC<SubscriptionSummaryProps> = ({
     ? Math.round(selectedTierData.price * 12 * 0.9) 
     : selectedTierData.price;
 
+  const title = isUpgrade 
+    ? 'Upgrade to ' + selectedTierData.name 
+    : 'Subscribe to ' + selectedTierData.name;
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>
-          {isUpgrade ? 'Upgrade to ' + selectedTierData.name : 'Subscribe to ' + selectedTierData.name}
-        </CardTitle>
-        <CardDescription>
-          {paymentType === 'subscription' 
-            ? 'You will be charged this amount monthly'
-            : 'You will be charged annually (10% discount applied)'
-          }
-        </CardDescription>
-      </CardHeader>
+      <PlanHeader 
+        title={title} 
+        isAnnual={paymentType === 'annual'} 
+      />
+      
       <CardContent>
-        {isUpgrade && (
-          <div className="mb-4 p-3 bg-amber-50 text-amber-800 rounded border border-amber-200">
-            <p className="text-sm">
-              <strong>Upgrading from {currentTier}:</strong> You'll be charged a prorated 
-              amount for the remainder of the current billing cycle.
-            </p>
-          </div>
-        )}
+        {isUpgrade && <UpgradeNotice currentTier={currentTier} />}
         
         <ErrorBoundary>
           <StripeProvider>
@@ -67,13 +60,8 @@ export const SubscriptionSummary: React.FC<SubscriptionSummaryProps> = ({
           </StripeProvider>
         </ErrorBoundary>
       </CardContent>
-      <CardFooter className="flex flex-col items-start text-sm text-muted-foreground">
-        <div className="flex items-center gap-2 mb-2">
-          <ShieldCheck className="h-4 w-4" />
-          <span>Your payment information is securely processed.</span>
-        </div>
-        <p>You can upgrade or downgrade your plan at any time.</p>
-      </CardFooter>
+      
+      <PlanFooter />
     </Card>
   );
 };
