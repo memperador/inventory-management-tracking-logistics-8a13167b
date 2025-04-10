@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useTenant } from '@/hooks/useTenantContext';
@@ -26,11 +25,11 @@ export const useTenantManagement = () => {
     setLookupResult(null);
     
     try {
-      // Use a simple query to find users by email - avoid complex type instantiation
+      // Directly query the users table to find the user by email
       const { data, error } = await supabase
         .from('users')
-        .select('id')
-        .eq('id', await getUserIdByEmail(email));
+        .select('id, email')
+        .filter('email', 'eq', email);
 
       if (error || !data || data.length === 0) {
         toast({
@@ -69,29 +68,6 @@ export const useTenantManagement = () => {
       });
       setIsLoading(false);
       return null;
-    }
-  };
-
-  /**
-   * Helper function to get user ID by email using auth metadata
-   */
-  const getUserIdByEmail = async (email: string): Promise<string> => {
-    try {
-      // First try to find the user in the auth.users table via a simple RPC function
-      // This approach avoids the deep type instantiation issue
-      const { data, error } = await supabase
-        .rpc('get_user_id_by_email', { user_email: email });
-        
-      if (!error && data) {
-        return data;
-      }
-      
-      // Fallback: query profiles or other tables that might have the email
-      // This is a simplification - you might need to implement this based on your schema
-      return '';
-    } catch (error) {
-      console.error("Error finding user by email:", error);
-      return '';
     }
   };
 

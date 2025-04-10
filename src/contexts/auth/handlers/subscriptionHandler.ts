@@ -1,3 +1,4 @@
+
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 import { Session } from '@supabase/supabase-js';
 import { startUserTrial, handleExpiredTrial } from './tenantActions';
@@ -233,24 +234,23 @@ export async function migrateUserToNewTenant(
 
 /**
  * Get user details by email via direct Supabase query
+ * Uses a simplified approach to avoid deep type instantiation
  */
 export async function getUserDetailsByEmail(email: string): Promise<{ id: string } | null> {
   if (!email) return null;
   
   try {
-    // Since we can't query auth.users directly from the client,
-    // we'll use the profiles table or another table that contains user emails
-    const { data, error } = await supabase
-      .from('profiles')
+    // Using a direct query without complex type instantiation
+    const { data } = await supabase
+      .from('users')
       .select('id')
-      .eq('email', email)
-      .single();
+      .eq('email', email.toLowerCase());
       
-    if (error || !data) {
+    if (!data || data.length === 0) {
       return null;
     }
     
-    return { id: data.id };
+    return { id: data[0].id };
   } catch (error) {
     console.error(`Error fetching user by email: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return null;
