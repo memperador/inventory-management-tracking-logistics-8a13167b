@@ -1,8 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth/AuthContext';
 import AuthCard from '@/components/auth/AuthCard';
 import { useAuthVerification } from '@/hooks/useAuthVerification';
+import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -26,11 +28,53 @@ const Auth = () => {
   
   const isLoading = authLoading || verificationLoading;
   
+  // Handle signup completion
+  const handleSignupComplete = (email: string) => {
+    logAuth('AUTH', `Signup completed for ${email}, redirecting to onboarding`, {
+      level: AUTH_LOG_LEVELS.INFO,
+      force: true
+    });
+    setVerificationSent(true);
+    setVerificationEmail(email);
+  };
+  
   useEffect(() => {
+    // Check if user is verified and needs to go to onboarding
+    if (user && emailVerified && !navigationProcessed) {
+      setNavigationProcessed(true);
+      
+      logAuth('AUTH', `User authenticated, checking if new signup`, {
+        level: AUTH_LOG_LEVELS.INFO,
+        force: true,
+        data: { userId: user.id, metadata: user.user_metadata }
+      });
+      
+      // Check if this is a new user that needs onboarding
+      if (user.user_metadata?.needs_subscription === true) {
+        logAuth('AUTH', `New user needs subscription, redirecting to subscription page`, {
+          level: AUTH_LOG_LEVELS.INFO,
+          force: true
+        });
+        navigate('/subscription');
+      } else if (!user.user_metadata?.onboarding_completed) {
+        logAuth('AUTH', `User needs onboarding, redirecting to customer onboarding`, {
+          level: AUTH_LOG_LEVELS.INFO,
+          force: true
+        });
+        navigate('/customer-onboarding');
+      } else {
+        logAuth('AUTH', `User already onboarded, redirecting to dashboard`, {
+          level: AUTH_LOG_LEVELS.INFO,
+          force: true
+        });
+        navigate('/dashboard');
+      }
+    }
+    
     return () => {
       setNavigationProcessed(false);
     };
-  }, []);
+  }, [user, emailVerified, navigate]);
   
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
@@ -51,6 +95,7 @@ const Auth = () => {
           emailProvider={emailProvider}
           setVerificationSent={setVerificationSent}
           setVerificationEmail={setVerificationEmail}
+          onSignupComplete={handleSignupComplete}
         />
       )}
     </div>

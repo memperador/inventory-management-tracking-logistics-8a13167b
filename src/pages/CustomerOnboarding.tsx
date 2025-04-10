@@ -12,6 +12,7 @@ import OnboardingWorkflow from '@/components/onboarding/OnboardingWorkflow';
 import { useAuth } from '@/hooks/useAuthContext';
 import { useTenant } from '@/hooks/useTenantContext';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
+import { supabase } from '@/integrations/supabase/client';
 
 const CustomerOnboarding: React.FC = () => {
   const { onboardingState } = useOnboardingState();
@@ -19,8 +20,8 @@ const CustomerOnboarding: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>('guide');
-  const { user } = useAuth();
-  const { currentTenant } = useTenant();
+  const { user, refreshSession } = useAuth();
+  const { currentTenant, setCurrentTenant } = useTenant();
   
   // Check if this is a first-time setup
   useEffect(() => {
@@ -50,21 +51,60 @@ const CustomerOnboarding: React.FC = () => {
   };
 
   // When onboarding is complete
-  const handleOnboardingComplete = () => {
-    logAuth('ONBOARDING', 'User completed onboarding', {
-      level: AUTH_LOG_LEVELS.INFO,
-      force: true,
-      data: {
-        userId: user?.id,
-        tenantId: currentTenant?.id
-      }
-    });
+  const handleOnboardingComplete = async () => {
+    if (!user || !currentTenant) return;
     
-    toast({
-      title: "Onboarding Complete!",
-      description: "You've successfully completed the onboarding process. Enjoy using our platform!",
-    });
-    navigate('/dashboard');
+    try {
+      // Mark onboarding as completed in tenant
+      if (currentTenant?.id) {
+        const { error } = await supabase
+          .from('tenants')
+          .update({ onboarding_completed: true })
+          .eq('id', currentTenant.id);
+          
+        if (error) throw error;
+        
+        // Update local tenant data
+        setCurrentTenant({
+          ...currentTenant,
+          onboarding_completed: true
+        });
+      }
+      
+      // Mark onboarding as completed in user metadata
+      await supabase.auth.updateUser({
+        data: { 
+          onboarding_completed: true,
+          needs_subscription: false
+        }
+      });
+      
+      // Refresh session to get updated metadata
+      await refreshSession();
+      
+      logAuth('ONBOARDING', 'User completed onboarding', {
+        level: AUTH_LOG_LEVELS.INFO,
+        force: true,
+        data: {
+          userId: user.id,
+          tenantId: currentTenant?.id
+        }
+      });
+      
+      toast({
+        title: "Onboarding Complete!",
+        description: "You've successfully completed the onboarding process. Enjoy using our platform!",
+      });
+      
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save onboarding status. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -72,6 +112,11 @@ const CustomerOnboarding: React.FC = () => {
       <PageHeader
         title="Customer Onboarding"
         description="Let's get your account set up and ready to use"
+        actions={
+          <Button onClick={handleOnboardingComplete} variant="default">
+            Complete Onboarding
+          </Button>
+        }
       />
       
       {onboardingState.isComplete ? (

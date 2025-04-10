@@ -27,10 +27,10 @@ export const signUp = async (email: string, password: string, firstName: string,
           first_name: firstName,
           last_name: lastName,
           company_name: companyName || `${firstName}'s Company`, // Ensure company name is always set
-          needs_subscription: true // Add flag to indicate subscription needed
+          needs_subscription: true, // Add flag to indicate subscription needed
+          role: 'admin' // Set the initial user role to admin
         },
         // Use the full URL to /auth route with a query parameter to indicate verification
-        // Don't add the new_user flag here, we'll handle it in the verification flow
         emailRedirectTo: `${domain}/auth?email_confirmed=true`,
       },
     });

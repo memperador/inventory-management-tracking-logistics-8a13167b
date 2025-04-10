@@ -21,12 +21,22 @@ export async function handleSubscriptionForNewSignup(
     tenantData.subscription_status !== 'trialing';
   
   logAuth('SUBSCRIPTION-HANDLER', `User needs subscription: ${needsSubscription}, noActiveSubscription: ${noActiveSubscription}`, {
-    level: AUTH_LOG_LEVELS.INFO
+    level: AUTH_LOG_LEVELS.INFO,
+    force: true
   });
   
   // If this is a new signup with no subscription yet, start a trial
   if (needsSubscription && (!tenantData?.subscription_status || tenantData?.subscription_status === 'inactive')) {
     await startUserTrial(tenantId);
+    
+    // Update user metadata to indicate subscription has been handled
+    await supabase.auth.updateUser({
+      data: { 
+        tenant_id: tenantId,
+        needs_subscription: false
+      }
+    });
+    
     return true;
   }
   
