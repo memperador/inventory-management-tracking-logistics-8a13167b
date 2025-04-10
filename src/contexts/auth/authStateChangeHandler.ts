@@ -136,7 +136,7 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
       });
       
       // If this is a new signup with no subscription yet, start a trial
-      if (needsSubscription && (!tenantData.subscription_status || tenantData.subscription_status === 'inactive')) {
+      if (needsSubscription && (!tenantData?.subscription_status || tenantData?.subscription_status === 'inactive')) {
         logAuth('AUTH-HANDLER', 'Starting 7-day free trial for new user', {
           level: AUTH_LOG_LEVELS.INFO
         });
