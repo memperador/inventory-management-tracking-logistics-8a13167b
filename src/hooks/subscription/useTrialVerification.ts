@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useTenant } from '@/hooks/useTenantContext';
-import { verifyTrialPeriod } from '@/contexts/auth/handlers/subscriptionHandler';
+import { verifyTrialPeriod } from '@/utils/subscription/tenantVerification';
 
 export const useTrialVerification = () => {
   const { toast } = useToast();

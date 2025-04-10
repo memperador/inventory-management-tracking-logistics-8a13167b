@@ -1,6 +1,6 @@
 
 import { useTenant } from '@/hooks/useTenantContext';
-import { calculateTrialDaysLeft, checkTrialStatus } from '@/contexts/auth/handlers/subscriptionHandler';
+import { checkTrialStatus, calculateTrialDaysLeft } from '@/utils/subscription/trialUtils';
 
 export const useSubscriptionStatus = () => {
   const { currentTenant } = useTenant();
