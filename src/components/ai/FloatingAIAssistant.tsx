@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -10,7 +9,8 @@ import {
   AlertTriangle, 
   Lightbulb,
   Settings,
-  Sparkles
+  Sparkles,
+  CheckCircle
 } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -55,16 +55,12 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
   const { toast } = useToast();
   const { hasSubscriptionTier } = useFeatureAccess();
   
-  // Determine if user has access to premium AI features
   const hasPremiumAccess = hasSubscriptionTier('standard');
   
-  // Process errors and generate recommendations
   useEffect(() => {
     if (recentErrors.length > 0) {
-      // Only process the most recent error that hasn't been processed yet
       const latestError = recentErrors[recentErrors.length - 1];
       
-      // Check if we've already processed this error
       const hasProcessed = messages.some(
         msg => msg.type === 'error' && msg.content.includes(latestError)
       );
@@ -83,11 +79,8 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     }
   }, [recentErrors]);
   
-  // Generate feature recommendations based on usage patterns
   useEffect(() => {
-    // Only show feature recommendations if we have at least 5 messages
     if (messages.length >= 5 && Math.random() > 0.7) {
-      // Choose a random available feature to recommend
       if (availableFeatures.length > 0) {
         const randomFeature = availableFeatures[Math.floor(Math.random() * availableFeatures.length)];
         
@@ -109,7 +102,6 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     
     if (!input.trim()) return;
     
-    // Add user message to the conversation
     const userMessage: AIMessage = {
       role: 'user',
       content: input,
@@ -122,8 +114,6 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     setIsLoading(true);
     
     try {
-      // In a real implementation, we would call the AI service here
-      // For now, let's simulate a response
       setTimeout(() => {
         let responseContent = "I'm processing your request about " + input.substring(0, 30) + "...";
         
@@ -169,7 +159,6 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     setIsMinimized(!isMinimized);
   };
   
-  // Render message based on type
   const renderMessage = (message: AIMessage) => {
     const baseClasses = "rounded-lg px-4 py-2 max-w-[80%]";
     let classes = "";
@@ -213,7 +202,6 @@ const FloatingAIAssistant: React.FC<FloatingAIAssistantProps> = ({
     );
   };
   
-  // Get badge based on tier
   const getBadgeByTier = () => {
     switch(tier) {
       case 'premium':
