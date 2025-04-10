@@ -6,20 +6,31 @@ export const AI_ASSISTANT_FEATURES: AIAssistantFeaturesMap = {
   'basic': [
     'Inventory management assistance',
     'Basic stock level recommendations',
-    'Simple maintenance scheduling'
+    'Simple maintenance scheduling',
+    'Equipment categorization suggestions',
+    'Error tracking and troubleshooting',
+    'Basic QR code generation help'
   ],
   'standard': [
     'All basic features',
     'Equipment location tracking insights',
     'Maintenance optimization based on usage',
-    'Audit pattern recognition'
+    'Audit pattern recognition',
+    'GPS tracking configuration assistance',
+    'Movement pattern analysis',
+    'Route efficiency recommendations',
+    'Advanced error diagnostics'
   ],
   'premium': [
     'All standard features',
     'Predictive maintenance AI',
     'Route optimization recommendations',
     'Advanced asset utilization analysis',
-    'Cross-project resource allocation'
+    'Cross-project resource allocation',
+    'Geofencing setup assistance',
+    'Anomaly detection in equipment usage',
+    'Custom report generation assistance',
+    'Advanced error prevention and prediction'
   ],
   'enterprise': [
     'All premium features',
@@ -27,7 +38,10 @@ export const AI_ASSISTANT_FEATURES: AIAssistantFeaturesMap = {
     'Integration with enterprise systems',
     'Advanced predictive analytics',
     'Custom data sources integration',
-    'Organization-wide intelligence'
+    'Organization-wide intelligence',
+    'Industry-specific recommendation engine',
+    'Custom error pattern detection',
+    'AI-driven process optimization'
   ]
 };
 
