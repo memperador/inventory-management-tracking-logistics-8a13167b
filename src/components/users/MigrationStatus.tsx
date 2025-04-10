@@ -152,7 +152,7 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
                       </TableCell>
                       <TableCell>
                         {tenant.onboarding_completed ? (
-                          <Badge variant="success" className="bg-green-100 text-green-800">Completed</Badge>
+                          <Badge variant="default" className="bg-green-100 text-green-800">Completed</Badge>
                         ) : (
                           <Badge variant="outline" className="bg-yellow-50 text-yellow-800">Pending</Badge>
                         )}
