@@ -7,6 +7,8 @@ import { ArrowRight } from 'lucide-react';
 import { useTenantManagement } from '@/hooks/subscription/useTenantManagement';
 import { Tenant } from '@/types/tenant';
 import { UserLookupResult } from './types';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 interface UserMigrationSectionProps {
   lookupResult: UserLookupResult | null;
@@ -31,7 +33,7 @@ const UserMigrationSection: React.FC<UserMigrationSectionProps> = ({
   handleMigrateUserToNewTenant,
   handleMigrateUserToExistingTenant
 }) => {
-  const { isLoading } = useTenantManagement();
+  const { isLoading, migrationResult } = useTenantManagement();
 
   if (!lookupResult) return null;
 
@@ -66,6 +68,16 @@ const UserMigrationSection: React.FC<UserMigrationSectionProps> = ({
             </div>
           </div>
         </form>
+        
+        {migrationResult && !migrationResult.success && (
+          <Alert className="mt-4" variant="destructive">
+            <AlertCircle className="h-5 w-5" />
+            <AlertTitle>Migration Failed</AlertTitle>
+            <AlertDescription>
+              {migrationResult.message}
+            </AlertDescription>
+          </Alert>
+        )}
       </div>
       
       <Separator className="my-6" />

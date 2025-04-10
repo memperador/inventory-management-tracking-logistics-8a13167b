@@ -111,8 +111,14 @@ serve(async (req) => {
       );
     }
 
-    // Create a new tenant
-    const { data: tenantData, error: tenantError } = await supabaseClient
+    // Use service role for tenant creation to bypass RLS
+    const serviceRoleClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Create a new tenant with service role to bypass RLS
+    const { data: tenantData, error: tenantError } = await serviceRoleClient
       .from('tenants')
       .insert({ name: companyName })
       .select('id')
@@ -122,8 +128,8 @@ serve(async (req) => {
       throw new Error(`Error creating tenant: ${tenantError.message}`);
     }
 
-    // Associate the user with the tenant
-    const { error: userUpdateError } = await supabaseClient
+    // Associate the user with the tenant using service role
+    const { error: userUpdateError } = await serviceRoleClient
       .from('users')
       .update({ tenant_id: tenantData.id, role: 'admin' })
       .eq('id', user.id);

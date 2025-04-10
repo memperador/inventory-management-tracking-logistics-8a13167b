@@ -169,6 +169,8 @@ export async function verifyTrialPeriod(tenantId: string): Promise<{
 
 /**
  * Move a user to a new tenant
+ * NOTE: This function is kept for backward compatibility but the direct implementation
+ * in useUserMigration.ts should be preferred to avoid RLS issues
  */
 export async function migrateUserToNewTenant(
   userId: string, 
