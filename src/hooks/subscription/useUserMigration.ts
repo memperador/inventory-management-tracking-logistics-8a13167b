@@ -42,6 +42,84 @@ export const useUserMigration = () => {
       description: "Migration logs have been output to the console",
     });
   };
+  
+  // New function to debug tenant information
+  const debugTenantInfo = async () => {
+    try {
+      // Get all tenants for debugging
+      const { data: tenants, error: tenantsError } = await supabase
+        .from('tenants')
+        .select('id, name, subscription_status, subscription_tier, trial_ends_at');
+      
+      if (tenantsError) {
+        console.error('Error fetching tenants:', tenantsError);
+        return;
+      }
+      
+      // Get all users for debugging
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('id, tenant_id, role');
+      
+      if (usersError) {
+        console.error('Error fetching users:', usersError);
+        return;
+      }
+      
+      // Get current user details
+      const currentUserId = user?.id;
+      let currentUserData = null;
+      let currentUserTenant = null;
+      
+      if (currentUserId) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('id, tenant_id, role')
+          .eq('id', currentUserId)
+          .single();
+          
+        currentUserData = userData;
+        
+        if (userData?.tenant_id) {
+          const { data: tenantData } = await supabase
+            .from('tenants')
+            .select('id, name, subscription_status, subscription_tier, trial_ends_at')
+            .eq('id', userData.tenant_id)
+            .single();
+            
+          currentUserTenant = tenantData;
+        }
+      }
+      
+      // Log all collected data
+      console.group('Tenant and User Debug Info');
+      console.log('All Tenants:', tenants);
+      console.log('All Users:', users);
+      console.log('Current User:', currentUserData);
+      console.log('Current User Tenant:', currentUserTenant);
+      console.groupEnd();
+      
+      // Format and display in toast
+      toast({
+        title: "Debug Info Available",
+        description: `Found ${tenants?.length || 0} tenants and ${users?.length || 0} users. Details in console.`,
+      });
+      
+      return {
+        tenants,
+        users,
+        currentUserData,
+        currentUserTenant
+      };
+    } catch (error) {
+      console.error('Error in debug tenant info:', error);
+      toast({
+        title: "Debug Error",
+        description: "Failed to gather debug information. Check console.",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Helper function to ensure user has admin role
   const ensureAdminRole = async (userId: string, tenantId: string) => {
@@ -115,6 +193,7 @@ export const useUserMigration = () => {
     isLoading: newTenantMigration.isLoading || existingTenantMigration.isLoading,
     migrationResult,
     showDebugLogs,
+    debugTenantInfo, // Expose the new debug function
     migrateToNewTenant: async (newTenantName: string, userId?: string) => {
       logAuth('USER-MIGRATION', `Attempting to migrate to new tenant: ${newTenantName}, User ID: ${userId}`, {
         level: AUTH_LOG_LEVELS.INFO,
@@ -205,4 +284,3 @@ export const useUserMigration = () => {
     }
   };
 };
-
