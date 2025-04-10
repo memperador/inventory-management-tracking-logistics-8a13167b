@@ -1,3 +1,4 @@
+
 export interface Tenant {
   id: string;
   name: string;
@@ -6,6 +7,7 @@ export interface Tenant {
   company_type?: 'construction' | 'electrical' | 'plumbing' | 'hvac' | 'mechanical' | 'general';
   trial_ends_at?: string | null;
   subscription_expires_at?: string | null;
+  onboarding_completed?: boolean;
   settings: {
     theme: string;
     features: string[];

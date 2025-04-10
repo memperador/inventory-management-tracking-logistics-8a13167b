@@ -163,8 +163,9 @@ export const useNewTenantMigration = () => {
       });
       
       // Use the RPC function to create tenant and migrate user
+      // Using 'any' type for now since TypeScript doesn't know about our custom function
       const { data, error } = await supabase.rpc(
-        'create_tenant_and_migrate_user',
+        'create_tenant_and_migrate_user' as any,
         { p_tenant_name: tenantName, p_user_id: userId }
       );
       
@@ -172,7 +173,7 @@ export const useNewTenantMigration = () => {
         throw error;
       }
       
-      if (!data || !data.tenant_id) {
+      if (!data || !data.success) {
         throw new Error("No tenant ID returned from function");
       }
       
