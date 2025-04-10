@@ -4,7 +4,7 @@ import { useTenant } from '@/hooks/useTenantContext';
 import { differenceInDays } from 'date-fns';
 import StandardTrialBanner from './StandardTrialBanner';
 import TierTestingBanner from './TierTestingBanner';
-import { calculateTrialDaysLeft } from '@/contexts/auth/handlers/subscriptionHandler';
+import { calculateTrialDaysLeft } from '@/utils/subscription/trialUtils';
 
 interface TrialBannerProps {
   className?: string;
