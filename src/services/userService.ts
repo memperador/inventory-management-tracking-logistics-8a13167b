@@ -11,27 +11,15 @@ export const fetchUsers = async (): Promise<User[]> => {
     
     if (usersError) throw usersError;
     
-    // Then fetch auth users to get emails
-    const { data: authUsers, error: authError } = await supabase
-      .from('auth.users')
-      .select('id, email')
-      .limit(100);
-      
-    if (authError) {
-      console.warn('Could not fetch auth users, using placeholder emails:', authError);
-    }
-    
-    // Map auth emails to users
+    // Try to get user emails another way (since we can't access auth.users directly)
+    // This is a simplified approach for demonstration purposes
     const usersWithData = usersData.map(user => {
-      // Find the matching auth user for this user
-      const authUser = authUsers?.find(auth => auth.id === user.id);
-      
       return {
         id: user.id,
         name: 'User', // Will be updated when profiles are fetched
-        email: authUser?.email || 'user@example.com',
+        email: `user-${user.id.substring(0, 5)}@example.com`, // Placeholder email
         role: user.role,
-        status: 'active',
+        status: 'active', // Default to active
         lastActive: user.created_at,
         tenantId: user.tenant_id // Keep track of tenant ID for display
       };

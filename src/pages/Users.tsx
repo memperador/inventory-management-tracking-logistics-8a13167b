@@ -1,21 +1,19 @@
 
 import React, { useState } from 'react';
-import { Plus, UserPlus, Users, RefreshCw } from 'lucide-react';
+import { Plus, UserPlus, Users as UsersIcon, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
-import { UserRole } from '@/types/roles';
 import Permission from '@/components/auth/Permission';
 import PageHeader from '@/components/common/PageHeader';
 import SearchBar from '@/components/users/SearchBar';
 import UserList from '@/components/users/UserList';
 import LoadingIndicator from '@/components/common/LoadingIndicator';
 import { fetchUsers, fetchProfiles } from '@/services/userService';
-import { User } from '@/types/user';
 import { Input } from '@/components/ui/input';
 import MigrationStatus from '@/components/users/MigrationStatus';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const Users = () => {
+const UsersPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [migrationEmail, setMigrationEmail] = useState('');
   const [emailToCheck, setEmailToCheck] = useState('');
@@ -78,7 +76,7 @@ const Users = () => {
       <Tabs defaultValue="users">
         <TabsList>
           <TabsTrigger value="users">
-            <Users className="h-4 w-4 mr-2" />
+            <UsersIcon className="h-4 w-4 mr-2" />
             User List
           </TabsTrigger>
           <TabsTrigger value="migration">
@@ -121,4 +119,4 @@ const Users = () => {
   );
 };
 
-export default Users;
+export default UsersPage;

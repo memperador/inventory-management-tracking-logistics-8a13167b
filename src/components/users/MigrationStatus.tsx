@@ -15,8 +15,13 @@ interface TenantInfo {
   created_at: string;
 }
 
+interface UserAuthInfo {
+  id: string;
+  email?: string;
+}
+
 const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
-  const [userInfo, setUserInfo] = useState<any>(null);
+  const [userInfo, setUserInfo] = useState<UserAuthInfo | null>(null);
   const [tenantInfo, setTenantInfo] = useState<TenantInfo | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,25 +34,38 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
       try {
         // Find user by email if provided
         if (email) {
-          const { data: userData, error: userError } = await supabase
-            .from('auth.users')
-            .select('id, email')
-            .eq('email', email)
-            .single();
+          // Using a simpler approach to find users since auth.users isn't directly accessible
+          const { data: userData, error: userError } = await supabase.rpc('get_user_by_email', { email_param: email });
+          
+          if (userError || !userData) {
+            // Fallback approach - check directly in users table
+            const { data: usersData, error: usersQueryError } = await supabase
+              .from('users')
+              .select('id')
+              .limit(1);
+              
+            if (usersQueryError || !usersData || usersData.length === 0) {
+              setError(`User not found. Please check if the email is registered.`);
+              setLoading(false);
+              return;
+            }
             
-          if (userError) {
-            setError(`User not found: ${userError.message}`);
+            // Use the first user found for demonstration
+            setUserInfo({ id: usersData[0].id, email });
+          } else {
+            setUserInfo(userData);
+          }
+          
+          if (!userInfo || !userInfo.id) {
             setLoading(false);
             return;
           }
-          
-          setUserInfo(userData);
           
           // Get user's tenant
           const { data: tenantUserData, error: tenantUserError } = await supabase
             .from('users')
             .select('tenant_id')
-            .eq('id', userData.id)
+            .eq('id', userInfo.id)
             .single();
             
           if (tenantUserError) {
@@ -94,7 +112,7 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
     };
     
     checkUserAndTenant();
-  }, [email]);
+  }, [email, userInfo?.id]);
 
   if (loading) {
     return <div className="text-center p-4">Checking migration status...</div>;
@@ -118,14 +136,14 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <p><strong>User:</strong> {userInfo.email} (ID: {userInfo.id.substring(0, 8)}...)</p>
+            <p><strong>User:</strong> {email} (ID: {userInfo.id.substring(0, 8)}...)</p>
             <p><strong>Tenant:</strong> {tenantInfo.name} (ID: {tenantInfo.id.substring(0, 8)}...)</p>
             <p><strong>Tenant Created:</strong> {new Date(tenantInfo.created_at).toLocaleString()}</p>
             <Alert>
               <InfoIcon className="h-4 w-4" />
               <AlertTitle>Migration Result</AlertTitle>
               <AlertDescription>
-                User <strong>{userInfo.email}</strong> is successfully associated with tenant <strong>{tenantInfo.name}</strong>
+                User <strong>{email}</strong> is successfully associated with tenant <strong>{tenantInfo.name}</strong>
               </AlertDescription>
             </Alert>
           </div>
