@@ -2,12 +2,11 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/auth';
-import { migrateUserToNewTenant } from '@/contexts/auth/handlers/subscriptionHandler';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useUserMigration = () => {
   const { toast } = useToast();
-  const { user, refreshSession } = useAuth();
+  const { user, refreshSession, session } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [migrationResult, setMigrationResult] = useState<any>(null);
 
@@ -29,90 +28,93 @@ export const useUserMigration = () => {
     setIsLoading(true);
     
     try {
-      // Instead of using the handler function that might be restricted by RLS,
-      // directly create the tenant with service role if available
-      const { data: newTenantData, error: createError } = await supabase
-        .from('tenants')
-        .insert([{ name: newTenantName }])
-        .select('id')
-        .single();
-        
-      if (createError) {
+      // Get current session access token
+      const accessToken = session?.access_token;
+      
+      if (!accessToken) {
+        throw new Error("No access token available. Please log in again.");
+      }
+      
+      // Instead of direct database operations, use the create-tenant edge function
+      // which has service role access to bypass RLS
+      const response = await fetch(`${window.location.origin}/api/create-tenant`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({
+          tenantName: newTenantName,
+          userId: targetUserId,
+          isMigration: true
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create tenant');
+      }
+      
+      const result = await response.json();
+      
+      if (!result.success) {
         setMigrationResult({
           success: false,
-          message: `Failed to create new tenant: ${createError.message}`
+          message: result.message || 'Failed to create tenant'
         });
         
         toast({
           title: "Migration Failed",
-          description: `Failed to create new tenant: ${createError.message}`,
+          description: result.message || 'Failed to create tenant',
           variant: "destructive"
         });
         setIsLoading(false);
         return;
       }
       
-      const newTenantId = newTenantData.id;
-      
-      // Update the user's tenant_id in the users table
-      const { error: updateUserError } = await supabase
-        .from('users')
-        .update({ tenant_id: newTenantId })
-        .eq('id', targetUserId);
-        
-      if (updateUserError) {
-        setMigrationResult({
-          success: false, 
-          message: `Failed to update user's tenant: ${updateUserError.message}`
-        });
-        
-        toast({
-          title: "Migration Failed",
-          description: `Failed to update user's tenant: ${updateUserError.message}`,
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return;
-      }
-      
-      // Update the profile's tenant_id if it exists
-      const { error: updateProfileError } = await supabase
-        .from('profiles')
-        .update({ tenant_id: newTenantId })
-        .eq('id', targetUserId);
+      const newTenantId = result.tenant_id;
       
       // Setup trial period for the new tenant
       try {
         const trialEndsAt = new Date();
         trialEndsAt.setDate(trialEndsAt.getDate() + 7); // 7-day trial
         
-        const { error: trialError } = await supabase
-          .from('tenants')
-          .update({
-            subscription_status: 'trialing',
-            subscription_tier: 'premium',
-            trial_ends_at: trialEndsAt.toISOString()
+        // Use the edge function to update the tenant trial status
+        const trialResponse = await fetch(`${window.location.origin}/api/create-tenant`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({
+            tenantId: newTenantId,
+            action: 'setTrial',
+            trialData: {
+              subscription_status: 'trialing',
+              subscription_tier: 'premium',
+              trial_ends_at: trialEndsAt.toISOString()
+            }
           })
-          .eq('id', newTenantId);
-          
-        if (trialError) {
-          console.warn("Failed to set trial period:", trialError.message);
+        });
+        
+        if (!trialResponse.ok) {
+          console.warn("Failed to set trial period:", await trialResponse.text());
         }
       } catch (e) {
         console.warn("Error setting up trial:", e);
       }
       
-      const result = {
+      const successResult = {
         success: true,
         message: `Successfully moved user to new tenant "${newTenantName}"`,
         newTenantId
       };
       
-      setMigrationResult(result);
+      setMigrationResult(successResult);
       
       toast({
         title: "Migration Successful",
-        description: result.message,
+        description: successResult.message,
       });
       
       // If migration was successful and we're migrating ourselves, refresh the session

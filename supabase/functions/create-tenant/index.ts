@@ -14,6 +14,9 @@ serve(async (req) => {
   }
 
   try {
+    // Get request body
+    const requestData = await req.json();
+    
     // Create a Supabase client with the Auth context of the function
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -25,6 +28,86 @@ serve(async (req) => {
       }
     );
 
+    // Service role client for admin operations
+    const serviceRoleClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Handle different actions
+    if (requestData.action === 'setTrial' && requestData.tenantId) {
+      // Set trial for existing tenant
+      const { error: trialError } = await serviceRoleClient
+        .from('tenants')
+        .update(requestData.trialData)
+        .eq('id', requestData.tenantId);
+        
+      if (trialError) {
+        throw new Error(`Error setting trial: ${trialError.message}`);
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "Trial settings updated successfully" 
+        }),
+        { 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
+    }
+    
+    // Handle user migration case
+    if (requestData.isMigration && requestData.userId && requestData.tenantName) {
+      // Create a new tenant with service role to bypass RLS
+      const { data: tenantData, error: tenantError } = await serviceRoleClient
+        .from('tenants')
+        .insert({ name: requestData.tenantName })
+        .select('id')
+        .single();
+
+      if (tenantError) {
+        throw new Error(`Error creating tenant: ${tenantError.message}`);
+      }
+
+      // Associate the user with the tenant using service role
+      const { error: userUpdateError } = await serviceRoleClient
+        .from('users')
+        .update({ tenant_id: tenantData.id })
+        .eq('id', requestData.userId);
+
+      if (userUpdateError) {
+        throw new Error(`Error associating user with tenant: ${userUpdateError.message}`);
+      }
+      
+      // Update the profile's tenant_id if it exists
+      const { error: profileUpdateError } = await serviceRoleClient
+        .from('profiles')
+        .update({ tenant_id: tenantData.id })
+        .eq('id', requestData.userId);
+      
+      if (profileUpdateError) {
+        console.warn(`Warning: Failed to update profile tenant: ${profileUpdateError.message}`);
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "User migrated to new tenant successfully",
+          tenant_id: tenantData.id 
+        }),
+        { 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
+    }
+    
     // Get the current authenticated user
     const {
       data: { user },
@@ -40,7 +123,7 @@ serve(async (req) => {
     }
 
     // Extract company name and email domain from user metadata
-    const companyName = user.user_metadata.company_name || `${user.user_metadata.first_name}'s Company`;
+    const companyName = requestData.tenantName || user.user_metadata.company_name || `${user.user_metadata.first_name}'s Company`;
     const emailDomain = user.email ? user.email.split('@')[1] : null;
 
     // Check if a tenant with the same company name already exists
@@ -110,12 +193,6 @@ serve(async (req) => {
         }
       );
     }
-
-    // Use service role for tenant creation to bypass RLS
-    const serviceRoleClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
 
     // Create a new tenant with service role to bypass RLS
     const { data: tenantData, error: tenantError } = await serviceRoleClient
