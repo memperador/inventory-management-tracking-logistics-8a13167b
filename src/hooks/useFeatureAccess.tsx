@@ -31,7 +31,7 @@ export const useFeatureAccess = () => {
   };
 
   // Check if user is in trial mode
-  const isTrialMode = !!currentTenant?.subscription_status === 'trialing';
+  const isTrialMode = currentTenant?.subscription_status === 'trialing';
 
   // Check if user has access to a feature
   const canAccessFeature = (featureKey: string): boolean => {
@@ -202,6 +202,6 @@ export const useFeatureAccess = () => {
     isUnderUserLimit,
     hasActiveSubscription,
     currentTier: currentTenant?.subscription_tier as 'basic' | 'standard' | 'premium' | 'enterprise' | null,
-    isTrialMode: currentTenant?.subscription_status === 'trialing'
+    isTrialMode
   };
 };

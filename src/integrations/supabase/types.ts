@@ -203,9 +203,11 @@ export type Database = {
           name: string
           onboarding_completed: boolean | null
           state: string | null
+          subscription_expires_at: string | null
           subscription_status: string | null
           subscription_tier: string | null
           tax_id: string | null
+          trial_ends_at: string | null
           updated_at: string
           zip_code: string | null
         }
@@ -220,9 +222,11 @@ export type Database = {
           name: string
           onboarding_completed?: boolean | null
           state?: string | null
+          subscription_expires_at?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
           tax_id?: string | null
+          trial_ends_at?: string | null
           updated_at?: string
           zip_code?: string | null
         }
@@ -237,9 +241,11 @@ export type Database = {
           name?: string
           onboarding_completed?: boolean | null
           state?: string | null
+          subscription_expires_at?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
           tax_id?: string | null
+          trial_ends_at?: string | null
           updated_at?: string
           zip_code?: string | null
         }
