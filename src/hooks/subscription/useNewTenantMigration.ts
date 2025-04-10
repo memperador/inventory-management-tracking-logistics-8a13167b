@@ -40,13 +40,83 @@ export const useNewTenantMigration = () => {
         force: true
       });
       
-      // ALWAYS try SQL migration as primary approach to bypass RLS
+      // Try Edge Function method first (most powerful RLS bypass)
+      try {
+        logAuth('MIGRATION', 'Trying Edge Function to create tenant and migrate user', {
+          level: AUTH_LOG_LEVELS.INFO,
+          force: true
+        });
+        
+        // Call the create-tenant edge function with migration flag
+        const response = await fetch(`https://wscoyigjjcevriqqyxwo.functions.supabase.co/create-tenant`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || ''}`
+          },
+          body: JSON.stringify({
+            isMigration: true,
+            userId: targetUserId,
+            tenantName: newTenantName
+          })
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          logAuth('MIGRATION', `Edge function failed: ${response.status} - ${errorText}`, {
+            level: AUTH_LOG_LEVELS.ERROR,
+            force: true
+          });
+          throw new Error(`Edge function error: ${response.status} - ${errorText}`);
+        }
+        
+        const edgeResult = await response.json();
+        
+        if (!edgeResult.success) {
+          throw new Error(`Edge function returned error: ${edgeResult.error || edgeResult.message || 'Unknown error'}`);
+        }
+        
+        logAuth('MIGRATION', `Edge function succeeded: ${JSON.stringify(edgeResult)}`, {
+          level: AUTH_LOG_LEVELS.INFO,
+          force: true
+        });
+        
+        const newTenantId = edgeResult.tenant_id;
+        
+        const successResult = {
+          success: true,
+          message: `Successfully moved user to new tenant "${newTenantName}" using edge function`,
+          newTenantId
+        };
+        
+        setMigrationResult(successResult);
+        
+        toast({
+          title: "Migration Successful",
+          description: successResult.message,
+        });
+        
+        // Refresh session if we're migrating ourselves
+        if (targetUserId === user?.id) {
+          await refreshSession();
+        }
+        
+        return successResult;
+      } catch (edgeError) {
+        logAuth('MIGRATION', `Edge function migration failed, trying SQL function: ${edgeError instanceof Error ? edgeError.message : 'Unknown error'}`, {
+          level: AUTH_LOG_LEVELS.WARN,
+          data: edgeError,
+          force: true
+        });
+      }
+    
+      // ALWAYS try SQL migration as second approach to bypass RLS
       logAuth('MIGRATION', 'Using SQL function to bypass RLS for tenant creation', {
         level: AUTH_LOG_LEVELS.INFO,
         force: true
       });
       
-      // Fix #1: Cast the function name to any to bypass the type checking since the types aren't updated
+      // Cast the function name to any to bypass type checking since the types aren't updated
       const { data: migrationData, error: migrationError } = await supabase.rpc(
         'create_tenant_and_migrate_user' as any, 
         { 
@@ -71,7 +141,7 @@ export const useNewTenantMigration = () => {
         force: true
       });
       
-      // Fix #2: Check if migrationData is an object and has tenant_id property
+      // Check if migrationData is an object and has tenant_id property
       const newTenantId = typeof migrationData === 'object' && migrationData ? migrationData.tenant_id : null;
       
       if (!newTenantId) {

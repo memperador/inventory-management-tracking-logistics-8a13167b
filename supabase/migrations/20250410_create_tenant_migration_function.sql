@@ -37,3 +37,7 @@ $$;
 
 -- Add comment to the function for documentation
 COMMENT ON FUNCTION public.create_tenant_and_migrate_user(TEXT, UUID) IS 'Creates a new tenant and migrates a user to it while bypassing RLS policies';
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION public.create_tenant_and_migrate_user(TEXT, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.create_tenant_and_migrate_user(TEXT, UUID) TO service_role;
