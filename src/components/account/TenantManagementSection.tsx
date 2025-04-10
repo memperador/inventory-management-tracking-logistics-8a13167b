@@ -6,9 +6,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useTenantManagement } from '@/hooks/subscription/useTenantManagement';
-import { AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
+import { AlertCircle, CheckCircle, ArrowRight, ShieldAlert } from 'lucide-react';
 
-// This component is only visible to admin users or in development mode
+// This component is only visible to superadmin users or in development mode
 const TenantManagementSection: React.FC = () => {
   const [newTenantName, setNewTenantName] = useState('');
   const { 
@@ -27,10 +27,13 @@ const TenantManagementSection: React.FC = () => {
   };
 
   return (
-    <Card className="mt-6">
-      <CardHeader>
-        <CardTitle>Advanced Tenant Management</CardTitle>
-        <CardDescription>Tools for administrators to manage tenants and subscriptions</CardDescription>
+    <Card className="mt-6 border-purple-200">
+      <CardHeader className="bg-purple-50">
+        <div className="flex items-center gap-2">
+          <ShieldAlert className="h-5 w-5 text-purple-600" />
+          <CardTitle className="text-purple-800">SuperAdmin Tenant Management</CardTitle>
+        </div>
+        <CardDescription>Advanced tenant administration tools for SuperAdmins only</CardDescription>
       </CardHeader>
       
       <CardContent className="space-y-6">
@@ -125,7 +128,7 @@ const TenantManagementSection: React.FC = () => {
       
       <CardFooter className="flex justify-between border-t pt-6">
         <p className="text-xs text-muted-foreground">
-          These tools are intended for administrators only. Changes made here may affect user access and data.
+          These tools are intended for SuperAdmins only. Changes made here directly affect tenant data and user access.
         </p>
       </CardFooter>
     </Card>

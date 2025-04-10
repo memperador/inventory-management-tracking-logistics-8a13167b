@@ -5,13 +5,16 @@ import AccountForm from '@/components/account/AccountForm';
 import TenantManagementSection from '@/components/account/TenantManagementSection';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/auth';
+import { useRole } from '@/hooks/useRoleContext';
 
 const AccountPage = () => {
   const { user } = useAuth();
+  const { userRole } = useRole();
   
-  // Check if user is an admin or if we're in development mode
+  // Check if user is a superadmin specifically or if we're in development mode
   const isDev = process.env.NODE_ENV === 'development';
-  const showAdminFeatures = isDev || user?.user_metadata?.role === 'admin';
+  const isSuperAdmin = userRole === 'superadmin';
+  const showTenantManagement = isDev || isSuperAdmin;
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -28,8 +31,8 @@ const AccountPage = () => {
         </Card>
       </div>
       
-      {/* Show tenant management tools for admins or in dev mode */}
-      {showAdminFeatures && <TenantManagementSection />}
+      {/* Show tenant management tools for superadmins only or in dev mode */}
+      {showTenantManagement && <TenantManagementSection />}
     </div>
   );
 };
