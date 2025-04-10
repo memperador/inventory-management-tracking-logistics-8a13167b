@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import RoleDisplay from '@/components/users/RoleDisplay';
 import { User } from '@/types/user';
+import { Badge } from '@/components/ui/badge';
 
 interface UserListProps {
   users: User[];
@@ -42,6 +43,7 @@ const UserList: React.FC<UserListProps> = ({ users }) => {
           <TableRow>
             <TableHead>User</TableHead>
             <TableHead>Role</TableHead>
+            <TableHead>Tenant</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Last Active</TableHead>
           </TableRow>
@@ -49,7 +51,7 @@ const UserList: React.FC<UserListProps> = ({ users }) => {
         <TableBody>
           {users.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4} className="text-center py-8">
+              <TableCell colSpan={5} className="text-center py-8">
                 No users found
               </TableCell>
             </TableRow>
@@ -71,6 +73,15 @@ const UserList: React.FC<UserListProps> = ({ users }) => {
                 </TableCell>
                 <TableCell>
                   <RoleDisplay userId={user.id} initialRole={user.role} />
+                </TableCell>
+                <TableCell>
+                  {user.tenantId ? (
+                    <Badge variant="outline" className="font-normal">
+                      {user.tenantName || user.tenantId.substring(0, 8)}
+                    </Badge>
+                  ) : (
+                    <span className="text-gray-400">No tenant</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center">

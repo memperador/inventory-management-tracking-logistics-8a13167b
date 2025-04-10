@@ -8,4 +8,6 @@ export type User = {
   role: UserRole;
   status: 'active' | 'inactive';
   lastActive: string;
+  tenantId?: string;
+  tenantName?: string;
 };

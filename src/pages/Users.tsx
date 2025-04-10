@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, UserPlus } from 'lucide-react';
+import { Plus, UserPlus, Users, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { UserRole } from '@/types/roles';
@@ -11,18 +11,23 @@ import UserList from '@/components/users/UserList';
 import LoadingIndicator from '@/components/common/LoadingIndicator';
 import { fetchUsers, fetchProfiles } from '@/services/userService';
 import { User } from '@/types/user';
+import { Input } from '@/components/ui/input';
+import MigrationStatus from '@/components/users/MigrationStatus';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Users = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [migrationEmail, setMigrationEmail] = useState('');
+  const [emailToCheck, setEmailToCheck] = useState('');
   
   // Fetch users using React Query
-  const { data: users = [], isLoading } = useQuery({
+  const { data: users = [], isLoading, refetch } = useQuery({
     queryKey: ['users'],
     queryFn: fetchUsers
   });
   
   // Separately fetch profiles to get names
-  useQuery({
+  const { isLoading: isLoadingProfiles } = useQuery({
     queryKey: ['profiles'],
     queryFn: async () => {
       const updatedUsers = await fetchProfiles(users);
@@ -37,18 +42,29 @@ const Users = () => {
     user.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleMigrationCheck = (e: React.FormEvent) => {
+    e.preventDefault();
+    setEmailToCheck(migrationEmail);
+  };
+
   // Page header actions
   const headerActions = (
-    <Permission allowedRoles={['admin']}>
-      <Button variant="outline">
-        <UserPlus className="mr-2 h-4 w-4" />
-        Invite User
+    <>
+      <Button variant="outline" onClick={() => refetch()}>
+        <RefreshCw className="mr-2 h-4 w-4" />
+        Refresh
       </Button>
-      <Button>
-        <Plus className="mr-2 h-4 w-4" />
-        Add User
-      </Button>
-    </Permission>
+      <Permission allowedRoles={['admin']}>
+        <Button variant="outline">
+          <UserPlus className="mr-2 h-4 w-4" />
+          Invite User
+        </Button>
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          Add User
+        </Button>
+      </Permission>
+    </>
   );
 
   return (
@@ -59,17 +75,48 @@ const Users = () => {
         actions={headerActions}
       />
       
-      <SearchBar 
-        value={searchQuery}
-        onChange={setSearchQuery}
-        placeholder="Search users..."
-      />
-      
-      {isLoading ? (
-        <LoadingIndicator message="Loading users..." />
-      ) : (
-        <UserList users={filteredUsers} />
-      )}
+      <Tabs defaultValue="users">
+        <TabsList>
+          <TabsTrigger value="users">
+            <Users className="h-4 w-4 mr-2" />
+            User List
+          </TabsTrigger>
+          <TabsTrigger value="migration">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Migration Status
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="users" className="space-y-4">
+          <SearchBar 
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search users..."
+          />
+          
+          {isLoading || isLoadingProfiles ? (
+            <LoadingIndicator message="Loading users..." />
+          ) : (
+            <UserList users={filteredUsers} />
+          )}
+        </TabsContent>
+        
+        <TabsContent value="migration" className="space-y-4">
+          <div className="border rounded-lg overflow-hidden bg-white p-4">
+            <h3 className="font-medium mb-2">Check Migration Status</h3>
+            <form onSubmit={handleMigrationCheck} className="flex gap-2 mb-4">
+              <Input 
+                placeholder="Enter email to check..."
+                value={migrationEmail}
+                onChange={(e) => setMigrationEmail(e.target.value)}
+              />
+              <Button type="submit">Check</Button>
+            </form>
+            
+            <MigrationStatus email={emailToCheck} />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
