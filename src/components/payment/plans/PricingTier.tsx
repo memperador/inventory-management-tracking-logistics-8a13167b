@@ -3,7 +3,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, HelpCircle, Building, Zap } from 'lucide-react';
+import { CheckCircle, HelpCircle, Building, Zap, TrendingDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface TierLimit {
@@ -48,6 +48,11 @@ export const PricingTier: React.FC<PricingTierProps> = ({
   // Calculate annual price with 10% discount
   const annualPrice = Math.round(price * 12 * 0.9);
   const displayPrice = paymentType === 'annual' ? annualPrice / 12 : price;
+  
+  // Calculate savings amount and percentage
+  const monthlyCost = price * 12;
+  const annualSavings = monthlyCost - annualPrice;
+  const savingsPercentage = 10; // 10% discount
 
   return (
     <Card 
@@ -74,6 +79,16 @@ export const PricingTier: React.FC<PricingTierProps> = ({
               <span className="text-muted-foreground">/month</span>
               {paymentType === 'annual' && (
                 <div className="text-xs text-emerald-600 mt-1">Billed annually (${(annualPrice / 100).toFixed(2)}/year)</div>
+              )}
+              
+              {/* Annual Savings Indicator */}
+              {paymentType === 'annual' && (
+                <div className="flex items-center justify-center mt-2 text-emerald-600 bg-emerald-50 rounded-md p-2">
+                  <TrendingDown className="h-4 w-4 mr-1" />
+                  <span className="text-sm font-medium">
+                    Save ${(annualSavings / 100).toFixed(2)} ({savingsPercentage}%)
+                  </span>
+                </div>
               )}
             </>
           )}

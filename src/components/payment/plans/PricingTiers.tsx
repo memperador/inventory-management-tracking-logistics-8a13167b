@@ -53,11 +53,16 @@ export const PricingTiers: React.FC<PricingTiersProps> = ({
               <span className={`text-sm font-medium ${paymentType === 'annual' ? 'text-primary' : 'text-muted-foreground'}`}>
                 Annual
               </span>
-              {paymentType === 'annual' && (
-                <span className="text-emerald-600 text-xs ml-2 px-1.5 py-0.5 bg-emerald-50 rounded">10% off</span>
-              )}
+              <div className="flex items-center ml-2">
+                <span className="text-emerald-600 text-xs px-1.5 py-0.5 bg-emerald-50 rounded">10% off</span>
+              </div>
             </div>
           </div>
+          {paymentType === 'annual' && (
+            <p className="text-sm text-emerald-600 text-center mt-2">
+              Save 10% with annual billing
+            </p>
+          )}
         </div>
       </div>
       
