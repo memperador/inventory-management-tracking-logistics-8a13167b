@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { InventoryHeader as BaseInventoryHeader } from '@/components/inventory/InventoryHeader';
+import { InventoryHeader } from '@/components/inventory/InventoryHeader';
 import { useInventoryImportExport } from '@/components/inventory/inventoryUtils';
 import { Equipment } from '@/components/equipment/types';
 
@@ -29,7 +29,7 @@ export const EnhancedInventoryHeader: React.FC<InventoryHeaderProps> = ({
   };
 
   return (
-    <BaseInventoryHeader 
+    <InventoryHeader 
       onImport={handleImport}
       onExport={handleExportWrapper}
       onExportCSV={handleExportCSVWrapper}
