@@ -2,6 +2,8 @@
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 import { Session } from '@supabase/supabase-js';
 import { startUserTrial, handleExpiredTrial } from './tenantActions';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 /**
  * Checks and handles subscription status for new signups
@@ -87,5 +89,144 @@ export function calculateTrialDaysLeft(trialEndsAt: string | null | undefined): 
       level: AUTH_LOG_LEVELS.ERROR
     });
     return 0;
+  }
+}
+
+/**
+ * Verify that trial periods are correctly working for a tenant
+ */
+export async function verifyTrialPeriod(tenantId: string): Promise<{
+  isValid: boolean;
+  daysLeft: number;
+  message: string;
+  tenantData: any | null;
+}> {
+  try {
+    // Fetch the tenant data
+    const { data: tenantData, error } = await supabase
+      .from('tenants')
+      .select('subscription_status, trial_ends_at, subscription_tier')
+      .eq('id', tenantId)
+      .single();
+      
+    if (error) {
+      return {
+        isValid: false,
+        daysLeft: 0,
+        message: `Error fetching tenant: ${error.message}`,
+        tenantData: null
+      };
+    }
+    
+    const isInTrial = tenantData.subscription_status === 'trialing';
+    const trialEndsAt = tenantData.trial_ends_at;
+    const daysLeft = calculateTrialDaysLeft(trialEndsAt);
+    
+    // Verify the trial is valid
+    if (isInTrial && !trialEndsAt) {
+      return {
+        isValid: false,
+        daysLeft: 0,
+        message: 'Tenant is marked as in trial but has no trial end date',
+        tenantData
+      };
+    }
+    
+    if (isInTrial && daysLeft <= 0) {
+      return {
+        isValid: false,
+        daysLeft: 0,
+        message: 'Trial has expired but status not updated',
+        tenantData
+      };
+    }
+    
+    if (isInTrial) {
+      return {
+        isValid: true,
+        daysLeft,
+        message: `Valid trial with ${daysLeft} days remaining`,
+        tenantData
+      };
+    }
+    
+    return {
+      isValid: true,
+      daysLeft: 0,
+      message: `Not in trial mode. Current status: ${tenantData.subscription_status}`,
+      tenantData
+    };
+  } catch (error) {
+    return {
+      isValid: false,
+      daysLeft: 0,
+      message: `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      tenantData: null
+    };
+  }
+}
+
+/**
+ * Move a user to a new tenant
+ */
+export async function migrateUserToNewTenant(
+  userId: string, 
+  newTenantName: string
+): Promise<{
+  success: boolean;
+  message: string;
+  newTenantId?: string;
+}> {
+  try {
+    // Create a new tenant
+    const { data: newTenantData, error: createError } = await supabase
+      .from('tenants')
+      .insert([
+        { name: newTenantName }
+      ])
+      .select('id')
+      .single();
+      
+    if (createError || !newTenantData) {
+      return {
+        success: false,
+        message: `Failed to create new tenant: ${createError?.message || 'No tenant data returned'}`
+      };
+    }
+    
+    const newTenantId = newTenantData.id;
+    
+    // Update the user's tenant_id in the users table
+    const { error: updateUserError } = await supabase
+      .from('users')
+      .update({ tenant_id: newTenantId })
+      .eq('id', userId);
+      
+    if (updateUserError) {
+      return {
+        success: false, 
+        message: `Failed to update user's tenant: ${updateUserError.message}`
+      };
+    }
+    
+    // Update the profile's tenant_id if it exists
+    const { error: updateProfileError } = await supabase
+      .from('profiles')
+      .update({ tenant_id: newTenantId })
+      .eq('id', userId);
+    
+    // Start a trial for the new tenant
+    await startUserTrial(newTenantId);
+    
+    return {
+      success: true,
+      message: `Successfully moved user to new tenant "${newTenantName}"`,
+      newTenantId
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Unexpected error during migration: ${error instanceof Error ? error.message : 'Unknown error'}`
+    };
   }
 }
