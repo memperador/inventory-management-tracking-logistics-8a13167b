@@ -2,7 +2,6 @@
 import React from 'react';
 import PricingTiers from './PricingTiers';
 import PaymentOptions from './PaymentOptions';
-import SubscriptionSummary from './SubscriptionSummary';
 import { ServiceTier } from './PricingTiers';
 
 interface StandardPlanSectionProps {
@@ -49,7 +48,7 @@ const StandardPlanSection: React.FC<StandardPlanSectionProps> = ({
         onPaymentTypeChange={handlePaymentTypeChange}
       />
       
-      <div className="grid gap-6 md:grid-cols-2 mt-8">
+      <div className="mt-8 max-w-md mx-auto">
         <PaymentOptions
           agreeToFees={agreeToFees}
           setAgreeToFees={setAgreeToFees}
@@ -60,16 +59,7 @@ const StandardPlanSection: React.FC<StandardPlanSectionProps> = ({
           selectedTier={selectedTierData.id}
           onSuccess={handleSuccess}
           onError={handleError}
-        />
-        
-        <SubscriptionSummary
           selectedTierData={selectedTierData}
-          paymentType={paymentType}
-          agreeToFees={agreeToFees}
-          isUpgrade={isUpgrade}
-          currentTier={currentTenantTier}
-          onSuccess={handleSuccess}
-          onError={handleError}
         />
       </div>
     </>

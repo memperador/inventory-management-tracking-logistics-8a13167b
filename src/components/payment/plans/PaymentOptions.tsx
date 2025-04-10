@@ -7,6 +7,7 @@ import { ShieldCheck } from 'lucide-react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { StripeProvider } from '@/components/payment/StripeProvider';
 import PaymentForm from '@/components/payment/PaymentForm';
+import { ServiceTier } from './PricingTiers';
 
 interface PaymentOptionsProps {
   agreeToFees: boolean;
@@ -16,6 +17,7 @@ interface PaymentOptionsProps {
   amount: number;
   paymentType: string;
   selectedTier: string;
+  selectedTierData: ServiceTier;
   onSuccess: (paymentIntent: any) => void;
   onError: (error: Error) => void;
 }
@@ -28,6 +30,7 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
   amount,
   paymentType,
   selectedTier,
+  selectedTierData,
   onSuccess,
   onError
 }) => {
@@ -46,6 +49,36 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
             </p>
           </div>
         )}
+
+        <div className="mb-6 border-b pb-4">
+          <h3 className="font-medium mb-2">Plan Summary</h3>
+          <div className="text-sm">
+            <p><strong>Selected Plan:</strong> {selectedTierData.name}</p>
+            
+            <div className="mt-2">
+              <p><strong>Features:</strong></p>
+              <ul className="list-disc pl-5 mt-1 space-y-1">
+                {selectedTierData.features.map((feature, index) => (
+                  <li key={index}>{feature}</li>
+                ))}
+              </ul>
+            </div>
+            
+            <div className="mt-2">
+              <p><strong>Limits:</strong></p>
+              <ul className="pl-5 mt-1">
+                <li>Assets: {selectedTierData.limits.assets}</li>
+                <li>Users: {selectedTierData.limits.users}</li>
+              </ul>
+            </div>
+            
+            {selectedTierData.ai && (
+              <div className="mt-2">
+                <p><strong>AI Assistant:</strong> {selectedTierData.ai}</p>
+              </div>
+            )}
+          </div>
+        </div>
 
         <div className="flex items-top space-x-2 pt-4">
           <Checkbox 
