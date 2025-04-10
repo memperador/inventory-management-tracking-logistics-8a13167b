@@ -3,6 +3,7 @@ import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 import { addDays } from 'date-fns';
+import { toast } from '@/hooks/use-toast';
 
 /**
  * Handles post-login checks and redirects based on auth state changes
@@ -113,7 +114,30 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
           const result = await response.json();
           
           if (!response.ok) {
-            throw new Error(result.error || 'Failed to create tenant');
+            // Handle tenant conflict - show a toast message
+            if (response.status === 409 && result.conflict) {
+              logAuth('AUTH-HANDLER', `Tenant conflict detected: ${result.message}`, {
+                level: AUTH_LOG_LEVELS.WARNING,
+                data: result
+              });
+              
+              // Show toast message about the conflict
+              toast({
+                title: 'Organization Already Exists',
+                description: `${result.message}. Please contact your administrator to join the organization.`,
+                variant: 'destructive',
+                duration: 10000, // Show for 10 seconds
+              });
+              
+              // Sign out the user since they cannot proceed
+              await supabase.auth.signOut();
+              
+              // Redirect to auth page
+              window.location.href = '/auth';
+              return;
+            } else {
+              throw new Error(result.error || 'Failed to create tenant');
+            }
           }
           
           logAuth('AUTH-HANDLER', `Successfully created new tenant through edge function: ${result.tenant_id}`, {

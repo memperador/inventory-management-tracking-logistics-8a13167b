@@ -41,11 +41,22 @@ export const signUp = async (email: string, password: string, firstName: string,
     return { email, data };
     
   } catch (error: any) {
-    toast({
-      title: 'Error',
-      description: error.message || 'Failed to sign up',
-      variant: 'destructive',
-    });
+    // Check if error is related to tenant conflict
+    if (error.message?.includes('Organization Already Exists') || 
+        error.message?.includes('already exist in our system')) {
+      // Just pass the error through as this is a known error type we want to handle in the UI
+      toast({
+        title: 'Organization Already Exists',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to sign up',
+        variant: 'destructive',
+      });
+    }
     throw error;
   }
 };

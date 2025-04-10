@@ -39,8 +39,77 @@ serve(async (req) => {
       throw new Error("No user found");
     }
 
-    // Extract company name from user metadata
+    // Extract company name and email domain from user metadata
     const companyName = user.user_metadata.company_name || `${user.user_metadata.first_name}'s Company`;
+    const emailDomain = user.email ? user.email.split('@')[1] : null;
+
+    // Check if a tenant with the same company name already exists
+    const { data: existingCompanyTenants, error: companyTenantError } = await supabaseClient
+      .from('tenants')
+      .select('id, name')
+      .ilike('name', companyName)
+      .limit(1);
+
+    if (companyTenantError) {
+      throw new Error(`Error checking existing tenants: ${companyTenantError.message}`);
+    }
+
+    // If domain exists, check if any tenant has users with the same email domain
+    let existingDomainTenant = null;
+    if (emailDomain) {
+      // Get users with the same email domain
+      const { data: usersWithSameDomain, error: domainError } = await supabaseClient
+        .from('users')
+        .select('tenant_id')
+        .join('tenants', { 'tenants.id': 'users.tenant_id' })
+        .filter('email', 'ilike', `%@${emailDomain}`)
+        .limit(1);
+
+      if (domainError && domainError.code !== 'PGRST116') {
+        throw new Error(`Error checking domain users: ${domainError.message}`);
+      }
+
+      if (usersWithSameDomain && usersWithSameDomain.length > 0) {
+        existingDomainTenant = usersWithSameDomain[0].tenant_id;
+      }
+    }
+
+    // If tenant with same company name or domain exists, return that information
+    if (existingCompanyTenants && existingCompanyTenants.length > 0) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          conflict: true,
+          message: "A tenant with this company name already exists",
+          existingTenantName: existingCompanyTenants[0].name
+        }),
+        { 
+          status: 409, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
+    }
+
+    if (existingDomainTenant) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          conflict: true,
+          message: "Users from your organization already exist in our system",
+          existingTenantId: existingDomainTenant
+        }),
+        { 
+          status: 409, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
+    }
 
     // Create a new tenant
     const { data: tenantData, error: tenantError } = await supabaseClient
