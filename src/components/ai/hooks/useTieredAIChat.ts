@@ -7,7 +7,7 @@ import { useSecuredAIService } from '@/hooks/ai/useSecuredAIService';
 
 export interface Message {
   role: 'user' | 'assistant';
-  content: string;
+  content: string | React.ReactNode;
   timestamp: Date;
 }
 
@@ -32,26 +32,16 @@ export const useTieredAIChat = ({ tier, initialInput = '' }: UseTieredAIChatProp
   // Local state for temporary API key input by user (only used as fallback if allowed)
   const [localApiKey, setLocalApiKey] = useState('');
 
-  const getWelcomeMessage = () => {
-    if (tier === 'basic') {
-      return "Welcome! I'm your Inventory Expert assistant. I can help you organize your inventory and implement stock tracking best practices. How can I assist you today?";
-    } else if (tier === 'standard') {
-      return "Welcome! I'm your Inventory & Tracking Specialist. I can help with inventory management and GPS tracking for your equipment. What would you like assistance with today?";
-    } else {
-      return "Welcome to your premium Asset Management Intelligence assistant. I provide comprehensive guidance on inventory systems, GPS tracking, geofencing, predictive maintenance, and enterprise asset management. How can I help optimize your operations today?";
-    }
-  };
-
-  useEffect(() => {
-    const welcomeMessage = getWelcomeMessage();
+  // Initialize messages with a welcome message
+  const initializeMessages = (welcomeContent: string | React.ReactNode) => {
     setMessages([
       {
         role: 'assistant',
-        content: welcomeMessage,
+        content: welcomeContent,
         timestamp: new Date()
       }
     ]);
-  }, [tier]);
+  };
 
   // Set input from props when it changes
   useEffect(() => {
@@ -151,6 +141,7 @@ export const useTieredAIChat = ({ tier, initialInput = '' }: UseTieredAIChatProp
     isEnabled,
     fallbackToUserInput,
     handleSetApiKey,
-    handleSendMessage
+    handleSendMessage,
+    initializeMessages
   };
 };

@@ -1,17 +1,16 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bot, AlertCircle } from 'lucide-react';
+import { Bot } from 'lucide-react';
 import { useTenant } from '@/hooks/useTenantContext';
-import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useTieredAIChat } from './hooks/useTieredAIChat';
 import { assistantConfigs, AssistantTier } from './config/assistantConfig';
-import AICapabilities from './components/AICapabilities';
 import ApiKeyInput from './components/ApiKeyInput';
 import MessageList from './components/MessageList';
 import ChatInput from './components/ChatInput';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useSecuredAIService } from '@/hooks/ai/useSecuredAIService';
+import AICapabilityList from './components/AICapabilityList';
+import AIStatusAlert from './components/AIStatusAlert';
+import AIWelcomeMessage from './components/AIWelcomeMessage';
 
 interface TieredAIAssistantProps {
   initialInput?: string;
@@ -19,8 +18,8 @@ interface TieredAIAssistantProps {
 
 const TieredAIAssistant: React.FC<TieredAIAssistantProps> = ({ initialInput = '' }) => {
   const { currentTenant } = useTenant();
-  const { hasSubscriptionTier } = useFeatureAccess();
   
+  // Determine tier from tenant or default to basic
   const tier = (currentTenant?.subscription_tier as AssistantTier) || 'basic';
   const currentAssistant = assistantConfigs[tier] || assistantConfigs.basic;
   
@@ -35,8 +34,15 @@ const TieredAIAssistant: React.FC<TieredAIAssistantProps> = ({ initialInput = ''
     isEnabled,
     fallbackToUserInput,
     handleSetApiKey,
-    handleSendMessage
+    handleSendMessage,
+    initializeMessages
   } = useTieredAIChat({ tier, initialInput });
+
+  // Initialize welcome message based on tier
+  useEffect(() => {
+    const welcomeMessage = <AIWelcomeMessage tier={tier} />;
+    initializeMessages(welcomeMessage);
+  }, [tier]);
 
   return (
     <Card className="w-full flex flex-col h-[600px]">
@@ -48,16 +54,9 @@ const TieredAIAssistant: React.FC<TieredAIAssistantProps> = ({ initialInput = ''
         <CardDescription>{currentAssistant.description}</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 overflow-hidden">
-        <AICapabilities capabilities={currentAssistant.capabilities} />
+        <AICapabilityList capabilities={currentAssistant.capabilities} />
         
-        {!isEnabled && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              AI features are currently disabled for your organization. Please contact your administrator.
-            </AlertDescription>
-          </Alert>
-        )}
+        <AIStatusAlert isEnabled={isEnabled} />
         
         {isEnabled && !isReady && fallbackToUserInput && (
           <ApiKeyInput 
