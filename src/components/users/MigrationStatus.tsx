@@ -108,6 +108,10 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
                       <span> No active trial</span>
                     )}
                   </div>
+                  <div>
+                    <span className="font-medium">Onboarding completed:</span>
+                    <span> {currentUserTenant.onboarding_completed ? 'Yes' : 'No'}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -128,6 +132,7 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
                     <TableHead>Subscription</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Trial End</TableHead>
+                    <TableHead>Onboarding</TableHead>
                     <TableHead className="w-[100px]">ID</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -144,6 +149,13 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
                       </TableCell>
                       <TableCell>
                         {tenant.trial_ends_at ? new Date(tenant.trial_ends_at).toLocaleDateString() : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {tenant.onboarding_completed ? (
+                          <Badge variant="success" className="bg-green-100 text-green-800">Completed</Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-yellow-50 text-yellow-800">Pending</Badge>
+                        )}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">{tenant.id}</TableCell>
                     </TableRow>

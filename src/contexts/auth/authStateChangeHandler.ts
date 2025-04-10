@@ -154,6 +154,16 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
       const { hasActiveSubscription, inTrialPeriod, needsSubscription: needsSub } = 
         checkSubscriptionStatus(tenantData, currentSession);
       
+      // If onboarding is not completed and this is not the onboarding page, redirect to onboarding
+      if (tenantData && tenantData.onboarding_completed === false && currentPath !== '/onboarding') {
+        logAuth('AUTH-HANDLER', 'Tenant onboarding not completed, redirecting to onboarding flow', {
+          level: AUTH_LOG_LEVELS.INFO
+        });
+        executeRedirect('/onboarding', currentSession.user.id);
+        removeProcessingFlag(processingFlag);
+        return;
+      }
+      
       // Determine redirect path
       const targetPath = determineRedirectPath({
         userId: currentSession.user.id,

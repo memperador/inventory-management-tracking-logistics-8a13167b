@@ -177,7 +177,8 @@ export const useNewTenantMigration = () => {
         throw new Error("No tenant ID returned from function");
       }
       
-      const newTenantId = data.tenant_id;
+      // Extract tenant_id from the response
+      const newTenantId = data.tenant_id as string;
       
       // Start trial for the new tenant
       await startUserTrial(newTenantId);
