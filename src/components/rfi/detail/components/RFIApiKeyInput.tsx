@@ -19,7 +19,7 @@ const RFIApiKeyInput: React.FC<RFIApiKeyInputProps> = ({
 }) => {
   return (
     <div className="px-4 mb-3">
-      <Alert variant="outline" className="bg-muted/30">
+      <Alert variant="default" className="bg-muted/30">
         <AlertDescription className="text-sm">
           {isPremium ? 
             "Set your Perplexity API key to access premium RFI guidance with our most advanced AI model." : 
@@ -36,7 +36,7 @@ const RFIApiKeyInput: React.FC<RFIApiKeyInputProps> = ({
         />
         <Button 
           onClick={handleSetApiKey}
-          variant="default"  // Changed from "outline"
+          variant="default"
         >
           Connect
         </Button>

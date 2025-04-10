@@ -20,7 +20,7 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({
 }) => {
   return (
     <div className="mb-4 space-y-3">
-      <Alert variant="outline" className="bg-muted/50">
+      <Alert variant="default" className="bg-muted/50">
         <AlertDescription>
           <div className="flex items-start gap-2">
             <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
@@ -48,7 +48,7 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({
         <Button 
           onClick={onSetApiKey} 
           disabled={!apiKey.trim()}
-          variant="default"  // Changed from "outline"
+          variant="default"
         >
           Connect
         </Button>

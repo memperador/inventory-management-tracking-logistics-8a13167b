@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -55,7 +56,7 @@ const BetaBanner: React.FC<BetaBannerProps> = ({ className }) => {
   if (!isVisible) return null;
 
   return (
-    <Alert variant="outline" className={`border-orange-300 bg-orange-50 dark:bg-orange-900/20 dark:border-orange-800 mb-4 ${className}`}>
+    <Alert variant="default" className={`border-orange-300 bg-orange-50 dark:bg-orange-900/20 dark:border-orange-800 mb-4 ${className}`}>
       <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
       <AlertTitle className="text-orange-800 dark:text-orange-300">Beta Version</AlertTitle>
       <AlertDescription className="text-orange-700 dark:text-orange-200">
