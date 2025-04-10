@@ -49,7 +49,7 @@ export const PricingTier: React.FC<PricingTierProps> = ({
   const annualPrice = Math.round(price * 12 * 0.9);
   
   // Display monthly price (either regular monthly or annual divided by 12)
-  const displayPrice = paymentType === 'annual' ? annualPrice / 12 : price;
+  const displayPrice = paymentType === 'annual' ? Math.round(annualPrice / 12) : price;
   
   // What to display under the price
   const pricePeriod = paymentType === 'annual' ? '/month (billed annually)' : '/month';
