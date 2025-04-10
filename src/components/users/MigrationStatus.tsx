@@ -1,11 +1,11 @@
-
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { InfoIcon, RefreshCw, User, AlertTriangle } from 'lucide-react';
+import { InfoIcon, RefreshCw, User, AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { logAuth, AUTH_LOG_LEVELS, dumpAuthLogs } from '@/utils/debug/authLogger';
+import { useUserMigration } from '@/hooks/subscription/useUserMigration';
 
 interface MigrationStatusProps {
   email?: string;
@@ -28,8 +28,10 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showDebug, setShowDebug] = useState<boolean>(false);
+  const [logs, setLogs] = useState<any[]>([]);
+  
+  const { showDebugLogs } = useUserMigration();
 
-  // Function to fetch user and tenant info
   const checkUserAndTenant = async () => {
     setLoading(true);
     setError(null);
@@ -40,16 +42,13 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
         force: true
       });
       
-      // Find user by email if provided
       if (email) {
         try {
-          // Try direct database query first (most reliable)
           logAuth('MIG-STATUS', `Looking up user directly in database for email: ${email}`, {
             level: AUTH_LOG_LEVELS.INFO,
             force: true
           });
           
-          // Simplified approach for demo - in production you'd query by email
           const { data: usersData, error: usersQueryError } = await supabase
             .from('users')
             .select('id')
@@ -70,7 +69,6 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
             return;
           }
           
-          // Use the first user found for demonstration
           const foundUser = { id: usersData[0].id, email };
           logAuth('MIG-STATUS', `Found user for email ${email}: ${foundUser.id}`, {
             level: AUTH_LOG_LEVELS.INFO,
@@ -79,7 +77,6 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
           
           setUserInfo(foundUser);
           
-          // Get user's tenant
           const { data: tenantUserData, error: tenantUserError } = await supabase
             .from('users')
             .select('tenant_id')
@@ -97,7 +94,6 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
             return;
           }
           
-          // Get tenant details
           const tenantId = tenantUserData.tenant_id;
           if (tenantId) {
             logAuth('MIG-STATUS', `Fetching tenant details for ID: ${tenantId}`, {
@@ -141,7 +137,6 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
           setError(`Error checking migration status: ${err instanceof Error ? err.message : String(err)}`);
         }
       } else {
-        // Just check latest tenants for overview
         logAuth('MIG-STATUS', `No email provided, checking recent tenants`, {
           level: AUTH_LOG_LEVELS.INFO,
           force: true
@@ -179,7 +174,6 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
     }
   };
   
-  // Run the check when email changes
   useEffect(() => {
     if (email) {
       checkUserAndTenant();
@@ -194,14 +188,14 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
   
   const handleShowDebug = () => {
     setShowDebug(true);
-    const logs = dumpAuthLogs();
-    console.log('Migration logs:', logs);
+    setLogs(dumpAuthLogs());
+    showDebugLogs();
   };
 
   if (loading) {
     return (
       <div className="text-center p-4">
-        <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2" />
+        <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
         <p>Checking migration status...</p>
       </div>
     );
@@ -224,6 +218,22 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
               Show Debug Logs
             </Button>
           </div>
+          
+          {showDebug && logs.length > 0 && (
+            <div className="mt-4 p-3 bg-gray-900 text-gray-100 rounded overflow-auto text-xs max-h-60">
+              <h4 className="font-semibold mb-2">Migration Debug Logs</h4>
+              {logs.map((log, i) => (
+                <div key={i} className="mb-1 border-b border-gray-800 pb-1">
+                  <div className="font-mono">
+                    <span className={`${log.level === 'ERROR' ? 'text-red-400' : 'text-green-400'} font-semibold`}>
+                      {log.timestamp} [{log.tag}] {log.level}:
+                    </span>
+                    <div className="ml-2">{log.message}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </AlertDescription>
       </Alert>
     );
@@ -262,6 +272,21 @@ const MigrationStatus: React.FC<MigrationStatusProps> = ({ email }) => {
               </AlertDescription>
             </Alert>
           </div>
+          {showDebug && logs.length > 0 && (
+            <div className="mt-4 p-3 bg-gray-100 rounded overflow-auto text-xs max-h-60">
+              <h4 className="font-semibold mb-2">Migration Debug Logs</h4>
+              {logs.map((log, i) => (
+                <div key={i} className="mb-1 border-b border-gray-200 pb-1">
+                  <div className="font-mono">
+                    <span className={`${log.level === 'ERROR' ? 'text-red-600' : 'text-blue-600'} font-semibold`}>
+                      {log.timestamp} [{log.tag}] {log.level}:
+                    </span>
+                    <div className="ml-2">{log.message}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="mt-4 text-sm text-muted-foreground">
             <p>If you need to re-migrate this user, you can use the "Migrate User" section.</p>
           </div>

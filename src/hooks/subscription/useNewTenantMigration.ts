@@ -1,4 +1,3 @@
-
 import { useMigrationBase, MigrationResult } from './useMigrationBase';
 import { supabase } from '@/integrations/supabase/client';
 import { startUserTrial } from '@/contexts/auth/handlers/tenantSubscription';
@@ -37,148 +36,17 @@ export const useNewTenantMigration = () => {
     try {
       logAuth('MIGRATION', `Starting migration to new tenant: ${newTenantName} for user: ${targetUserId}`, {
         level: AUTH_LOG_LEVELS.INFO,
-        force: true // Always log this regardless of level
+        force: true
       });
       
-      // Always try direct migration first as the most reliable method
+      // ALWAYS try direct database migration as the primary approach
       logAuth('MIGRATION', 'Using direct database migration as primary approach', {
         level: AUTH_LOG_LEVELS.INFO,
         force: true
       });
       
-      try {
-        // Remove the try/catch around direct migration to let errors bubble up
-        return await performDirectMigration(newTenantName, targetUserId);
-      } catch (directError) {
-        logAuth('MIGRATION', `Direct migration failed with error: ${directError instanceof Error ? directError.message : 'Unknown error'}`, {
-          level: AUTH_LOG_LEVELS.ERROR,
-          data: directError,
-          force: true
-        });
-        
-        if (directError && typeof directError === 'object' && 'code' in directError) {
-          const errorCode = directError.code;
-          logAuth('MIGRATION', `Database error code: ${errorCode}`, {
-            level: AUTH_LOG_LEVELS.ERROR,
-            force: true
-          });
-          
-          if (errorCode === '42501') {
-            // This is an RLS permission error
-            const errorMessage = 'Row-level security prevented tenant creation. You need admin privileges.';
-            toast({
-              title: "Permission Error",
-              description: errorMessage,
-              variant: "destructive"
-            });
-            return { success: false, message: errorMessage };
-          }
-        }
-        
-        // Only try edge function if direct migration fails AND we're not in development mode
-        logAuth('MIGRATION', `Will attempt edge function as fallback`, {
-          level: AUTH_LOG_LEVELS.INFO,
-          force: true
-        });
-        
-        // Get current session access token
-        const accessToken = session?.access_token;
-        
-        if (!accessToken) {
-          throw new Error("No access token available. Please log in again.");
-        }
-        
-        // Call the create-tenant edge function with full URL
-        const functionUrl = `/functions/v1/create-tenant`;
-        logAuth('MIGRATION', `Calling edge function at: ${functionUrl}`, {
-          level: AUTH_LOG_LEVELS.INFO,
-          data: {
-            tenantName: newTenantName,
-            userId: targetUserId
-          },
-          force: true
-        });
-        
-        try {
-          const response = await fetch(functionUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${accessToken}`
-            },
-            body: JSON.stringify({
-              tenantName: newTenantName,
-              userId: targetUserId,
-              isMigration: true
-            })
-          });
-          
-          // Log the response status for debugging
-          logAuth('MIGRATION', `Edge function returned status: ${response.status}`, {
-            level: AUTH_LOG_LEVELS.INFO,
-            force: true
-          });
-          
-          if (!response.ok) {
-            const errorText = await response.text();
-            logAuth('MIGRATION', `Edge function error: ${response.status} - ${errorText}`, {
-              level: AUTH_LOG_LEVELS.ERROR,
-              force: true
-            });
-            
-            // If we get a 404 error, it means the edge function doesn't exist
-            if (response.status === 404) {
-              // Better error message for 404
-              const error404Message = "Edge function not found (404). Using direct database migration only.";
-              logAuth('MIGRATION', error404Message, {
-                level: AUTH_LOG_LEVELS.WARN,
-                force: true
-              });
-              
-              // Try direct migration one more time with elevated privileges
-              return await performElevatedMigration(newTenantName, targetUserId);
-            }
-            
-            throw new Error(`Edge function error: ${response.status} - ${errorText}`);
-          }
-          
-          const result = await handleMigrationResponse(response, targetUserId);
-          const newTenantId = result.tenant_id;
-          
-          if (!newTenantId) {
-            throw new Error('No tenant ID returned from the edge function');
-          }
-          
-          const successResult = {
-            success: true,
-            message: `Successfully moved user to new tenant "${newTenantName}"`,
-            newTenantId
-          };
-          
-          setMigrationResult(successResult);
-          
-          toast({
-            title: "Migration Successful",
-            description: successResult.message,
-          });
-          
-          // If migration was successful and we're migrating ourselves, refresh the session
-          if (targetUserId === user?.id) {
-            await refreshSession();
-          }
-
-          return successResult;
-        } catch (fetchError) {
-          logAuth('MIGRATION', 'Edge function attempt failed:', {
-            level: AUTH_LOG_LEVELS.ERROR,
-            data: fetchError,
-            force: true
-          });
-          
-          // Try one more time with direct migration but with elevated privileges
-          return await performElevatedMigration(newTenantName, targetUserId);
-        }
-      }
+      return await performDirectMigration(newTenantName, targetUserId);
+      
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logAuth('MIGRATION', `Migration failed: ${errorMessage}`, {
@@ -187,27 +55,45 @@ export const useNewTenantMigration = () => {
         force: true
       });
       
-      const failureResult = {
-        success: false,
-        message: `Failed to migrate user: ${errorMessage}`
-      };
-      
-      setMigrationResult(failureResult);
-      
-      toast({
-        title: "Error",
-        description: `Failed to migrate user: ${errorMessage}`,
-        variant: "destructive"
-      });
-      
-      return failureResult;
+      // Try elevated privileges migration as a fallback
+      try {
+        logAuth('MIGRATION', `Attempting fallback with elevated privileges`, {
+          level: AUTH_LOG_LEVELS.WARN,
+          force: true
+        });
+        
+        return await performElevatedMigration(newTenantName, targetUserId);
+      } catch (elevatedError) {
+        const elevatedErrorMessage = elevatedError instanceof Error ? elevatedError.message : 'Unknown error';
+        
+        logAuth('MIGRATION', `Elevated migration also failed: ${elevatedErrorMessage}`, {
+          level: AUTH_LOG_LEVELS.ERROR,
+          data: elevatedError,
+          force: true
+        });
+        
+        const failureResult = {
+          success: false,
+          message: `Failed to migrate user after multiple attempts: ${elevatedErrorMessage}`
+        };
+        
+        setMigrationResult(failureResult);
+        
+        toast({
+          title: "Migration Failed",
+          description: `Failed to migrate user: ${elevatedErrorMessage}`,
+          variant: "destructive"
+        });
+        
+        return failureResult;
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   /**
-   * Perform migration directly using Supabase client when edge function is not available
+   * Perform migration directly using Supabase client
    */
   const performDirectMigration = async (newTenantName: string, userId: string): Promise<MigrationResult> => {
     try {
@@ -231,6 +117,11 @@ export const useNewTenantMigration = () => {
           data: createError,
           force: true
         });
+        
+        if (createError.code === '42501') {
+          // This is an RLS permission error
+          throw new Error('Row-level security prevented tenant creation. Using elevated privileges.');
+        }
         
         throw createError;
       }
@@ -330,7 +221,7 @@ export const useNewTenantMigration = () => {
 
   /**
    * Last resort method to try migration with elevated privileges
-   * This is a fallback when both direct migration and edge function fail
+   * This is a fallback when direct migration fails
    */
   const performElevatedMigration = async (newTenantName: string, userId: string): Promise<MigrationResult> => {
     try {
@@ -339,7 +230,7 @@ export const useNewTenantMigration = () => {
         force: true
       });
       
-      // Use less restrictive query options to try to create the tenant
+      // Use trial settings to create tenant (sometimes helps avoid permission issues)
       const { data: newTenantData, error: createError } = await supabase
         .from('tenants')
         .insert([
@@ -359,7 +250,7 @@ export const useNewTenantMigration = () => {
           force: true
         });
         
-        throw new Error(`Could not create tenant: ${createError.message}. You may need superadmin privileges.`);
+        throw new Error(`Could not create tenant: ${createError.message}`);
       }
       
       if (!newTenantData || !newTenantData.id) {
@@ -386,6 +277,7 @@ export const useNewTenantMigration = () => {
                 level: AUTH_LOG_LEVELS.ERROR,
                 force: true
               });
+              throw error;
             }
           })
       );
@@ -401,6 +293,7 @@ export const useNewTenantMigration = () => {
                 level: AUTH_LOG_LEVELS.WARN,
                 force: true
               });
+              // Don't throw for profile errors
             }
           })
       );
