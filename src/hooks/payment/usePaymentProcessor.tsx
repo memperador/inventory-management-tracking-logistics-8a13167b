@@ -5,6 +5,9 @@ import { useAuditLogger } from '@/middleware/auditLogger';
 import { supabase } from '@/integrations/supabase/client';
 import { useTenant } from '@/hooks/useTenantContext';
 import { useNavigate } from 'react-router-dom';
+import { useUserMigration } from '@/hooks/subscription/useUserMigration';
+import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
+import { useAuth } from '@/hooks/useAuthContext';
 
 interface UsePaymentProcessorProps {
   amount: number;
@@ -26,6 +29,8 @@ export const usePaymentProcessor = ({
   const { toast } = useToast();
   const { logEvent } = useAuditLogger();
   const { currentTenant, setCurrentTenant } = useTenant();
+  const { migrateToNewTenant } = useUserMigration();
+  const { user, refreshSession } = useAuth();
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState(false);
@@ -77,6 +82,56 @@ export const usePaymentProcessor = ({
             subscription_status: 'active',
             trial_ends_at: null
           });
+        }
+
+        // If this tenant was just created for subscription purposes, ensure the user is migrated to it
+        const needsMigration = user?.user_metadata?.needs_subscription === true;
+        if (needsMigration) {
+          logAuth('PAYMENT', 'User needs migration after subscription', {
+            level: AUTH_LOG_LEVELS.INFO,
+            force: true
+          });
+
+          // Create a new tenant with the subscription tier
+          const tenantName = `${user.email?.split('@')[0]}'s Organization` || 'New Organization';
+          
+          try {
+            // Migrate the user to this tenant
+            const migrationResult = await migrateToNewTenant(tenantName);
+            
+            if (migrationResult.success) {
+              logAuth('PAYMENT', `Migration successful: ${JSON.stringify(migrationResult)}`, {
+                level: AUTH_LOG_LEVELS.INFO,
+                force: true
+              });
+              
+              // Refresh session to ensure user has the new tenant ID
+              await refreshSession();
+
+              // Don't navigate yet - we'll do that after all processing is complete
+              toast({
+                title: "Account Setup Complete",
+                description: "Your account has been set up with your new subscription!"
+              });
+            } else {
+              logAuth('PAYMENT', `Migration failed: ${migrationResult.message}`, {
+                level: AUTH_LOG_LEVELS.ERROR,
+                force: true
+              });
+              
+              toast({
+                title: "Subscription Activated",
+                description: "Your subscription has been activated, but account setup needs attention.",
+                variant: "destructive"
+              });
+            }
+          } catch (migrationError) {
+            logAuth('PAYMENT', 'Migration error:', {
+              level: AUTH_LOG_LEVELS.ERROR,
+              data: migrationError,
+              force: true
+            });
+          }
         }
       }
 
