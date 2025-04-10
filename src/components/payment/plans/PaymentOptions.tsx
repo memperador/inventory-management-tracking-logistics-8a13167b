@@ -4,6 +4,7 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Switch } from '@/components/ui/switch';
 
 interface PaymentOptionsProps {
   paymentType: string;
@@ -27,21 +28,26 @@ export const PaymentOptions: React.FC<PaymentOptionsProps> = ({
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Label>Payment Period</Label>
-          <ToggleGroup 
-            type="single" 
-            value={paymentType} 
-            onValueChange={(value) => {
-              if (value) setPaymentType(value);
-            }}
-            className="flex justify-start bg-slate-100 p-1 rounded-lg"
-          >
-            <ToggleGroupItem value="subscription" className="flex-1 data-[state=on]:bg-white data-[state=on]:shadow-sm">
+          <div className="flex items-center justify-between p-3 bg-slate-100 rounded-lg">
+            <span className={`text-sm font-medium ${paymentType === 'subscription' ? 'text-primary' : 'text-muted-foreground'}`}>
               Monthly
-            </ToggleGroupItem>
-            <ToggleGroupItem value="annual" className="flex-1 data-[state=on]:bg-white data-[state=on]:shadow-sm">
-              Annual <span className="text-emerald-600 text-xs ml-1">10% off</span>
-            </ToggleGroupItem>
-          </ToggleGroup>
+            </span>
+            
+            <Switch 
+              checked={paymentType === 'annual'}
+              onCheckedChange={(checked) => setPaymentType(checked ? 'annual' : 'subscription')}
+              className="mx-4"
+            />
+            
+            <div className="flex items-center">
+              <span className={`text-sm font-medium ${paymentType === 'annual' ? 'text-primary' : 'text-muted-foreground'}`}>
+                Annual
+              </span>
+              {paymentType === 'annual' && (
+                <span className="text-emerald-600 text-xs ml-2 px-1.5 py-0.5 bg-emerald-50 rounded">10% off</span>
+              )}
+            </div>
+          </div>
         </div>
         
         <div className="flex items-top space-x-2 pt-4">

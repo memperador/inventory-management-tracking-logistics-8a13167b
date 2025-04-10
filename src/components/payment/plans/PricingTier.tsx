@@ -2,12 +2,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, HelpCircle, Building, Zap } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Toggle } from '@/components/ui/toggle';
 
 interface TierLimit {
   assets: number | string;
@@ -41,7 +38,6 @@ export const PricingTier: React.FC<PricingTierProps> = ({
   isPopular = false,
   onSelect,
   paymentType,
-  onPaymentTypeChange,
 }) => {
   const navigate = useNavigate();
   
@@ -69,27 +65,6 @@ export const PricingTier: React.FC<PricingTierProps> = ({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex justify-center mb-4">
-          <div className="bg-slate-100 rounded-lg p-1 flex text-sm">
-            <button 
-              onClick={() => onPaymentTypeChange('subscription')}
-              className={`px-4 py-1.5 font-medium rounded-md transition-colors ${
-                paymentType === 'subscription' ? 'bg-white shadow-sm' : 'text-slate-600'
-              }`}
-            >
-              Monthly
-            </button>
-            <button 
-              onClick={() => onPaymentTypeChange('annual')}
-              className={`px-4 py-1.5 font-medium rounded-md transition-colors ${
-                paymentType === 'annual' ? 'bg-white shadow-sm' : 'text-slate-600'
-              }`}
-            >
-              Annual <span className="text-emerald-600 text-xs ml-1">10% off</span>
-            </button>
-          </div>
-        </div>
-        
         <div className="mt-2 text-center">
           {id === 'enterprise' ? (
             <span className="text-lg font-medium">Custom Pricing</span>
