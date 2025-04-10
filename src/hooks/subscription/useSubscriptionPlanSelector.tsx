@@ -11,24 +11,22 @@ export const useSubscriptionPlanSelector = () => {
 
   const handleTierChange = (tierId: string) => {
     setSelectedTier(tierId);
-    const tier = serviceTiers.find(t => t.id === tierId);
-    if (tier) {
-      if (paymentType === 'annual') {
-        setPaymentAmount(Math.round(tier.price * 12 * 0.9));
-      } else {
-        setPaymentAmount(tier.price);
-      }
-    }
+    updatePaymentAmount(tierId, paymentType);
   };
 
   const handlePaymentTypeChange = (type: string) => {
     setPaymentType(type);
-    const tier = serviceTiers.find(t => t.id === selectedTier);
-    if (tier) {
-      if (type === 'annual') {
-        setPaymentAmount(Math.round(tier.price * 12 * 0.9));
+    updatePaymentAmount(selectedTier, type);
+  };
+  
+  const updatePaymentAmount = (tier: string, payType: string) => {
+    const tierData = serviceTiers.find(t => t.id === tier);
+    if (tierData) {
+      if (payType === 'annual') {
+        // Apply 10% discount for annual payments
+        setPaymentAmount(Math.round(tierData.price * 12 * 0.9));
       } else {
-        setPaymentAmount(tier.price);
+        setPaymentAmount(tierData.price);
       }
     }
   };

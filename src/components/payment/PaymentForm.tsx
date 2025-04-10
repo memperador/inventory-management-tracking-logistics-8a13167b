@@ -4,10 +4,11 @@ import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuditLogger } from '@/middleware/auditLogger';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CreditCard, Wallet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTenant } from '@/hooks/useTenantContext';
 import { useNavigate } from 'react-router-dom';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface PaymentFormProps {
   amount: number;
@@ -33,15 +34,16 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'paypal'>('stripe');
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleProcessPayment = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
       // Mock successful payment without using Stripe
-      console.log(`Processing mock payment for $${(amount / 100).toFixed(2)} with tier ${selectedTier || 'unknown'}`);
+      console.log(`Processing mock ${paymentMethod} payment for $${(amount / 100).toFixed(2)} with tier ${selectedTier || 'unknown'}`);
       
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -52,7 +54,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         amount: amount,
         status: 'succeeded',
         created: Date.now() / 1000,
-        tier: selectedTier
+        tier: selectedTier,
+        paymentMethod
       };
       
       // Update the tenant's subscription in Supabase
@@ -84,7 +87,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
 
       toast({
         title: "Subscription updated",
-        description: `Your ${selectedTier} subscription has been activated.`,
+        description: `Your ${selectedTier} subscription has been activated using ${paymentMethod === 'stripe' ? 'credit card' : 'PayPal'}.`,
       });
       
       // Log the successful mock payment
@@ -97,7 +100,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
           amount,
           status: mockPaymentIntent.status,
           id: mockPaymentIntent.id,
-          tier: selectedTier
+          tier: selectedTier,
+          paymentMethod
         },
       });
       
@@ -128,6 +132,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
           amount,
           tier: selectedTier,
           error: errorMessage,
+          paymentMethod
         },
       });
       
@@ -155,12 +160,39 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="rounded-md border p-4">
-        <CardElement options={cardElementOptions} />
-        <div className="mt-2 text-sm text-blue-600">
-          This is a mock payment system - no actual charges will be processed
-        </div>
+    <form onSubmit={handleProcessPayment} className="space-y-4">
+      <Tabs value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as 'stripe' | 'paypal')}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="stripe" className="flex items-center">
+            <CreditCard className="mr-2 h-4 w-4" />
+            Credit Card
+          </TabsTrigger>
+          <TabsTrigger value="paypal" className="flex items-center">
+            <Wallet className="mr-2 h-4 w-4" />
+            PayPal
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="stripe" className="pt-4">
+          <div className="rounded-md border p-4">
+            <CardElement options={cardElementOptions} />
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="paypal" className="pt-4">
+          <div className="rounded-md border p-4 flex justify-center items-center h-20 bg-blue-50">
+            <img 
+              src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg" 
+              alt="PayPal" 
+              className="h-8"
+            />
+            <p className="ml-2 text-blue-800">Pay with PayPal</p>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      <div className="mt-2 text-sm text-blue-600">
+        This is a mock payment system - no actual charges will be processed
       </div>
       
       {error && (
@@ -178,7 +210,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             Processing...
           </>
         ) : (
-          `Mock Subscribe: $${(amount / 100).toFixed(2)}`
+          `Subscribe: $${(amount / 100).toFixed(2)}${paymentType === 'annual' ? '/year' : '/month'}`
         )}
       </Button>
       

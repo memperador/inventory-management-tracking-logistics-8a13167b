@@ -47,7 +47,12 @@ export const PricingTier: React.FC<PricingTierProps> = ({
 
   // Calculate annual price with 10% discount
   const annualPrice = Math.round(price * 12 * 0.9);
+  
+  // Display monthly price (either regular monthly or annual divided by 12)
   const displayPrice = paymentType === 'annual' ? annualPrice / 12 : price;
+  
+  // What to display under the price
+  const pricePeriod = paymentType === 'annual' ? '/month (billed annually)' : '/month';
   
   // Calculate savings amount and percentage
   const monthlyCost = price * 12;
@@ -76,7 +81,7 @@ export const PricingTier: React.FC<PricingTierProps> = ({
           ) : (
             <>
               <span className="text-3xl font-bold">${(displayPrice / 100).toFixed(2)}</span>
-              <span className="text-muted-foreground">/month</span>
+              <span className="text-muted-foreground">{pricePeriod}</span>
               {paymentType === 'annual' && (
                 <div className="text-xs text-emerald-600 mt-1">Billed annually (${(annualPrice / 100).toFixed(2)}/year)</div>
               )}

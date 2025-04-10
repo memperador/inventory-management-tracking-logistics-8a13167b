@@ -26,6 +26,7 @@ export const SubscriptionSummary: React.FC<SubscriptionSummaryProps> = ({
   onSuccess,
   onError
 }) => {
+  // Calculate the correct amount based on payment type
   const amount = paymentType === 'annual' 
     ? Math.round(selectedTierData.price * 12 * 0.9) 
     : selectedTierData.price;
@@ -68,7 +69,7 @@ export const SubscriptionSummary: React.FC<SubscriptionSummaryProps> = ({
       <CardFooter className="flex flex-col items-start text-sm text-muted-foreground">
         <div className="flex items-center gap-2 mb-2">
           <ShieldCheck className="h-4 w-4" />
-          <span>Your payment information is securely processed by Stripe.</span>
+          <span>Your payment information is securely processed.</span>
         </div>
         <p>You can upgrade or downgrade your plan at any time.</p>
       </CardFooter>
