@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuditLogger } from '@/middleware/auditLogger';
@@ -6,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTenant } from '@/hooks/useTenantContext';
 import { useNavigate } from 'react-router-dom';
 import { useUserMigration } from '@/hooks/subscription/useUserMigration';
-import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
+import { logAuth, AUTH_LOG_LEVELS, dumpAuthLogs } from '@/utils/debug/authLogger';
 import { useAuth } from '@/hooks/useAuthContext';
 
 interface UsePaymentProcessorProps {
@@ -42,13 +41,16 @@ export const usePaymentProcessor = ({
     setError(null);
 
     try {
-      // Mock successful payment without using Stripe
+      logAuth('PAYMENT_PROCESS', `Starting ${paymentMethod} payment process for ${selectedTier} tier`, {
+        level: AUTH_LOG_LEVELS.INFO,
+        force: true,
+        data: { amount, paymentType, userId: user?.id }
+      });
+      
       console.log(`Processing mock ${paymentMethod} payment for $${(amount / 100).toFixed(2)} with tier ${selectedTier || 'unknown'}`);
       
-      // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Create a fake payment intent for the UI
       const mockPaymentIntent = {
         id: `mock_payment_${Date.now()}`,
         amount: amount,
@@ -58,14 +60,12 @@ export const usePaymentProcessor = ({
         paymentMethod
       };
       
-      // Update the tenant's subscription in Supabase
       if (selectedTier && currentTenant?.id) {
         const { error: updateError } = await supabase
           .from('tenants')
           .update({
             subscription_tier: selectedTier,
             subscription_status: 'active',
-            // Clear trial end date if it was on a trial
             trial_ends_at: null
           })
           .eq('id', currentTenant.id);
@@ -74,7 +74,6 @@ export const usePaymentProcessor = ({
           throw new Error(`Failed to update subscription: ${updateError.message}`);
         }
         
-        // Update the local tenant state
         if (currentTenant) {
           setCurrentTenant({
             ...currentTenant,
@@ -84,7 +83,6 @@ export const usePaymentProcessor = ({
           });
         }
 
-        // If this tenant was just created for subscription purposes, ensure the user is migrated to it
         const needsMigration = user?.user_metadata?.needs_subscription === true;
         if (needsMigration) {
           logAuth('PAYMENT', 'User needs migration after subscription', {
@@ -92,11 +90,21 @@ export const usePaymentProcessor = ({
             force: true
           });
 
-          // Create a new tenant with the subscription tier
+          logAuth('PAYMENT_MIGRATION', 'Attempting to migrate user to new tenant', {
+            level: AUTH_LOG_LEVELS.INFO,
+            force: true,
+            data: {
+              userId: user?.id,
+              email: user?.email,
+              subscriptionTier: selectedTier,
+              paymentMethod,
+              currentTimestamp: new Date().toISOString()
+            }
+          });
+
           const tenantName = `${user.email?.split('@')[0]}'s Organization` || 'New Organization';
           
           try {
-            // Migrate the user to this tenant
             const migrationResult = await migrateToNewTenant(tenantName);
             
             if (migrationResult.success) {
@@ -105,10 +113,28 @@ export const usePaymentProcessor = ({
                 force: true
               });
               
-              // Refresh session to ensure user has the new tenant ID
+              const logs = dumpAuthLogs();
+              logAuth('PAYMENT_DEBUG', `Auth logs prior to session refresh: ${logs.length} entries`, {
+                level: AUTH_LOG_LEVELS.DEBUG,
+                force: true
+              });
+              
+              logAuth('PAYMENT_SESSION', 'Refreshing user session after migration', {
+                level: AUTH_LOG_LEVELS.INFO,
+                force: true
+              });
+              
               await refreshSession();
+              
+              logAuth('PAYMENT_SESSION', 'Session refresh complete', {
+                level: AUTH_LOG_LEVELS.INFO,
+                force: true,
+                data: {
+                  newTenantId: migrationResult.newTenantId,
+                  userHasTenant: !!user?.user_metadata?.tenant_id
+                }
+              });
 
-              // Don't navigate yet - we'll do that after all processing is complete
               toast({
                 title: "Account Setup Complete",
                 description: "Your account has been set up with your new subscription!"
@@ -140,7 +166,6 @@ export const usePaymentProcessor = ({
         description: `Your ${selectedTier} subscription has been activated using ${paymentMethod === 'stripe' ? 'credit card' : 'PayPal'}.`,
       });
       
-      // Log the successful mock payment
       await logEvent({
         userId: 'current-user',
         action: 'mock_payment_processed',
@@ -159,7 +184,6 @@ export const usePaymentProcessor = ({
         onSuccess(mockPaymentIntent);
       }
 
-      // Redirect to dashboard
       navigate('/dashboard');
       
     } catch (err) {
@@ -172,7 +196,6 @@ export const usePaymentProcessor = ({
         variant: "destructive",
       });
       
-      // Log the failed payment
       await logEvent({
         userId: 'current-user',
         action: 'mock_payment_failed',
