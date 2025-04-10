@@ -1,3 +1,4 @@
+
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
@@ -79,9 +80,59 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
     }
     
     try {
+      // Check if this is a brand new signup with needs_subscription flag
+      const needsSubscription = currentSession.user.user_metadata?.needs_subscription === true;
+      const isNewSignup = currentSession.user.app_metadata?.provider === 'email' && 
+                          currentSession.user.app_metadata?.providers?.includes('email') && 
+                          !currentSession.user.app_metadata?.last_sign_in_at;
+      
+      logAuth('AUTH-HANDLER', `User needs subscription: ${needsSubscription}, isNewSignup: ${isNewSignup}`, {
+        level: AUTH_LOG_LEVELS.INFO
+      });
+      
+      // For new signups, we need to create a new tenant
+      if (isNewSignup || needsSubscription) {
+        logAuth('AUTH-HANDLER', `This appears to be a new signup. Creating tenant for user: ${currentSession.user.id}`, {
+          level: AUTH_LOG_LEVELS.INFO,
+          data: {
+            userEmail: currentSession.user.email,
+            userMetadata: currentSession.user.user_metadata
+          }
+        });
+        
+        try {
+          // Call the create-tenant edge function to set up a new tenant for this user
+          const response = await fetch(`${window.location.origin}/api/create-tenant`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${currentSession.access_token}`
+            }
+          });
+          
+          const result = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(result.error || 'Failed to create tenant');
+          }
+          
+          logAuth('AUTH-HANDLER', `Successfully created new tenant through edge function: ${result.tenant_id}`, {
+            level: AUTH_LOG_LEVELS.INFO,
+            data: result
+          });
+        } catch (error) {
+          logAuth('AUTH-HANDLER', `Error creating tenant through edge function: ${error instanceof Error ? error.message : 'Unknown error'}`, {
+            level: AUTH_LOG_LEVELS.ERROR,
+            data: error
+          });
+          // Continue with the flow even if tenant creation fails, the auth check will redirect to onboarding
+        }
+      }
+      
       logAuth('AUTH-HANDLER', `Checking user tenant for user: ${currentSession.user.id}`, {
         level: AUTH_LOG_LEVELS.INFO
       });
+      
       // Check if user has an associated tenant
       const { data: userData, error: userError } = await supabase
         .from('users')
@@ -128,12 +179,6 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
         return;
       }
 
-      // Check if this is a brand new signup with needs_subscription flag
-      const needsSubscription = currentSession.user.user_metadata?.needs_subscription === true;
-      logAuth('AUTH-HANDLER', `User needs subscription: ${needsSubscription}`, {
-        level: AUTH_LOG_LEVELS.INFO
-      });
-      
       // If this is a new signup with no subscription yet, start a trial
       if (needsSubscription && (!tenantData?.subscription_status || tenantData?.subscription_status === 'inactive')) {
         logAuth('AUTH-HANDLER', 'Starting 7-day free trial for new user', {
