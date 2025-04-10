@@ -34,38 +34,6 @@ export const PricingTiers: React.FC<PricingTiersProps> = ({
 }) => {
   return (
     <div className="space-y-8">
-      {/* Payment Period Toggle */}
-      <div className="w-full max-w-md mx-auto">
-        <div className="space-y-2">
-          <Label className="text-lg font-medium">Payment Period</Label>
-          <div className="flex items-center justify-between p-4 bg-slate-100 rounded-lg">
-            <span className={`text-sm font-medium ${paymentType === 'subscription' ? 'text-primary' : 'text-muted-foreground'}`}>
-              Monthly
-            </span>
-            
-            <Switch 
-              checked={paymentType === 'annual'}
-              onCheckedChange={(checked) => onPaymentTypeChange(checked ? 'annual' : 'subscription')}
-              className="mx-4"
-            />
-            
-            <div className="flex items-center">
-              <span className={`text-sm font-medium ${paymentType === 'annual' ? 'text-primary' : 'text-muted-foreground'}`}>
-                Annual
-              </span>
-              <div className="flex items-center ml-2">
-                <span className="text-emerald-600 text-xs px-1.5 py-0.5 bg-emerald-50 rounded">10% off</span>
-              </div>
-            </div>
-          </div>
-          {paymentType === 'annual' && (
-            <p className="text-sm text-emerald-600 text-center mt-2">
-              Save 10% with annual billing
-            </p>
-          )}
-        </div>
-      </div>
-      
       {/* Pricing Tiers Grid */}
       <div className="grid gap-6 lg:grid-cols-4">
         {tiers.map((tier) => (
