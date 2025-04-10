@@ -35,9 +35,11 @@ export const useUserMigration = () => {
         throw new Error("No access token available. Please log in again.");
       }
       
-      // Instead of direct database operations, use the create-tenant edge function
-      // which has service role access to bypass RLS
-      const response = await fetch(`${window.location.origin}/api/create-tenant`, {
+      // Call the create-tenant edge function
+      const functionUrl = `${window.location.origin}/functions/v1/create-tenant`;
+      console.log(`Calling edge function at: ${functionUrl}`);
+      
+      const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -50,29 +52,30 @@ export const useUserMigration = () => {
         })
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create tenant');
+      const responseText = await response.text();
+      console.log('Edge function raw response:', responseText);
+      
+      if (!responseText) {
+        throw new Error('Edge function returned empty response');
       }
       
-      const result = await response.json();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse response:', parseError);
+        throw new Error(`Failed to parse response: ${responseText}`);
+      }
       
-      if (!result.success) {
-        setMigrationResult({
-          success: false,
-          message: result.message || 'Failed to create tenant'
-        });
-        
-        toast({
-          title: "Migration Failed",
-          description: result.message || 'Failed to create tenant',
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return;
+      if (!response.ok || !result.success) {
+        throw new Error(result?.error || result?.message || 'Failed to create tenant');
       }
       
       const newTenantId = result.tenant_id;
+      
+      if (!newTenantId) {
+        throw new Error('No tenant ID returned from the edge function');
+      }
       
       // Setup trial period for the new tenant
       try {
@@ -80,7 +83,7 @@ export const useUserMigration = () => {
         trialEndsAt.setDate(trialEndsAt.getDate() + 7); // 7-day trial
         
         // Use the edge function to update the tenant trial status
-        const trialResponse = await fetch(`${window.location.origin}/api/create-tenant`, {
+        const trialResponse = await fetch(functionUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -97,11 +100,15 @@ export const useUserMigration = () => {
           })
         });
         
+        const trialResponseText = await trialResponse.text();
+        console.log('Trial setup response:', trialResponseText);
+        
         if (!trialResponse.ok) {
-          console.warn("Failed to set trial period:", await trialResponse.text());
+          console.warn("Failed to set trial period:", trialResponseText);
         }
       } catch (e) {
         console.warn("Error setting up trial:", e);
+        // Don't throw here, as the main migration was successful
       }
       
       const successResult = {
@@ -123,6 +130,8 @@ export const useUserMigration = () => {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Migration error:', error);
+      
       setMigrationResult({
         success: false,
         message: `Failed to migrate user: ${errorMessage}`

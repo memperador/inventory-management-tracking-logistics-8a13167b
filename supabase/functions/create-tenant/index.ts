@@ -8,6 +8,8 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log(`${req.method} request received to create-tenant function`);
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -15,12 +17,53 @@ serve(async (req) => {
 
   try {
     // Get request body
-    const requestData = await req.json();
+    let requestData;
+    try {
+      const bodyText = await req.text();
+      console.log("Request body:", bodyText);
+      requestData = JSON.parse(bodyText);
+    } catch (e) {
+      console.error("Error parsing request body:", e);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Error parsing request body: ${e.message}` 
+        }),
+        { 
+          status: 400, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
+    }
+    
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
+      console.error("Missing required environment variables");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Server configuration error: Missing environment variables"
+        }),
+        { 
+          status: 500,
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders
+          }
+        }
+      );
+    }
     
     // Create a Supabase client with the Auth context of the function
     const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      supabaseUrl,
+      supabaseAnonKey,
       {
         global: {
           headers: { Authorization: req.headers.get("Authorization")! },
@@ -30,12 +73,13 @@ serve(async (req) => {
 
     // Service role client for admin operations
     const serviceRoleClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      supabaseUrl,
+      supabaseServiceRoleKey
     );
 
     // Handle different actions
     if (requestData.action === 'setTrial' && requestData.tenantId) {
+      console.log("Setting trial for tenant:", requestData.tenantId);
       // Set trial for existing tenant
       const { error: trialError } = await serviceRoleClient
         .from('tenants')
@@ -43,6 +87,7 @@ serve(async (req) => {
         .eq('id', requestData.tenantId);
         
       if (trialError) {
+        console.error("Error setting trial:", trialError);
         throw new Error(`Error setting trial: ${trialError.message}`);
       }
       
@@ -62,6 +107,8 @@ serve(async (req) => {
     
     // Handle user migration case
     if (requestData.isMigration && requestData.userId && requestData.tenantName) {
+      console.log(`Migrating user ${requestData.userId} to new tenant ${requestData.tenantName}`);
+      
       // Create a new tenant with service role to bypass RLS
       const { data: tenantData, error: tenantError } = await serviceRoleClient
         .from('tenants')
@@ -70,8 +117,16 @@ serve(async (req) => {
         .single();
 
       if (tenantError) {
+        console.error("Error creating tenant:", tenantError);
         throw new Error(`Error creating tenant: ${tenantError.message}`);
       }
+
+      if (!tenantData || !tenantData.id) {
+        console.error("No tenant data returned");
+        throw new Error("Failed to create tenant: No ID returned");
+      }
+
+      console.log(`New tenant created with ID: ${tenantData.id}`);
 
       // Associate the user with the tenant using service role
       const { error: userUpdateError } = await serviceRoleClient
@@ -80,8 +135,11 @@ serve(async (req) => {
         .eq('id', requestData.userId);
 
       if (userUpdateError) {
+        console.error("Error associating user with tenant:", userUpdateError);
         throw new Error(`Error associating user with tenant: ${userUpdateError.message}`);
       }
+
+      console.log(`User ${requestData.userId} associated with tenant ${tenantData.id}`);
       
       // Update the profile's tenant_id if it exists
       const { error: profileUpdateError } = await serviceRoleClient
@@ -91,6 +149,8 @@ serve(async (req) => {
       
       if (profileUpdateError) {
         console.warn(`Warning: Failed to update profile tenant: ${profileUpdateError.message}`);
+      } else {
+        console.log(`User profile updated with tenant ${tenantData.id}`);
       }
 
       return new Response(
@@ -115,10 +175,12 @@ serve(async (req) => {
     } = await supabaseClient.auth.getUser();
 
     if (userError) {
+      console.error("Error getting user:", userError);
       throw new Error(`Error getting user: ${userError.message}`);
     }
 
     if (!user) {
+      console.error("No user found");
       throw new Error("No user found");
     }
 
@@ -134,6 +196,7 @@ serve(async (req) => {
       .limit(1);
 
     if (companyTenantError) {
+      console.error("Error checking existing tenants:", companyTenantError);
       throw new Error(`Error checking existing tenants: ${companyTenantError.message}`);
     }
 
@@ -149,6 +212,7 @@ serve(async (req) => {
         .limit(1);
 
       if (domainError && domainError.code !== 'PGRST116') {
+        console.error("Error checking domain users:", domainError);
         throw new Error(`Error checking domain users: ${domainError.message}`);
       }
 
@@ -159,6 +223,7 @@ serve(async (req) => {
 
     // If tenant with same company name or domain exists, return that information
     if (existingCompanyTenants && existingCompanyTenants.length > 0) {
+      console.log("Tenant with this company name already exists:", existingCompanyTenants[0].name);
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -177,6 +242,7 @@ serve(async (req) => {
     }
 
     if (existingDomainTenant) {
+      console.log("Users from this organization already exist, tenant ID:", existingDomainTenant);
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -202,6 +268,7 @@ serve(async (req) => {
       .single();
 
     if (tenantError) {
+      console.error("Error creating tenant:", tenantError);
       throw new Error(`Error creating tenant: ${tenantError.message}`);
     }
 
@@ -212,6 +279,7 @@ serve(async (req) => {
       .eq('id', user.id);
 
     if (userUpdateError) {
+      console.error("Error associating user with tenant:", userUpdateError);
       throw new Error(`Error associating user with tenant: ${userUpdateError.message}`);
     }
 
@@ -230,6 +298,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
+    console.error("Function error:", error);
     return new Response(
       JSON.stringify({ 
         success: false, 

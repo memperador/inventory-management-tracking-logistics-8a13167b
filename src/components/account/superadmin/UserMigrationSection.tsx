@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { useTenantManagement } from '@/hooks/subscription/useTenantManagement';
 import { Tenant } from '@/types/tenant';
 import { UserLookupResult } from './types';
@@ -63,7 +63,16 @@ const UserMigrationSection: React.FC<UserMigrationSectionProps> = ({
                 type="submit" 
                 disabled={isLoading || !newTenantName.trim()}
               >
-                Create & Migrate <ArrowRight className="ml-2 h-4 w-4" />
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Migrating...
+                  </>
+                ) : (
+                  <>
+                    Create & Migrate <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -112,7 +121,16 @@ const UserMigrationSection: React.FC<UserMigrationSectionProps> = ({
                 onClick={handleMigrateUserToExistingTenant}
                 disabled={isLoading || !existingTenantId}
               >
-                Migrate <ArrowRight className="ml-2 h-4 w-4" />
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Migrating...
+                  </>
+                ) : (
+                  <>
+                    Migrate <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
               </Button>
             </div>
           </div>
