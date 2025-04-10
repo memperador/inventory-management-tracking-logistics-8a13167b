@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -15,6 +14,7 @@ interface TenantContextType {
   updateCompanyType: (companyType: Tenant['company_type']) => Promise<void>;
   createTenant: (name: string) => Promise<string | null>;
   hasActiveSubscription: () => boolean;
+  setCurrentTenant: (tenant: Tenant) => void;
 }
 
 export const TenantContext = createContext<TenantContextType | undefined>(undefined);
@@ -25,12 +25,10 @@ export const TenantProvider = ({ children, userId }: { children: ReactNode, user
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  // Fetch tenant ID when user ID changes
   useEffect(() => {
     const fetchTenantId = async () => {
       if (userId) {
         try {
-          // Query the users table
           const { data, error } = await supabase
             .from('users')
             .select('tenant_id')
@@ -48,7 +46,6 @@ export const TenantProvider = ({ children, userId }: { children: ReactNode, user
           } else if (data) {
             setTenantId(data.tenant_id);
             
-            // Fetch tenant details
             fetchTenantDetails(data.tenant_id);
           }
         } catch (error: any) {
@@ -70,7 +67,6 @@ export const TenantProvider = ({ children, userId }: { children: ReactNode, user
     fetchTenantId();
   }, [userId]);
   
-  // Fetch tenant details when tenant ID changes
   const fetchTenantDetails = async (id: string) => {
     if (!id) return;
     
@@ -83,7 +79,6 @@ export const TenantProvider = ({ children, userId }: { children: ReactNode, user
     }
   };
   
-  // Check if subscription is active or in trial period
   const hasActiveSubscription = (): boolean => {
     if (!currentTenant) return false;
     
@@ -95,7 +90,6 @@ export const TenantProvider = ({ children, userId }: { children: ReactNode, user
     return isActive || inTrial;
   };
   
-  // Create a new tenant
   const createTenant = async (name: string): Promise<string | null> => {
     try {
       const { data, error } = await supabase
@@ -126,7 +120,6 @@ export const TenantProvider = ({ children, userId }: { children: ReactNode, user
     }
   };
   
-  // Update tenant settings
   const handleUpdateTenantSettings = async (settings: Partial<Tenant['settings']>) => {
     if (!tenantId || !currentTenant) {
       throw new Error("No tenant selected");
@@ -135,7 +128,6 @@ export const TenantProvider = ({ children, userId }: { children: ReactNode, user
     try {
       await updateSettings(tenantId, settings);
       
-      // Update local state
       setCurrentTenant({
         ...currentTenant,
         settings: {
@@ -151,7 +143,6 @@ export const TenantProvider = ({ children, userId }: { children: ReactNode, user
     }
   };
   
-  // Update company type
   const handleUpdateCompanyType = async (companyType: Tenant['company_type']) => {
     if (!tenantId || !currentTenant) {
       throw new Error("No tenant selected");
@@ -160,7 +151,6 @@ export const TenantProvider = ({ children, userId }: { children: ReactNode, user
     try {
       await updateTenantCompanyType(tenantId, companyType);
       
-      // Update local state
       setCurrentTenant({
         ...currentTenant,
         company_type: companyType
@@ -183,7 +173,8 @@ export const TenantProvider = ({ children, userId }: { children: ReactNode, user
       updateTenantSettings: handleUpdateTenantSettings,
       updateCompanyType: handleUpdateCompanyType,
       createTenant,
-      hasActiveSubscription
+      hasActiveSubscription,
+      setCurrentTenant
     }}>
       {children}
     </TenantContext.Provider>
