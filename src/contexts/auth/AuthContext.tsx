@@ -35,6 +35,18 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
     let lastAuthTime = 0;
     let lastAuthUserId = '';
     
+    // Clear any existing session storage that might cause loops
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && (
+        key.startsWith('auth_processed_') || 
+        key.startsWith('processing_') || 
+        key === 'login_toast_shown'
+      )) {
+        sessionStorage.removeItem(key);
+      }
+    }
+    
     // First set up the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
