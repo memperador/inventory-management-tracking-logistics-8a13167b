@@ -4,12 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 import { toast } from '@/hooks/use-toast';
 
-// Import the modular handlers
+// Import from the modular handlers
 import { 
-  createTenantForNewUser, 
+  createTenantForNewUser
+} from './handlers/createTenant';
+import { 
   checkUserTenant, 
   getTenantDetails 
-} from './handlers/tenantActions';
+} from './handlers/checkTenant';
 import { 
   hasProcessedPathForSession, 
   isAlreadyProcessing, 

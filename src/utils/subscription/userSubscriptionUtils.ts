@@ -1,8 +1,7 @@
-
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 import { supabase } from '@/integrations/supabase/client';
 import { Session } from '@supabase/supabase-js';
-import { startUserTrial, handleExpiredTrial } from '@/contexts/auth/handlers/tenantActions';
+import { startUserTrial, handleExpiredTrial } from '@/contexts/auth/handlers/tenantSubscription';
 
 /**
  * Checks and handles subscription status for new signups
