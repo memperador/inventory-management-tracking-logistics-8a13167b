@@ -6,12 +6,15 @@ import { MigrationResult } from './useMigrationBase';
 import { logAuth, AUTH_LOG_LEVELS, dumpAuthLogs } from '@/utils/debug/authLogger';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuthContext';
 
 export const useUserMigration = () => {
   const newTenantMigration = useNewTenantMigration();
   const existingTenantMigration = useExistingTenantMigration();
   const [migrationResult, setMigrationResult] = useState<MigrationResult | null>(null);
   const { toast } = useToast();
+  // Add access to the user from the auth context
+  const { user } = useAuth();
 
   // Sync migration results from both hooks
   useEffect(() => {
@@ -133,7 +136,7 @@ export const useUserMigration = () => {
         
         if (result.success && result.newTenantId) {
           // Ensure user has admin role in the new tenant
-          const targetUserId = userId || newTenantMigration.user?.id;
+          const targetUserId = userId || user?.id;
           if (targetUserId) {
             await ensureAdminRole(targetUserId, result.newTenantId);
             // Clear the subscription prompt flag
@@ -177,7 +180,7 @@ export const useUserMigration = () => {
         
         if (result.success && tenantId) {
           // Ensure user has admin role in the existing tenant
-          const targetUserId = userId || existingTenantMigration.user?.id;
+          const targetUserId = userId || user?.id;
           if (targetUserId) {
             await ensureAdminRole(targetUserId, tenantId);
             // Clear the subscription prompt flag
@@ -202,3 +205,4 @@ export const useUserMigration = () => {
     }
   };
 };
+
