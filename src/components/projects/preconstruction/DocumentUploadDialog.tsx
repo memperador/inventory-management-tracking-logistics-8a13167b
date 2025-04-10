@@ -1,13 +1,15 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, File, X } from 'lucide-react';
 import { useFileUploadWithPreview } from '@/hooks/useFileUploadWithPreview';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from '@/utils/uuid';
 import { DocumentAttachment } from '../types/preConstructionTypes';
+import FileDropzone from './components/FileDropzone';
+import FilePreview from './components/FilePreview';
 
 interface DocumentUploadDialogProps {
   open: boolean;
@@ -116,68 +118,23 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
           
           <div className="space-y-2">
             <Label>File Upload</Label>
-            <div
-              className={`border-2 border-dashed rounded-md p-6 ${
-                isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
-              }`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <div className="flex flex-col items-center justify-center space-y-2 text-center">
-                <Upload className="h-10 w-10 text-muted-foreground" />
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">Drag files or click to upload</p>
-                  <p className="text-xs text-muted-foreground">
-                    Supported formats: PDF, DOC, DOCX, JPG, PNG (Max 10MB)
-                  </p>
-                </div>
-                
-                <Input
-                  id="file-upload"
-                  type="file"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => document.getElementById('file-upload')?.click()}
-                  disabled={isUploading}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {isUploading ? 'Uploading...' : 'Select File'}
-                </Button>
-              </div>
-            </div>
+            <FileDropzone
+              isDragging={isDragging}
+              isUploading={isUploading}
+              handleDragOver={handleDragOver}
+              handleDragLeave={handleDragLeave}
+              handleDrop={handleDrop}
+              handleFileChange={handleFileChange}
+            />
           </div>
           
           {files.length > 0 && (
-            <div className="space-y-2">
-              <Label>Selected File</Label>
-              <div className="bg-muted/50 p-2 rounded-md">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
-                      <File className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="text-sm">
-                      <p className="font-medium truncate max-w-[200px]">{files[0].name}</p>
-                      <p className="text-xs text-muted-foreground">{formatFileSize(files[0].size)}</p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeFile(0)}
-                    disabled={isUploading}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
+            <FilePreview
+              file={files[0]} 
+              fileSize={formatFileSize(files[0].size)}
+              removeFile={() => removeFile(0)}
+              isUploading={isUploading}
+            />
           )}
         </div>
         
