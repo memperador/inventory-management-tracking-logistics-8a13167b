@@ -16,7 +16,7 @@ const UserList: React.FC<UserListProps> = ({ users }) => {
       .split(' ')
       .map(part => part[0])
       .join('')
-      .toUpperCase();
+      .toUpperCase() || '?';
   };
 
   const formatLastActive = (dateString: string) => {
@@ -61,13 +61,19 @@ const UserList: React.FC<UserListProps> = ({ users }) => {
                 <TableCell>
                   <div className="flex items-center space-x-3">
                     <Avatar>
-                      <AvatarFallback className="bg-inventory-blue-light text-inventory-blue">
+                      <AvatarFallback className={`${user.name.includes('User') ? 'bg-amber-100 text-amber-600' : 'bg-inventory-blue-light text-inventory-blue'}`}>
                         {getInitials(user.name)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <div className="font-medium">{user.name}</div>
-                      <div className="text-sm text-gray-500">{user.email}</div>
+                      <div className="text-sm text-gray-500">
+                        {user.email.includes('@example.com') ? (
+                          <span className="italic text-amber-600">No email available</span>
+                        ) : (
+                          user.email
+                        )}
+                      </div>
                     </div>
                   </div>
                 </TableCell>

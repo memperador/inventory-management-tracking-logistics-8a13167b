@@ -41,13 +41,26 @@ export const fetchUsers = async (): Promise<User[]> => {
       // Find profile for this user
       const profile = profilesData?.find(p => p.id === user.id);
       
-      // Get real name from profile or use default
+      // Get email from auth data or use placeholder with user ID
+      const email = emailMap.get(user.id) || `user-${user.id.substring(0, 8)}@example.com`;
+      
+      // Generate a better display name based on available information
+      let name = '';
       const firstName = profile?.first_name || '';
       const lastName = profile?.last_name || '';
-      const name = `${firstName} ${lastName}`.trim() || 'Unknown User';
       
-      // Get real email from auth data or use placeholder
-      const email = emailMap.get(user.id) || `user-${user.id.substring(0, 5)}@example.com`;
+      if (firstName || lastName) {
+        // Use available name parts
+        name = `${firstName} ${lastName}`.trim();
+      } else {
+        // Create a name based on email if available, fallback to user ID
+        const emailPrefix = email.split('@')[0];
+        if (emailPrefix && !emailPrefix.startsWith('user-')) {
+          name = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
+        } else {
+          name = `User ${user.id.substring(0, 6)}`;
+        }
+      }
       
       return {
         id: user.id,
@@ -93,7 +106,10 @@ export const fetchProfiles = async (users: User[]): Promise<User[]> => {
       updatedUsers.forEach(user => {
         const userProfile = profilesData.find(profile => profile.id === user.id);
         if (userProfile) {
-          user.name = `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'Unknown User';
+          // Only update name if we have actual profile data
+          if (userProfile.first_name || userProfile.last_name) {
+            user.name = `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim();
+          }
           
           // Also append tenant name if available
           if (user.tenantId) {
