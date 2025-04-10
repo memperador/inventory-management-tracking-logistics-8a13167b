@@ -41,14 +41,14 @@ export const InventoryTabContent: React.FC<InventoryTabContentProps> = ({
       className="w-full"
     >
       <div className="flex justify-between items-center mb-4">
-        <TabsList>
+        <TabsList className="flex-grow-0">
           <TabsTrigger value="list" className="flex items-center gap-2">
             <LayoutGrid className="h-4 w-4" />
-            Inventory List
+            List View
           </TabsTrigger>
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <LineChart className="h-4 w-4" />
-            Dashboard
+            Analytics View
           </TabsTrigger>
         </TabsList>
         

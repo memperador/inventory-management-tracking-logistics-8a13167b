@@ -7,15 +7,7 @@ export const useTenant = () => {
   if (context === undefined) {
     throw new Error('useTenant must be used within a TenantProvider');
   }
-  return {
-    ...context,
-    setCurrentTenant: (tenant) => {
-      if (context.currentTenant !== tenant) {
-        // Update the context with the new tenant
-        (context as any).setCurrentTenant(tenant);
-      }
-    }
-  };
+  return context;
 };
 
 // For backward compatibility
