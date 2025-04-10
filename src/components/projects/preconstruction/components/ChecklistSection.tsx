@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/accordion';
 import ChecklistItemComponent from './ChecklistItem';
 import { PreConstructionSection, ChecklistItemStatus } from '../../types/preConstructionTypes';
+import CircularProgress from './CircularProgress';
 
 interface ChecklistSectionProps {
   section: PreConstructionSection;
@@ -37,6 +38,11 @@ const ChecklistSection: React.FC<ChecklistSectionProps> = ({
   const totalItemsCount = section.items.length;
   const filteredItemsCount = filteredItems.length;
   
+  // Calculate completion percentage for the progress indicator
+  const completionPercentage = totalItemsCount > 0 
+    ? (completedCount / totalItemsCount) * 100 
+    : 0;
+  
   // Don't show empty sections when filtering
   if (statusFilter !== 'all' && filteredItemsCount === 0) {
     return null;
@@ -45,9 +51,12 @@ const ChecklistSection: React.FC<ChecklistSectionProps> = ({
   return (
     <AccordionItem key={section.id} value={section.id}>
       <AccordionTrigger className="px-4 py-2 bg-muted/40 hover:bg-muted rounded-lg">
-        <div className="flex items-center">
-          <span>{section.title}</span>
-          <div className="ml-2 flex items-center gap-2">
+        <div className="flex items-center w-full justify-between pr-6">
+          <div className="flex items-center gap-4">
+            <CircularProgress value={completionPercentage} />
+            <span>{section.title}</span>
+          </div>
+          <div className="flex items-center gap-2">
             <Badge variant="outline">
               {completedCount}/{totalItemsCount}
             </Badge>
