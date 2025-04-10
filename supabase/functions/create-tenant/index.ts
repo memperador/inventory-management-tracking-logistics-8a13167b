@@ -21,6 +21,11 @@ serve(async (req) => {
     try {
       const bodyText = await req.text();
       console.log("Request body:", bodyText);
+      
+      if (!bodyText || bodyText.trim() === '') {
+        throw new Error("Empty request body");
+      }
+      
       requestData = JSON.parse(bodyText);
     } catch (e) {
       console.error("Error parsing request body:", e);
@@ -118,12 +123,36 @@ serve(async (req) => {
 
       if (tenantError) {
         console.error("Error creating tenant:", tenantError);
-        throw new Error(`Error creating tenant: ${tenantError.message}`);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `Error creating tenant: ${tenantError.message}` 
+          }),
+          { 
+            status: 400, 
+            headers: { 
+              "Content-Type": "application/json",
+              ...corsHeaders
+            } 
+          }
+        );
       }
 
       if (!tenantData || !tenantData.id) {
         console.error("No tenant data returned");
-        throw new Error("Failed to create tenant: No ID returned");
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: "Failed to create tenant: No ID returned" 
+          }),
+          { 
+            status: 400, 
+            headers: { 
+              "Content-Type": "application/json",
+              ...corsHeaders
+            } 
+          }
+        );
       }
 
       console.log(`New tenant created with ID: ${tenantData.id}`);
@@ -136,7 +165,19 @@ serve(async (req) => {
 
       if (userUpdateError) {
         console.error("Error associating user with tenant:", userUpdateError);
-        throw new Error(`Error associating user with tenant: ${userUpdateError.message}`);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `Error associating user with tenant: ${userUpdateError.message}` 
+          }),
+          { 
+            status: 400, 
+            headers: { 
+              "Content-Type": "application/json",
+              ...corsHeaders
+            } 
+          }
+        );
       }
 
       console.log(`User ${requestData.userId} associated with tenant ${tenantData.id}`);
@@ -176,12 +217,36 @@ serve(async (req) => {
 
     if (userError) {
       console.error("Error getting user:", userError);
-      throw new Error(`Error getting user: ${userError.message}`);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Error getting user: ${userError.message}` 
+        }),
+        { 
+          status: 400, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
     }
 
     if (!user) {
       console.error("No user found");
-      throw new Error("No user found");
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "No user found" 
+        }),
+        { 
+          status: 401, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
     }
 
     // Extract company name and email domain from user metadata
@@ -197,7 +262,19 @@ serve(async (req) => {
 
     if (companyTenantError) {
       console.error("Error checking existing tenants:", companyTenantError);
-      throw new Error(`Error checking existing tenants: ${companyTenantError.message}`);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Error checking existing tenants: ${companyTenantError.message}` 
+        }),
+        { 
+          status: 400, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
     }
 
     // If domain exists, check if any tenant has users with the same email domain
@@ -213,7 +290,19 @@ serve(async (req) => {
 
       if (domainError && domainError.code !== 'PGRST116') {
         console.error("Error checking domain users:", domainError);
-        throw new Error(`Error checking domain users: ${domainError.message}`);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `Error checking domain users: ${domainError.message}` 
+          }),
+          { 
+            status: 400, 
+            headers: { 
+              "Content-Type": "application/json",
+              ...corsHeaders
+            } 
+          }
+        );
       }
 
       if (usersWithSameDomain && usersWithSameDomain.length > 0) {
@@ -269,7 +358,19 @@ serve(async (req) => {
 
     if (tenantError) {
       console.error("Error creating tenant:", tenantError);
-      throw new Error(`Error creating tenant: ${tenantError.message}`);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Error creating tenant: ${tenantError.message}` 
+        }),
+        { 
+          status: 400, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
     }
 
     // Associate the user with the tenant using service role
@@ -280,7 +381,19 @@ serve(async (req) => {
 
     if (userUpdateError) {
       console.error("Error associating user with tenant:", userUpdateError);
-      throw new Error(`Error associating user with tenant: ${userUpdateError.message}`);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Error associating user with tenant: ${userUpdateError.message}` 
+        }),
+        { 
+          status: 400, 
+          headers: { 
+            "Content-Type": "application/json",
+            ...corsHeaders
+          } 
+        }
+      );
     }
 
     return new Response(

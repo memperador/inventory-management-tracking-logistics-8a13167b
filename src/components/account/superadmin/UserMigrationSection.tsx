@@ -78,10 +78,13 @@ const UserMigrationSection: React.FC<UserMigrationSectionProps> = ({
           </div>
         </form>
         
-        {migrationResult && !migrationResult.success && (
-          <Alert className="mt-4" variant="destructive">
+        {migrationResult && (
+          <Alert 
+            className="mt-4" 
+            variant={migrationResult.success ? "default" : "destructive"}
+          >
             <AlertCircle className="h-5 w-5" />
-            <AlertTitle>Migration Failed</AlertTitle>
+            <AlertTitle>{migrationResult.success ? "Migration Successful" : "Migration Failed"}</AlertTitle>
             <AlertDescription>
               {migrationResult.message}
             </AlertDescription>

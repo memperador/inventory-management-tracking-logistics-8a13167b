@@ -52,10 +52,21 @@ export const useUserMigration = () => {
         })
       });
       
+      // Log the status and headers for debugging
+      console.log('Edge function response status:', response.status);
+      console.log('Edge function response type:', response.headers.get('Content-Type'));
+      
+      // Check if the response is valid before trying to parse it
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Edge function error response:', errorText);
+        throw new Error(`Edge function returned error status ${response.status}: ${errorText || 'No error details'}`);
+      }
+      
       const responseText = await response.text();
       console.log('Edge function raw response:', responseText);
       
-      if (!responseText) {
+      if (!responseText || responseText.trim() === '') {
         throw new Error('Edge function returned empty response');
       }
       
@@ -67,7 +78,7 @@ export const useUserMigration = () => {
         throw new Error(`Failed to parse response: ${responseText}`);
       }
       
-      if (!response.ok || !result.success) {
+      if (!result.success) {
         throw new Error(result?.error || result?.message || 'Failed to create tenant');
       }
       
