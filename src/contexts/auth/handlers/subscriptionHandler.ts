@@ -1,4 +1,3 @@
-
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 import { Session } from '@supabase/supabase-js';
 import { startUserTrial, handleExpiredTrial } from './tenantActions';
@@ -229,5 +228,31 @@ export async function migrateUserToNewTenant(
       success: false,
       message: `Unexpected error during migration: ${error instanceof Error ? error.message : 'Unknown error'}`
     };
+  }
+}
+
+/**
+ * Get user details by email via direct Supabase query
+ */
+export async function getUserDetailsByEmail(email: string): Promise<{ id: string } | null> {
+  if (!email) return null;
+  
+  try {
+    // Since we can't query auth.users directly from the client,
+    // we'll use the profiles table or another table that contains user emails
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .single();
+      
+    if (error || !data) {
+      return null;
+    }
+    
+    return { id: data.id };
+  } catch (error) {
+    console.error(`Error fetching user by email: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return null;
   }
 }

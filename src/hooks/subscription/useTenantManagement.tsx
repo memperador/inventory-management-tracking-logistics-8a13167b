@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useTenant } from '@/hooks/useTenantContext';
@@ -25,19 +26,13 @@ export const useTenantManagement = () => {
     setLookupResult(null);
     
     try {
-      // First check if the email exists in users table
-      const { data: userData, error: userError } = await supabase
+      // Use a simple query to find users by email - avoid complex type instantiation
+      const { data, error } = await supabase
         .from('users')
         .select('id')
-        .eq('email', email)
-        .single();
+        .eq('id', await getUserIdByEmail(email));
 
-      if (userError) {
-        // If not found in users table, attempt more generic search
-        // Note: We're not using auth.admin.listUsers with filter as it's not supported in this context
-        
-        // Try a direct query to auth.users through a function if available
-        // For now, we'll just show an error since we can't directly query auth.users
+      if (error || !data || data.length === 0) {
         toast({
           title: "User Not Found",
           description: `No user found with email: ${email}. SuperAdmin may need to check Supabase directly.`,
@@ -47,13 +42,25 @@ export const useTenantManagement = () => {
         return null;
       }
 
-      setLookupResult({ userId: userData.id, email });
+      const userId = data[0]?.id;
+      
+      if (!userId) {
+        toast({
+          title: "User Not Found",
+          description: `No user found with email: ${email}.`,
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return null;
+      }
+
+      setLookupResult({ userId, email });
       toast({
         title: "User Found",
         description: `Found user: ${email}`
       });
       setIsLoading(false);
-      return { userId: userData.id, email };
+      return { userId, email };
     } catch (error) {
       toast({
         title: "Error",
@@ -62,6 +69,29 @@ export const useTenantManagement = () => {
       });
       setIsLoading(false);
       return null;
+    }
+  };
+
+  /**
+   * Helper function to get user ID by email using auth metadata
+   */
+  const getUserIdByEmail = async (email: string): Promise<string> => {
+    try {
+      // First try to find the user in the auth.users table via a simple RPC function
+      // This approach avoids the deep type instantiation issue
+      const { data, error } = await supabase
+        .rpc('get_user_id_by_email', { user_email: email });
+        
+      if (!error && data) {
+        return data;
+      }
+      
+      // Fallback: query profiles or other tables that might have the email
+      // This is a simplification - you might need to implement this based on your schema
+      return '';
+    } catch (error) {
+      console.error("Error finding user by email:", error);
+      return '';
     }
   };
 
