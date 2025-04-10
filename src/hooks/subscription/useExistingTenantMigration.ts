@@ -39,8 +39,8 @@ export const useExistingTenantMigration = () => {
         throw new Error("No access token available. Please log in again.");
       }
       
-      // Call the create-tenant edge function with the existing tenant ID
-      const functionUrl = `${window.location.origin}/functions/v1/create-tenant`;
+      // Call the create-tenant edge function with the existing tenant ID - fixed for webview compatibility
+      const functionUrl = `/functions/v1/create-tenant`;
       console.log(`Calling edge function for existing tenant migration:`, {
         tenantId,
         userId: targetUserId

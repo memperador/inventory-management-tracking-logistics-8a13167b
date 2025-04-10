@@ -39,8 +39,9 @@ export const useNewTenantMigration = () => {
         throw new Error("No access token available. Please log in again.");
       }
       
-      // Call the create-tenant edge function
-      const functionUrl = `${window.location.origin}/functions/v1/create-tenant`;
+      // Call the create-tenant edge function - fixed for webview compatibility
+      // Use relative URL to avoid cross-origin issues in webviews
+      const functionUrl = `/functions/v1/create-tenant`;
       console.log(`Calling edge function at: ${functionUrl}`);
       
       const response = await fetch(functionUrl, {
