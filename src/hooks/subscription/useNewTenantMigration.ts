@@ -1,3 +1,4 @@
+
 import { useMigrationBase, MigrationResult } from './useMigrationBase';
 import { supabase } from '@/integrations/supabase/client';
 import { startUserTrial } from '@/contexts/auth/handlers/tenantSubscription';
@@ -39,53 +40,104 @@ export const useNewTenantMigration = () => {
         force: true
       });
       
-      // ALWAYS try direct database migration as the primary approach
-      logAuth('MIGRATION', 'Using direct database migration as primary approach', {
+      // ALWAYS try SQL migration as primary approach to bypass RLS
+      logAuth('MIGRATION', 'Using SQL function to bypass RLS for tenant creation', {
         level: AUTH_LOG_LEVELS.INFO,
         force: true
       });
       
-      return await performDirectMigration(newTenantName, targetUserId);
+      const { data: migrationData, error: migrationError } = await supabase.rpc('create_tenant_and_migrate_user', { 
+        p_tenant_name: newTenantName,
+        p_user_id: targetUserId
+      });
       
+      if (migrationError) {
+        logAuth('MIGRATION', `SQL function migration failed: ${migrationError.message}`, {
+          level: AUTH_LOG_LEVELS.ERROR,
+          data: migrationError,
+          force: true
+        });
+        
+        // Try direct migration as fallback
+        return await performDirectMigration(newTenantName, targetUserId);
+      }
+      
+      logAuth('MIGRATION', `SQL function migration succeeded: ${JSON.stringify(migrationData)}`, {
+        level: AUTH_LOG_LEVELS.INFO,
+        force: true
+      });
+      
+      const newTenantId = migrationData?.tenant_id;
+      
+      if (!newTenantId) {
+        throw new Error('No tenant ID returned from migration function');
+      }
+      
+      // Start a trial for the new tenant
+      try {
+        await startUserTrial(newTenantId);
+        logAuth('MIGRATION', `Started trial for new tenant: ${newTenantId}`, {
+          level: AUTH_LOG_LEVELS.INFO,
+          force: true
+        });
+      } catch (trialError) {
+        logAuth('MIGRATION', `Warning: Failed to start trial, but continuing: ${trialError instanceof Error ? trialError.message : 'Unknown error'}`, {
+          level: AUTH_LOG_LEVELS.WARN,
+          data: trialError,
+          force: true
+        });
+      }
+      
+      const successResult = {
+        success: true,
+        message: `Successfully moved user to new tenant "${newTenantName}"`,
+        newTenantId
+      };
+      
+      setMigrationResult(successResult);
+      
+      toast({
+        title: "Migration Successful",
+        description: successResult.message,
+      });
+      
+      // If migration was successful and we're migrating ourselves, refresh the session
+      if (targetUserId === user?.id) {
+        await refreshSession();
+      }
+      
+      return successResult;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logAuth('MIGRATION', `Migration failed: ${errorMessage}`, {
+      logAuth('MIGRATION', `Migration error caught: ${error instanceof Error ? error.message : String(error)}`, {
         level: AUTH_LOG_LEVELS.ERROR,
         data: error,
         force: true
       });
       
-      // Try elevated privileges migration as a fallback
+      // Try alternative approaches
       try {
-        logAuth('MIGRATION', `Attempting fallback with elevated privileges`, {
-          level: AUTH_LOG_LEVELS.WARN,
-          force: true
-        });
-        
-        return await performElevatedMigration(newTenantName, targetUserId);
-      } catch (elevatedError) {
-        const elevatedErrorMessage = elevatedError instanceof Error ? elevatedError.message : 'Unknown error';
-        
-        logAuth('MIGRATION', `Elevated migration also failed: ${elevatedErrorMessage}`, {
-          level: AUTH_LOG_LEVELS.ERROR,
-          data: elevatedError,
-          force: true
-        });
-        
-        const failureResult = {
-          success: false,
-          message: `Failed to migrate user after multiple attempts: ${elevatedErrorMessage}`
-        };
-        
-        setMigrationResult(failureResult);
-        
-        toast({
-          title: "Migration Failed",
-          description: `Failed to migrate user: ${elevatedErrorMessage}`,
-          variant: "destructive"
-        });
-        
-        return failureResult;
+        return await performDirectMigration(newTenantName, targetUserId);
+      } catch (directError) {
+        try {
+          return await performElevatedMigration(newTenantName, targetUserId);
+        } catch (elevatedError) {
+          const elevatedErrorMessage = elevatedError instanceof Error ? elevatedError.message : 'Unknown error';
+          
+          const failureResult = {
+            success: false,
+            message: `Failed to migrate user after multiple attempts: ${elevatedErrorMessage}`
+          };
+          
+          setMigrationResult(failureResult);
+          
+          toast({
+            title: "Migration Failed",
+            description: `Failed to migrate user: ${elevatedErrorMessage}`,
+            variant: "destructive"
+          });
+          
+          return failureResult;
+        }
       }
     } finally {
       setIsLoading(false);

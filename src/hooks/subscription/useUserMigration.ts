@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNewTenantMigration } from './useNewTenantMigration';
 import { useExistingTenantMigration } from './useExistingTenantMigration';
@@ -50,8 +49,7 @@ export const useUserMigration = () => {
       });
       
       try {
-        // Always use direct migration first as primary approach
-        logAuth('USER-MIGRATION', 'Using direct database migration as primary approach', {
+        logAuth('USER-MIGRATION', 'Starting database migration with RLS bypass function', {
           level: AUTH_LOG_LEVELS.INFO,
           force: true
         });
@@ -85,7 +83,6 @@ export const useUserMigration = () => {
       });
       
       try {
-        // Always use direct migration first
         logAuth('USER-MIGRATION', 'Using direct database migration for existing tenant', {
           level: AUTH_LOG_LEVELS.INFO,
           force: true
