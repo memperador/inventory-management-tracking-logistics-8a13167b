@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useTenant } from '@/hooks/useTenantContext';
@@ -26,7 +25,7 @@ export const useTenantManagement = () => {
     setLookupResult(null);
     
     try {
-      // First check if the email exists in auth.users (requires elevated privileges)
+      // First check if the email exists in users table
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('id')
@@ -34,31 +33,18 @@ export const useTenantManagement = () => {
         .single();
 
       if (userError) {
-        // Try to look up the user by their auth email
-        const { data: authData, error: authError } = await supabase.auth.admin.listUsers({
-          filter: {
-            email: email
-          }
-        });
+        // If not found in users table, attempt more generic search
+        // Note: We're not using auth.admin.listUsers with filter as it's not supported in this context
         
-        if (authError || !authData?.users?.length) {
-          toast({
-            title: "User Not Found",
-            description: `No user found with email: ${email}`,
-            variant: "destructive"
-          });
-          setIsLoading(false);
-          return null;
-        }
-        
-        const foundUser = authData.users[0];
-        setLookupResult({ userId: foundUser.id, email });
+        // Try a direct query to auth.users through a function if available
+        // For now, we'll just show an error since we can't directly query auth.users
         toast({
-          title: "User Found",
-          description: `Found user: ${email}`
+          title: "User Not Found",
+          description: `No user found with email: ${email}. SuperAdmin may need to check Supabase directly.`,
+          variant: "destructive"
         });
         setIsLoading(false);
-        return { userId: foundUser.id, email };
+        return null;
       }
 
       setLookupResult({ userId: userData.id, email });
