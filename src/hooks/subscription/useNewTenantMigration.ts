@@ -1,7 +1,7 @@
 
 import { useMigrationBase, MigrationResult } from './useMigrationBase';
 import { supabase } from '@/integrations/supabase/client';
-import { startUserTrial } from '@/contexts/auth/handlers/tenantActions';
+import { startUserTrial } from '@/contexts/auth/handlers/tenantSubscription';
 
 export const useNewTenantMigration = () => {
   const {

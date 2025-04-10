@@ -1,7 +1,7 @@
 
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 import { supabase } from '@/integrations/supabase/client';
-import { startUserTrial } from '@/contexts/auth/handlers/tenantActions';
+import { startUserTrial } from '@/contexts/auth/handlers/tenantSubscription';
 
 /**
  * Move a user to a new tenant
