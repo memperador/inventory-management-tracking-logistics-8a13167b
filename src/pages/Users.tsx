@@ -21,7 +21,7 @@ const UsersPage = () => {
   const [emailToCheck, setEmailToCheck] = useState('');
   
   // Fetch users using React Query
-  const { data: users = [], isLoading, refetch } = useQuery({
+  const { data: users = [], isLoading, refetch, error } = useQuery({
     queryKey: ['users'],
     queryFn: fetchUsers
   });
@@ -73,8 +73,8 @@ const UsersPage = () => {
   return (
     <div className="space-y-6">
       <PageHeader 
-        title="Users"
-        description="Manage users and permissions"
+        title="Users Management"
+        description="Manage users, roles and permissions"
         actions={headerActions}
       />
       
@@ -84,6 +84,15 @@ const UsersPage = () => {
           <AlertDescription className="text-amber-800">
             Some users are missing email addresses. This may affect functionality. 
             Please update user information to include valid email addresses.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Error loading users: {error instanceof Error ? error.message : 'Unknown error'}
           </AlertDescription>
         </Alert>
       )}
