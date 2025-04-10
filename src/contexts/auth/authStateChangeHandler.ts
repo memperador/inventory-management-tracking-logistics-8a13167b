@@ -6,7 +6,16 @@ import { supabase } from '@/integrations/supabase/client';
  * Handles post-login checks and redirects based on auth state changes
  */
 export const handleAuthStateChange = (event: string, currentSession: Session | null) => {
-  console.log('User signed in, checking tenant and subscription status');
+  // Skip processing if no user is logged in (for non-sign-in events)
+  if (event !== 'SIGNED_IN' && !currentSession?.user) {
+    console.log('No user session for event:', event);
+    return;
+  }
+  
+  // For SIGNED_IN event, log additional info
+  if (event === 'SIGNED_IN') {
+    console.log('User signed in, checking tenant and subscription status');
+  }
   
   // Prevent redirect loops by checking if we've already processed this session
   const sessionKey = `auth_processed_${currentSession?.user?.id}`;
@@ -32,6 +41,7 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
   // Use setTimeout to ensure state updates complete before navigation
   setTimeout(async () => {
     if (!currentSession?.user) {
+      console.log('No user in session, cleaning up and exiting');
       sessionStorage.removeItem(processingFlag);
       return;
     }

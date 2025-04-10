@@ -32,6 +32,7 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
   useEffect(() => {
     // Track the last auth event to prevent duplicate processing
     let lastAuthEvent = '';
+    let lastAuthTime = 0;
     let lastAuthUserId = '';
     
     // First set up the auth state change listener
@@ -39,16 +40,18 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
       (event, currentSession) => {
         console.log('Auth state changed:', event);
         
-        // Skip duplicate events for the same user
+        // Skip duplicate events for the same user within a short timeframe
         const currentUserId = currentSession?.user?.id || '';
+        const currentTime = Date.now();
         const eventKey = `${event}-${currentUserId}`;
         
-        if (eventKey === lastAuthEvent) {
+        if (eventKey === lastAuthEvent && currentTime - lastAuthTime < 3000) {
           console.log('Skipping duplicate auth event:', event);
           return;
         }
         
         lastAuthEvent = eventKey;
+        lastAuthTime = currentTime;
         lastAuthUserId = currentUserId;
         
         setSession(currentSession);
@@ -64,6 +67,18 @@ export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
         if (event === 'SIGNED_IN') {
           handleAuthStateChange(event, currentSession);
         } else if (event === 'SIGNED_OUT') {
+          // Clean up any session storage keys that might cause redirect loops
+          for (let i = 0; i < sessionStorage.length; i++) {
+            const key = sessionStorage.key(i);
+            if (key && (
+              key.startsWith('auth_processed_') || 
+              key.startsWith('processing_') || 
+              key === 'login_toast_shown'
+            )) {
+              sessionStorage.removeItem(key);
+            }
+          }
+          
           toast({
             title: 'Signed out',
             description: 'You have been signed out successfully.',
