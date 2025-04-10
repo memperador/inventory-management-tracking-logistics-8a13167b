@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { useNewTenantMigration } from './useNewTenantMigration';
 import { useExistingTenantMigration } from './useExistingTenantMigration';
 import { MigrationResult } from './useMigrationBase';
 import { logAuth, AUTH_LOG_LEVELS, dumpAuthLogs } from '@/utils/debug/authLogger';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useUserMigration = () => {
   const newTenantMigration = useNewTenantMigration();
@@ -38,6 +40,74 @@ export const useUserMigration = () => {
     });
   };
 
+  // Helper function to ensure user has admin role
+  const ensureAdminRole = async (userId: string, tenantId: string) => {
+    try {
+      logAuth('USER-MIGRATION', `Ensuring admin role for user ${userId} in tenant ${tenantId}`, {
+        level: AUTH_LOG_LEVELS.INFO,
+        force: true
+      });
+      
+      const { error } = await supabase
+        .from('users')
+        .update({ role: 'admin' })
+        .eq('id', userId)
+        .eq('tenant_id', tenantId);
+      
+      if (error) {
+        logAuth('USER-MIGRATION', `Failed to set admin role: ${error.message}`, {
+          level: AUTH_LOG_LEVELS.ERROR,
+          force: true
+        });
+        return false;
+      }
+      
+      logAuth('USER-MIGRATION', `Successfully set admin role for user ${userId}`, {
+        level: AUTH_LOG_LEVELS.INFO,
+        force: true
+      });
+      return true;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      logAuth('USER-MIGRATION', `Error setting admin role: ${errorMsg}`, {
+        level: AUTH_LOG_LEVELS.ERROR,
+        force: true,
+        data: { error }
+      });
+      return false;
+    }
+  };
+
+  // Helper function to clear subscription prompt flag
+  const clearSubscriptionFlag = async (userId: string) => {
+    try {
+      const { data: userData, error } = await supabase.auth.updateUser({
+        data: { needs_subscription: false }
+      });
+      
+      if (error) {
+        logAuth('USER-MIGRATION', `Failed to clear subscription flag: ${error.message}`, {
+          level: AUTH_LOG_LEVELS.ERROR,
+          force: true
+        });
+        return false;
+      }
+      
+      logAuth('USER-MIGRATION', `Successfully cleared subscription flag for user ${userId}`, {
+        level: AUTH_LOG_LEVELS.INFO,
+        force: true
+      });
+      return true;
+    } catch (error) {
+      logAuth('USER-MIGRATION', `Error clearing subscription flag: ${error instanceof Error ? error.message : String(error)}`, {
+        level: AUTH_LOG_LEVELS.ERROR,
+        force: true,
+        data: { error }
+      });
+      return false;
+    }
+  };
+
   return {
     isLoading: newTenantMigration.isLoading || existingTenantMigration.isLoading,
     migrationResult,
@@ -60,6 +130,16 @@ export const useUserMigration = () => {
           level: result.success ? AUTH_LOG_LEVELS.INFO : AUTH_LOG_LEVELS.ERROR,
           force: true
         });
+        
+        if (result.success && result.newTenantId) {
+          // Ensure user has admin role in the new tenant
+          const targetUserId = userId || newTenantMigration.user?.id;
+          if (targetUserId) {
+            await ensureAdminRole(targetUserId, result.newTenantId);
+            // Clear the subscription prompt flag
+            await clearSubscriptionFlag(targetUserId);
+          }
+        }
         
         return result;
       } catch (error) {
@@ -94,6 +174,16 @@ export const useUserMigration = () => {
           level: result.success ? AUTH_LOG_LEVELS.INFO : AUTH_LOG_LEVELS.ERROR,
           force: true
         });
+        
+        if (result.success && tenantId) {
+          // Ensure user has admin role in the existing tenant
+          const targetUserId = userId || existingTenantMigration.user?.id;
+          if (targetUserId) {
+            await ensureAdminRole(targetUserId, tenantId);
+            // Clear the subscription prompt flag
+            await clearSubscriptionFlag(targetUserId);
+          }
+        }
         
         return result;
       } catch (error) {

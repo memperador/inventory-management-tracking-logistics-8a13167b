@@ -1,11 +1,12 @@
 
-import React, { ReactNode, useEffect } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/auth/AuthContext';
+import { useAuth } from '@/hooks/useAuthContext';
 import { useTenant } from '@/hooks/useTenantContext';
 import { UserRole } from '@/types/roles';
 import { useRole } from '@/hooks/useRoleContext';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
+import { checkUserSubscriptionAccess } from '@/utils/subscription/userMigrationUtils';
 
 interface ProtectedRouteProps {
   requiredRoles?: UserRole[];
@@ -24,9 +25,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { currentTenant, loading: tenantLoading } = useTenant();
   const { hasPermission, isRoleLoading } = useRole();
   const location = useLocation();
+  const [checkedSubscription, setCheckedSubscription] = useState(false);
+  const [needsSubscription, setNeedsSubscription] = useState(false);
+  
+  // Track if we've already processed this route to prevent redirect loops
+  const [routeProcessed, setRouteProcessed] = useState(false);
   
   // Log the authentication status and current path for debugging
   useEffect(() => {
+    if (loading || tenantLoading || isRoleLoading) return;
+    
     logAuth('PROTECTED-ROUTE', 'ProtectedRoute status check', {
       level: AUTH_LOG_LEVELS.INFO,
       data: {
@@ -43,33 +51,49 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       }
     });
     
-    if (loading || tenantLoading) {
-      logAuth('PROTECTED-ROUTE', "Auth or tenant data loading, waiting...", {
-        level: AUTH_LOG_LEVELS.INFO
-      });
-    } else if (!user) {
-      logAuth('PROTECTED-ROUTE', `Unauthorized access attempt to: ${location.pathname} - Redirecting to auth`, {
-        level: AUTH_LOG_LEVELS.INFO
-      });
-    } else {
-      logAuth('PROTECTED-ROUTE', `User authenticated, allowing access to: ${location.pathname}`, {
-        level: AUTH_LOG_LEVELS.INFO
+    // Check subscription status once when data is loaded
+    const checkSubscription = async () => {
+      if (!user?.id || checkedSubscription || routeProcessed) return;
+      
+      // Skip subscription check for these routes
+      if (
+        location.pathname === '/payment' ||
+        location.pathname === '/auth' ||
+        location.pathname === '/unauthorized' ||
+        location.pathname === '/logout'
+      ) {
+        setCheckedSubscription(true);
+        return;
+      }
+      
+      // Check if user needs subscription from user metadata
+      const needsSubscriptionFromMetadata = user.user_metadata?.needs_subscription === true;
+      
+      // Check if we have an active subscription
+      const subscriptionCheck = await checkUserSubscriptionAccess(user.id);
+      
+      // Log subscription check results
+      logAuth('SUBSCRIPTION-CHECK', 'Subscription status check in protected route', {
+        level: AUTH_LOG_LEVELS.INFO,
+        data: {
+          path: location.pathname,
+          userId: user.id,
+          fromMetadata: needsSubscriptionFromMetadata,
+          hasAccess: subscriptionCheck.hasAccess,
+          message: subscriptionCheck.message
+        }
       });
       
-      // Check if user needs to select a subscription plan
-      const needsSubscription = user.user_metadata?.needs_subscription === true;
-      if (needsSubscription && location.pathname !== '/payment') {
-        logAuth('PROTECTED-ROUTE', "User needs subscription, redirecting to payment page", {
-          level: AUTH_LOG_LEVELS.INFO
-        });
-      }
-    }
-  }, [user, loading, location.pathname, tenantLoading, currentTenant, isRoleLoading, requiredRoles]);
+      // Set local state
+      setNeedsSubscription(needsSubscriptionFromMetadata || !subscriptionCheck.hasAccess);
+      setCheckedSubscription(true);
+    };
+    
+    checkSubscription();
+  }, [user, loading, location.pathname, tenantLoading, currentTenant, isRoleLoading, requiredRoles, checkedSubscription, routeProcessed]);
   
-  if (loading || isRoleLoading || tenantLoading) {
-    logAuth('PROTECTED-ROUTE', 'Still loading, showing loading indicator', {
-      level: AUTH_LOG_LEVELS.INFO
-    });
+  // Don't render or redirect until all loading states are resolved
+  if (loading || isRoleLoading || tenantLoading || !checkedSubscription) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-100">
         <div className="flex flex-col items-center gap-4">
@@ -90,18 +114,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to={`${redirectTo}?returnTo=${currentPath}`} replace />;
   }
   
-  // Check if the user needs to subscribe first
-  const needsSubscription = user.user_metadata?.needs_subscription === true;
-  const noActiveSubscription = currentTenant && 
-                              currentTenant.subscription_status !== 'active' && 
-                              currentTenant.subscription_status !== 'trialing';
-  
-  // Don't redirect to payment page if the user is in a trial or allowFreeTrialUsers is true
-  const isInTrial = currentTenant?.subscription_status === 'trialing';
-  
-  if ((needsSubscription || noActiveSubscription) && 
-      location.pathname !== '/payment' && 
-      !(allowFreeTrialUsers && isInTrial)) {
+  // Check if user needs to subscribe or has an active subscription
+  if (needsSubscription && location.pathname !== '/payment' && location.pathname !== '/customer-onboarding') {
     logAuth('PROTECTED-ROUTE', `Redirecting user ${user.id} to payment page to select a plan`, {
       level: AUTH_LOG_LEVELS.INFO,
       data: {
@@ -109,10 +123,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         hasActiveTenant: !!currentTenant,
         currentPath: location.pathname,
         subscriptionStatus: currentTenant?.subscription_status || 'none',
-        isInTrial,
-        allowFreeTrialUsers
       }
     });
+    
+    setRouteProcessed(true);
     return <Navigate to="/payment" replace />;
   }
   
@@ -121,6 +135,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     logAuth('PROTECTED-ROUTE', 'No specific roles required, rendering content', {
       level: AUTH_LOG_LEVELS.INFO
     });
+    setRouteProcessed(true);
     return children ? <>{children}</> : <Outlet />;
   }
   
@@ -129,6 +144,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     logAuth('PROTECTED-ROUTE', `User ${user.id} doesn't have required roles (${requiredRoles.join(', ')}), redirecting to unauthorized`, {
       level: AUTH_LOG_LEVELS.WARN
     });
+    setRouteProcessed(true);
     return <Navigate to="/unauthorized" replace />;
   }
   
@@ -136,6 +152,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   logAuth('PROTECTED-ROUTE', `User ${user.id} has required permissions, rendering content`, {
     level: AUTH_LOG_LEVELS.INFO
   });
+  setRouteProcessed(true);
   return children ? <>{children}</> : <Outlet />;
 };
 

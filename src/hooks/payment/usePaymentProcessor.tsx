@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuditLogger } from '@/middleware/auditLogger';
@@ -7,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUserMigration } from '@/hooks/subscription/useUserMigration';
 import { logAuth, AUTH_LOG_LEVELS, dumpAuthLogs } from '@/utils/debug/authLogger';
 import { useAuth } from '@/hooks/useAuthContext';
+import { logMigrationSessionState } from '@/utils/subscription/userMigrationUtils';
 
 interface UsePaymentProcessorProps {
   amount: number;
@@ -41,11 +43,22 @@ export const usePaymentProcessor = ({
     setError(null);
 
     try {
+      // Log payment process start
       logAuth('PAYMENT_PROCESS', `Starting ${paymentMethod} payment process for ${selectedTier} tier`, {
         level: AUTH_LOG_LEVELS.INFO,
         force: true,
-        data: { amount, paymentType, userId: user?.id }
+        data: { 
+          amount, 
+          paymentType, 
+          userId: user?.id,
+          email: user?.email,
+          currentTimestamp: new Date().toISOString()
+        }
       });
+      
+      // Log current session state before payment
+      logMigrationSessionState(await supabase.auth.getSession().then(res => res.data.session), 
+        'Session state before payment processing');
       
       console.log(`Processing mock ${paymentMethod} payment for $${(amount / 100).toFixed(2)} with tier ${selectedTier || 'unknown'}`);
       
@@ -60,7 +73,13 @@ export const usePaymentProcessor = ({
         paymentMethod
       };
       
+      // Update existing tenant if already created
       if (selectedTier && currentTenant?.id) {
+        logAuth('PAYMENT', `Updating existing tenant ${currentTenant.id} with subscription tier ${selectedTier}`, {
+          level: AUTH_LOG_LEVELS.INFO,
+          force: true
+        });
+        
         const { error: updateError } = await supabase
           .from('tenants')
           .update({
@@ -83,6 +102,7 @@ export const usePaymentProcessor = ({
           });
         }
 
+        // Check if user needs migration after subscription
         const needsMigration = user?.user_metadata?.needs_subscription === true;
         if (needsMigration) {
           logAuth('PAYMENT', 'User needs migration after subscription', {
@@ -102,9 +122,17 @@ export const usePaymentProcessor = ({
             }
           });
 
-          const tenantName = `${user.email?.split('@')[0]}'s Organization` || 'New Organization';
+          // Create tenant name based on email or company info
+          const emailPrefix = user.email?.split('@')[0] || '';
+          const companyName = user.user_metadata?.company_name;
+          const tenantName = companyName || `${emailPrefix}'s Organization`;
           
           try {
+            // Log session state before migration
+            logMigrationSessionState(await supabase.auth.getSession().then(res => res.data.session), 
+              'Session state before migration');
+            
+            // Migrate user to new tenant and set as admin
             const migrationResult = await migrateToNewTenant(tenantName);
             
             if (migrationResult.success) {
@@ -124,7 +152,17 @@ export const usePaymentProcessor = ({
                 force: true
               });
               
+              // Clear the needs_subscription flag
+              await supabase.auth.updateUser({
+                data: { needs_subscription: false }
+              });
+              
+              // Refresh the session to get the latest metadata and tenant ID
               await refreshSession();
+              
+              // Log session state after migration
+              logMigrationSessionState(await supabase.auth.getSession().then(res => res.data.session), 
+                'Session state after migration and refresh');
               
               logAuth('PAYMENT_SESSION', 'Session refresh complete', {
                 level: AUTH_LOG_LEVELS.INFO,
@@ -139,6 +177,10 @@ export const usePaymentProcessor = ({
                 title: "Account Setup Complete",
                 description: "Your account has been set up with your new subscription!"
               });
+              
+              // Clear any session storage flags that might cause redirect loops
+              sessionStorage.removeItem('authRedirectHandled');
+              sessionStorage.removeItem('processingAuth');
             } else {
               logAuth('PAYMENT', `Migration failed: ${migrationResult.message}`, {
                 level: AUTH_LOG_LEVELS.ERROR,
@@ -152,12 +194,19 @@ export const usePaymentProcessor = ({
               });
             }
           } catch (migrationError) {
+            const errorData = migrationError instanceof Error 
+              ? { message: migrationError.message, stack: migrationError.stack }
+              : { stringError: String(migrationError) };
+              
             logAuth('PAYMENT', 'Migration error:', {
               level: AUTH_LOG_LEVELS.ERROR,
-              data: migrationError,
+              data: errorData,
               force: true
             });
           }
+        } else {
+          // Just refresh the session to get latest tenant data
+          await refreshSession();
         }
       }
 
@@ -167,7 +216,7 @@ export const usePaymentProcessor = ({
       });
       
       await logEvent({
-        userId: 'current-user',
+        userId: user?.id || 'unknown-user',
         action: 'mock_payment_processed',
         entityType: 'payment',
         entityId: mockPaymentIntent.id,
@@ -180,15 +229,27 @@ export const usePaymentProcessor = ({
         },
       });
       
+      // Redirect to onboarding after successful payment
       if (onSuccess) {
         onSuccess(mockPaymentIntent);
       }
 
-      navigate('/dashboard');
+      // Redirect to customer onboarding instead of dashboard
+      navigate('/customer-onboarding');
       
     } catch (err) {
+      const errorData = err instanceof Error 
+        ? { message: err.message, stack: err.stack }
+        : { stringError: String(err) };
+        
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
       setError(errorMessage);
+      
+      logAuth('PAYMENT_ERROR', 'Payment process failed:', {
+        level: AUTH_LOG_LEVELS.ERROR,
+        data: errorData,
+        force: true
+      });
       
       toast({
         title: "Payment failed",
@@ -197,7 +258,7 @@ export const usePaymentProcessor = ({
       });
       
       await logEvent({
-        userId: 'current-user',
+        userId: user?.id || 'unknown-user',
         action: 'mock_payment_failed',
         entityType: 'payment',
         entityId: 'attempt',
