@@ -128,19 +128,19 @@ const Auth = () => {
             return;
           }
           
-          // Then check if onboarding is completed
-          const isOnboardingCompleted = tenantData.onboarding_completed === true;
+          // Then check if onboarding is completed - strictly compare with false
+          const needsOnboarding = tenantData.onboarding_completed === false;
           
-          logAuth('AUTH', `User onboarding status: ${isOnboardingCompleted ? 'completed' : 'not completed'}`, {
+          logAuth('AUTH', `User onboarding status check: ${needsOnboarding ? 'needs onboarding' : 'onboarding completed'}`, {
             level: AUTH_LOG_LEVELS.INFO,
             force: true,
             data: {
               onboardingCompleted: tenantData.onboarding_completed,
-              explicitTrueCheck: tenantData.onboarding_completed === true
+              explicitFalseCheck: tenantData.onboarding_completed === false
             }
           });
           
-          if (!isOnboardingCompleted) {
+          if (needsOnboarding) {
             logAuth('AUTH', `User needs onboarding, redirecting to customer onboarding`, {
               level: AUTH_LOG_LEVELS.INFO,
               force: true
