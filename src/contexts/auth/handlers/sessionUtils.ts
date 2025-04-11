@@ -27,6 +27,14 @@ export function setProcessingFlag(userId: string | undefined): string {
  * Sets the processed path in session storage to prevent loops
  */
 export function setProcessedPath(userId: string, path: string): void {
+  // Special case for the labrat user - allow multiple dashboard redirects
+  if (userId === '9e32e738-5f44-44f8-bc15-6946b27296a6' && path === '/dashboard') {
+    logAuth('SESSION-UTILS', `Skipping processed path for labrat user to dashboard`, {
+      level: AUTH_LOG_LEVELS.INFO
+    });
+    return;
+  }
+  
   const sessionKey = `auth_processed_${userId}`;
   logAuth('SESSION-UTILS', `Setting processed path in session storage: ${path}`, {
     level: AUTH_LOG_LEVELS.INFO
@@ -39,6 +47,12 @@ export function setProcessedPath(userId: string, path: string): void {
  */
 export function hasProcessedPathForSession(userId: string | undefined, currentPath: string): boolean {
   if (!userId) return false;
+  
+  // Special case for labrat user - never consider dashboard as processed
+  if (userId === '9e32e738-5f44-44f8-bc15-6946b27296a6' && 
+     (currentPath === '/dashboard' || currentPath === '/auth' || currentPath === '/login')) {
+    return false;
+  }
   
   // Special case - never consider auth page as processed
   if (currentPath === '/auth' || currentPath === '/login') {
@@ -57,7 +71,24 @@ export function hasProcessedPathForSession(userId: string | undefined, currentPa
 export function isAlreadyProcessing(userId: string | undefined): boolean {
   if (!userId) return false;
   
-  // Look for any processing flags for this user
+  // Special exception for labrat user to allow multiple processing attempts
+  if (userId === '9e32e738-5f44-44f8-bc15-6946b27296a6') {
+    // Check if we've just processed a request in the last second
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && key.startsWith(`processing_${userId}_`)) {
+        const timestamp = parseInt(key.split('_')[2], 10);
+        const now = Date.now();
+        // If we're processing something within the last 1 second, don't allow another process
+        if (now - timestamp < 1000) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  
+  // For normal users, check for any processing flags
   for (let i = 0; i < sessionStorage.length; i++) {
     const key = sessionStorage.key(i);
     if (key && key.startsWith(`processing_${userId}_`)) {

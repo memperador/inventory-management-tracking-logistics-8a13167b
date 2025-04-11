@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/auth/AuthContext';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 import { checkTenantAndOnboarding, handleRedirect } from './verification/utils/authVerificationUtils';
 import { toast } from '@/hooks/use-toast';
+import { LABRAT_EMAIL, redirectLabratToDashboard } from '@/utils/auth/labratUserUtils';
 
 const AuthRedirectManager: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -22,6 +23,21 @@ const AuthRedirectManager: React.FC = () => {
         force: true,
         data: { userId: user.id, metadata: user.user_metadata }
       });
+
+      // Special handling for labrat user
+      if (user.email === LABRAT_EMAIL) {
+        logAuth('AUTH', 'Labrat user detected, forcing dashboard redirect', {
+          level: AUTH_LOG_LEVELS.INFO,
+          force: true
+        });
+        
+        // Use setTimeout to ensure all state updates have completed
+        setTimeout(() => {
+          redirectLabratToDashboard();
+        }, 100);
+        
+        return;
+      }
       
       // Check tenant and onboarding status and redirect accordingly
       const processNavigation = async () => {

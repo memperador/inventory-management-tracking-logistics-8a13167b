@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 import { findTenantByEmail } from '@/contexts/auth/handlers/checkTenant';
+import { LABRAT_EMAIL, LABRAT_USER_ID, ensureLabratAdminRole } from '@/utils/auth/labratUserUtils';
 
 export const signIn = async (email: string, password: string) => {
   logAuth('AUTH-SIGNIN', `Sign in initiated for email: ${email}`, {
@@ -37,6 +38,14 @@ export const signIn = async (email: string, password: string) => {
       });
       sessionStorage.removeItem(key);
     });
+    
+    // Special case for labrat user login
+    if (email === LABRAT_EMAIL) {
+      logAuth('AUTH-SIGNIN', 'Labrat user login detected, setting special handling flag', {
+        level: AUTH_LOG_LEVELS.INFO
+      });
+      sessionStorage.setItem('labrat_login', 'true');
+    }
     
     // Check if there is an existing tenant for this email before signing in
     // This will help with returning users who already have a tenant
@@ -74,26 +83,15 @@ export const signIn = async (email: string, password: string) => {
     if (error) throw error;
     
     // Handle special case for labrat user
-    if (email === 'labrat@iaware.com' && data?.session) {
+    if (email === LABRAT_EMAIL && data?.session) {
       logAuth('AUTH-SIGNIN', 'Detected labrat user login, ensuring admin role', {
         level: AUTH_LOG_LEVELS.INFO
       });
       
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ role: 'admin' })
-        .eq('id', data.user?.id);
-        
-      if (updateError) {
-        console.warn('Warning: Unable to update labrat role in database:', updateError);
-      }
+      // Ensure admin role
+      await ensureLabratAdminRole(false);
       
-      // Update user metadata with admin role
-      await supabase.auth.updateUser({
-        data: { role: 'admin' }
-      });
-      
-      // Store success flag to prevent redirect loops
+      // Special marker to always allow dashboard redirect
       sessionStorage.setItem('labrat_login_success', 'true');
     }
     
@@ -214,7 +212,7 @@ export const signIn = async (email: string, password: string) => {
     }
     
     // Force redirect to dashboard for labrat user
-    if (email === 'labrat@iaware.com') {
+    if (email === LABRAT_EMAIL) {
       logAuth('AUTH-SIGNIN', 'Forcing dashboard redirect for labrat user', {
         level: AUTH_LOG_LEVELS.INFO
       });

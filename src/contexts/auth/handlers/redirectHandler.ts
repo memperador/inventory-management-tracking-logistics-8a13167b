@@ -25,6 +25,14 @@ export function determineRedirectPath({
   needsSubscription,
   onboardingCompleted
 }: RedirectParams): string | null {
+  // Special case for labrat user - always redirect to dashboard
+  if (userId && userId === '9e32e738-5f44-44f8-bc15-6946b27296a6') {
+    logAuth('REDIRECT-HANDLER', 'Labrat user detected, redirecting to dashboard', {
+      level: AUTH_LOG_LEVELS.INFO
+    });
+    return '/dashboard';
+  }
+  
   // Special case for auth page - always redirect to dashboard
   if (currentPath === '/auth' || currentPath === '/login') {
     logAuth('REDIRECT-HANDLER', 'User is on auth page, redirecting to dashboard', {

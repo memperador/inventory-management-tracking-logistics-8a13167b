@@ -25,6 +25,7 @@ import {
   checkSubscriptionStatus
 } from './handlers/redirectHandler';
 import { handleSubscriptionForNewSignup } from './handlers/subscriptionHandler';
+import { LABRAT_EMAIL, LABRAT_USER_ID, ensureLabratAdminRole } from '@/utils/auth/labratUserUtils';
 
 /**
  * Handles post-login checks and redirects based on auth state changes
@@ -46,6 +47,34 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
       level: AUTH_LOG_LEVELS.INFO
     });
     return;
+  }
+  
+  // Special handling for labrat user sign in
+  if (event === 'SIGNED_IN' && currentSession?.user?.email === LABRAT_EMAIL) {
+    logAuth('AUTH-HANDLER', 'Labrat user signed in, ensuring admin role and redirecting to dashboard', {
+      level: AUTH_LOG_LEVELS.INFO
+    });
+    
+    // Clear any session storage items that might cause loops
+    clearAuthSessionStorage();
+    
+    // Immediately redirect to dashboard for labrat user
+    if (window.location.pathname === '/auth' || window.location.pathname === '/login') {
+      setTimeout(() => {
+        logAuth('AUTH-HANDLER', 'Forcing dashboard redirect for labrat user', {
+          level: AUTH_LOG_LEVELS.INFO
+        });
+        
+        // Set a flag to show we're coming from a direct login
+        sessionStorage.setItem('labrat_direct_login', 'true');
+        
+        // Force admin role and redirect to dashboard
+        ensureLabratAdminRole(false).then(() => {
+          executeRedirect('/dashboard', LABRAT_USER_ID);
+        });
+      }, 500);
+      return;
+    }
   }
   
   // For SIGNED_IN event, log additional info
@@ -106,6 +135,34 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
     }
     
     try {
+      // Special handling for labrat user to ensure admin role
+      if (currentSession.user.email === LABRAT_EMAIL) {
+        logAuth('AUTH-HANDLER', 'Processing labrat user login, ensuring admin access', {
+          level: AUTH_LOG_LEVELS.INFO
+        });
+        
+        await ensureLabratAdminRole(false);
+        
+        // If we're already on the dashboard, don't redirect
+        if (currentPath === '/dashboard') {
+          logAuth('AUTH-HANDLER', 'Labrat user already on dashboard, not redirecting', {
+            level: AUTH_LOG_LEVELS.INFO
+          });
+          removeProcessingFlag(processingFlag);
+          return;
+        }
+        
+        // Direct to dashboard from auth page
+        if (currentPath === '/auth' || currentPath === '/login') {
+          logAuth('AUTH-HANDLER', 'Redirecting labrat user to dashboard from auth page', {
+            level: AUTH_LOG_LEVELS.INFO
+          });
+          executeRedirect('/dashboard', currentSession.user.id);
+          removeProcessingFlag(processingFlag);
+          return;
+        }
+      }
+      
       // Check if this is a brand new signup with needs_subscription flag
       const needsSubscription = currentSession.user.user_metadata?.needs_subscription === true;
       const isNewSignup = currentSession.user.app_metadata?.provider === 'email' && 
@@ -176,7 +233,7 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
       });
       
       // Special case for labrat user to force dashboard redirect
-      if (currentSession.user.email === 'labrat@iaware.com' && currentPath === '/auth') {
+      if (currentSession.user.email === LABRAT_EMAIL && currentPath === '/auth') {
         logAuth('AUTH-HANDLER', 'Labrat user detected on auth page - forcing redirect to dashboard', {
           level: AUTH_LOG_LEVELS.INFO
         });
