@@ -12,13 +12,14 @@ export function setProcessingFlag(userId: string | undefined): string {
   
   sessionStorage.setItem(processingFlag, 'true');
   
-  // Set processing flag with 10s expiry to prevent concurrent processing
+  // Set processing flag with 5s expiry to prevent concurrent processing
+  // Reduced from 10s to 5s to avoid long blocking periods
   setTimeout(() => {
     logAuth('SESSION-UTILS', `Removing expired processing flag: ${processingFlag}`, {
       level: AUTH_LOG_LEVELS.DEBUG
     });
     sessionStorage.removeItem(processingFlag);
-  }, 10000);
+  }, 5000);
   
   return processingFlag;
 }
@@ -27,6 +28,14 @@ export function setProcessingFlag(userId: string | undefined): string {
  * Sets the processed path in session storage to prevent loops
  */
 export function setProcessedPath(userId: string, path: string): void {
+  // Force flag takes precedence over all other logic
+  if (sessionStorage.getItem('force_dashboard_redirect') === 'true' && path !== '/dashboard') {
+    logAuth('SESSION-UTILS', `Force dashboard redirect flag is set, overriding to /dashboard`, {
+      level: AUTH_LOG_LEVELS.INFO
+    });
+    path = '/dashboard';
+  }
+  
   // Special case for the labrat user - allow multiple dashboard redirects
   if (userId === '9e32e738-5f44-44f8-bc15-6946b27296a6' && path === '/dashboard') {
     logAuth('SESSION-UTILS', `Skipping processed path for labrat user to dashboard`, {
@@ -48,6 +57,11 @@ export function setProcessedPath(userId: string, path: string): void {
 export function hasProcessedPathForSession(userId: string | undefined, currentPath: string): boolean {
   if (!userId) return false;
   
+  // Force flag overrides everything
+  if (sessionStorage.getItem('force_dashboard_redirect') === 'true') {
+    return false;
+  }
+  
   // Special case for labrat user - never consider dashboard as processed
   if (userId === '9e32e738-5f44-44f8-bc15-6946b27296a6' && 
      (currentPath === '/dashboard' || currentPath === '/auth' || currentPath === '/login')) {
@@ -59,8 +73,16 @@ export function hasProcessedPathForSession(userId: string | undefined, currentPa
     return false;
   }
   
+  // Get the processed path from session storage
   const sessionKey = `auth_processed_${userId}`;
   const processedPath = sessionStorage.getItem(sessionKey);
+  
+  // If this path is already processed, log it
+  if (processedPath === currentPath) {
+    logAuth('SESSION-UTILS', `Path ${currentPath} already processed for user ${userId}`, {
+      level: AUTH_LOG_LEVELS.INFO
+    });
+  }
   
   return processedPath === currentPath;
 }
@@ -70,6 +92,11 @@ export function hasProcessedPathForSession(userId: string | undefined, currentPa
  */
 export function isAlreadyProcessing(userId: string | undefined): boolean {
   if (!userId) return false;
+  
+  // Force flag overrides everything
+  if (sessionStorage.getItem('force_dashboard_redirect') === 'true') {
+    return false;
+  }
   
   // Special exception for labrat user to allow multiple processing attempts
   if (userId === '9e32e738-5f44-44f8-bc15-6946b27296a6') {
@@ -129,4 +156,19 @@ export function clearAuthSessionStorage(): void {
     });
     sessionStorage.removeItem(key);
   });
+}
+
+/**
+ * Emergency clear all session storage to fix redirect loops
+ */
+export function emergencyClearAllAuthStorage(): void {
+  logAuth('SESSION-UTILS', 'EMERGENCY: Clearing all auth session storage', {
+    level: AUTH_LOG_LEVELS.WARN
+  });
+  
+  // Set force flag
+  sessionStorage.setItem('force_dashboard_redirect', 'true');
+  
+  // Clear all processed flags
+  clearAuthSessionStorage();
 }

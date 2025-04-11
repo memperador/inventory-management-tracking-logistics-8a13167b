@@ -1,17 +1,22 @@
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth/AuthContext';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 import { checkTenantAndOnboarding, handleRedirect } from './verification/utils/authVerificationUtils';
 import { toast } from '@/hooks/use-toast';
-import { LABRAT_EMAIL, redirectLabratToDashboard } from '@/utils/auth/labratUserUtils';
+import { LABRAT_EMAIL, redirectLabratToDashboard, ensureLabratAdminRole } from '@/utils/auth/labratUserUtils';
+import { emergencyFixLabratAdmin } from '@/utils/admin/fixLabratAdmin';
 
 const AuthRedirectManager: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading } = useAuth();
   const [navigationProcessed, setNavigationProcessed] = useState(false);
+  
+  // Add a check for redirect loop
+  const [redirectAttempts, setRedirectAttempts] = useState(0);
   
   useEffect(() => {
     // Check if user is verified and needs to go to onboarding
@@ -24,12 +29,32 @@ const AuthRedirectManager: React.FC = () => {
         data: { userId: user.id, metadata: user.user_metadata }
       });
 
-      // Special handling for labrat user
+      // Special handling for labrat user - HIGHEST PRIORITY
       if (user.email === LABRAT_EMAIL) {
         logAuth('AUTH', 'Labrat user detected, forcing dashboard redirect', {
           level: AUTH_LOG_LEVELS.INFO,
           force: true
         });
+        
+        // Clear session storage items that might cause loops
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key && (key.startsWith('auth_processed_') || key.startsWith('processing_'))) {
+            sessionStorage.removeItem(key);
+          }
+        }
+        
+        // If we're already on dashboard, don't redirect
+        if (location.pathname === '/dashboard') {
+          logAuth('AUTH', 'Labrat user already on dashboard, skipping redirect', {
+            level: AUTH_LOG_LEVELS.INFO,
+            force: true
+          });
+          return;
+        }
+        
+        // Always ensure labrat has admin role
+        ensureLabratAdminRole(false);
         
         // Use setTimeout to ensure all state updates have completed
         setTimeout(() => {
@@ -47,8 +72,19 @@ const AuthRedirectManager: React.FC = () => {
           // Get return URL from query params
           const returnTo = searchParams.get('returnTo');
           const finalPath = handleRedirect(targetPath, returnTo);
+          
+          // Set a flag to prevent redirect loop
+          if (redirectAttempts > 2) {
+            logAuth('AUTH', 'Too many redirect attempts, possible loop detected', {
+              level: AUTH_LOG_LEVELS.WARN,
+              force: true
+            });
+            return;
+          }
+          
+          setRedirectAttempts(prev => prev + 1);
 
-          if (finalPath !== window.location.pathname) {
+          if (finalPath !== location.pathname) {
             if (!needsSubscription && !needsOnboarding) {
               toast({
                 title: "Welcome back!",
@@ -72,7 +108,7 @@ const AuthRedirectManager: React.FC = () => {
     return () => {
       setNavigationProcessed(false);
     };
-  }, [user, loading, navigate, searchParams]);
+  }, [user, loading, navigate, searchParams, location.pathname, redirectAttempts]);
   
   // This component doesn't render anything, it just handles the navigation logic
   return null;

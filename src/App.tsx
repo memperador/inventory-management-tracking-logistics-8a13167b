@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { NotificationProvider } from '@/contexts/NotificationContext';
@@ -37,8 +38,10 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import CustomerOnboarding from './pages/CustomerOnboarding';
 import { AutoAdminRoleFixer } from './components/admin/AdminRoleFixer';
 
-// Import the emergency fix utility - will auto-execute
+// Import our emergency fix utility - will auto-execute
 import './utils/admin/fixLabratAdmin';
+// Import break login loop utility - makes it available in console
+import './utils/auth/breakLoginLoop';
 
 // Create a new query client
 const queryClient = new QueryClient();
@@ -50,6 +53,15 @@ const ProjectRedirect = () => {
 
 const RootRedirect = () => {
   console.log('[APP] RootRedirect component rendering');
+  
+  // Clear any potential redirect loop issues when landing on root path
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const key = sessionStorage.key(i);
+    if (key && (key.startsWith('auth_processed_') || key.startsWith('processing_'))) {
+      sessionStorage.removeItem(key);
+    }
+  }
+  
   // Check if user is already logged in
   const hasSession = localStorage.getItem('supabase.auth.token') !== null;
   

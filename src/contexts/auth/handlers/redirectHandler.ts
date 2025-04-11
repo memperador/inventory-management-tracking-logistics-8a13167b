@@ -25,6 +25,18 @@ export function determineRedirectPath({
   needsSubscription,
   onboardingCompleted
 }: RedirectParams): string | null {
+  // Check for force redirect flag - highest priority
+  if (sessionStorage.getItem('force_dashboard_redirect') === 'true') {
+    logAuth('REDIRECT-HANDLER', 'Force dashboard redirect flag detected, redirecting to dashboard', {
+      level: AUTH_LOG_LEVELS.INFO
+    });
+    // Clear the flag to prevent redirect loops
+    setTimeout(() => {
+      sessionStorage.removeItem('force_dashboard_redirect');
+    }, 2000);
+    return '/dashboard';
+  }
+  
   // Special case for labrat user - always redirect to dashboard
   if (userId && userId === '9e32e738-5f44-44f8-bc15-6946b27296a6') {
     logAuth('REDIRECT-HANDLER', 'Labrat user detected, redirecting to dashboard', {
@@ -93,6 +105,16 @@ export function determineRedirectPath({
  * Performs the actual redirect
  */
 export function executeRedirect(targetPath: string, userId?: string): void {
+  // Check for force redirect flag
+  if (sessionStorage.getItem('force_dashboard_redirect') === 'true') {
+    targetPath = '/dashboard';
+    
+    // Clear the flag after redirect is executed
+    setTimeout(() => {
+      sessionStorage.removeItem('force_dashboard_redirect');
+    }, 2000);
+  }
+  
   logAuth('REDIRECT-HANDLER', `Redirecting to: ${targetPath}`, {
     level: AUTH_LOG_LEVELS.INFO
   });
@@ -114,6 +136,16 @@ export function checkSubscriptionStatus(tenantData: any, session: Session | null
   needsSubscription: boolean;
   onboardingCompleted?: boolean;
 } {
+  // Special case for labrat user - override subscription check
+  if (session?.user?.email === 'labrat@iaware.com') {
+    return {
+      hasActiveSubscription: true,
+      inTrialPeriod: true,
+      needsSubscription: false,
+      onboardingCompleted: true
+    };
+  }
+
   // Determine if subscription is active
   const hasActiveSubscription = tenantData && tenantData.subscription_status === 'active';
   

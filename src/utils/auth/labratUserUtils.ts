@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
+import { emergencyClearAllAuthStorage } from '@/contexts/auth/handlers/sessionUtils';
 
 // Labrat user constants
 export const LABRAT_EMAIL = 'labrat@iaware.com';
@@ -100,17 +101,12 @@ export function redirectLabratToDashboard(): void {
     level: AUTH_LOG_LEVELS.INFO
   });
   
-  // Clear any potential redirect loop blockers
-  for (let i = 0; i < sessionStorage.length; i++) {
-    const key = sessionStorage.key(i);
-    if (key && (key.startsWith(`auth_processed_${LABRAT_USER_ID}`) || 
-                key.startsWith(`processing_${LABRAT_USER_ID}`))) {
-      sessionStorage.removeItem(key);
-    }
-  }
+  // Clear any redirect loop blockers
+  emergencyClearAllAuthStorage();
   
   // Set flag to prevent redirect loop detection
   sessionStorage.setItem('labrat_force_redirect', 'true');
+  sessionStorage.setItem('force_dashboard_redirect', 'true');
   
   // Use direct location change for more reliable redirect
   window.location.href = '/dashboard';
@@ -122,4 +118,22 @@ export function redirectLabratToDashboard(): void {
 export async function isLabratUser(): Promise<boolean> {
   const { data } = await supabase.auth.getSession();
   return data.session?.user?.email === LABRAT_EMAIL;
+}
+
+/**
+ * Emergency fix for when labrat user is stuck in a redirect loop
+ */
+export function emergencyLabratFix(): void {
+  logAuth('LABRAT-UTILS', 'Executing emergency labrat fix', {
+    level: AUTH_LOG_LEVELS.WARN
+  });
+  
+  // Clear all session storage
+  emergencyClearAllAuthStorage();
+  
+  // Set force flag
+  sessionStorage.setItem('force_dashboard_redirect', 'true');
+  
+  // Force reload to clean slate
+  window.location.href = '/dashboard';
 }
