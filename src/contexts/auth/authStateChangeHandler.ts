@@ -150,28 +150,25 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
         level: AUTH_LOG_LEVELS.INFO
       });
       
-      // Check subscription status
-      const { hasActiveSubscription, inTrialPeriod, needsSubscription: needsSub } = 
+      // Check subscription status including onboarding status
+      const { hasActiveSubscription, inTrialPeriod, needsSubscription: needsSub, onboardingCompleted } = 
         checkSubscriptionStatus(tenantData, currentSession);
       
-      // If onboarding is not completed and this is not the onboarding page, redirect to onboarding
-      if (tenantData && tenantData.onboarding_completed === false && currentPath !== '/onboarding') {
-        logAuth('AUTH-HANDLER', 'Tenant onboarding not completed, redirecting to onboarding flow', {
-          level: AUTH_LOG_LEVELS.INFO
-        });
-        executeRedirect('/onboarding', currentSession.user.id);
-        removeProcessingFlag(processingFlag);
-        return;
-      }
+      // Log the onboarding status from tenant data
+      logAuth('AUTH-HANDLER', `Tenant onboarding status: ${onboardingCompleted === false ? 'Not completed' : onboardingCompleted === true ? 'Completed' : 'Unknown'}`, {
+        level: AUTH_LOG_LEVELS.INFO,
+        data: { tenantId, onboardingCompleted }
+      });
       
-      // Determine redirect path
+      // Determine redirect path with onboarding status
       const targetPath = determineRedirectPath({
         userId: currentSession.user.id,
         currentPath,
         returnTo,
         hasActiveSubscription,
         inTrialPeriod,
-        needsSubscription: needsSub
+        needsSubscription: needsSub,
+        onboardingCompleted
       });
       
       // If targetPath is null, no redirect is needed

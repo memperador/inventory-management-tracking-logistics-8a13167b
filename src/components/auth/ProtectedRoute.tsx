@@ -27,6 +27,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const location = useLocation();
   const [checkedSubscription, setCheckedSubscription] = useState(false);
   const [needsSubscription, setNeedsSubscription] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
   
   // Use refs to prevent redundant checks and potential infinite loops
   const processedRef = useRef(false);
@@ -79,7 +80,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           location.pathname === '/auth' ||
           location.pathname === '/unauthorized' ||
           location.pathname === '/logout' ||
-          location.pathname === '/customer-onboarding'
+          location.pathname === '/customer-onboarding' ||
+          location.pathname === '/onboarding'
         ) {
           setCheckedSubscription(true);
           checkingSubscriptionRef.current = false;
@@ -88,6 +90,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         
         // Check if user needs subscription from user metadata
         const needsSubscriptionFromMetadata = user.user_metadata?.needs_subscription === true;
+        
+        // Check onboarding status from tenant data
+        const needsOnboardingFromTenant = currentTenant && currentTenant.onboarding_completed === false;
         
         // Check if we have an active subscription
         const subscriptionCheck = await checkUserSubscriptionAccess(user.id);
@@ -99,6 +104,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             path: location.pathname,
             userId: user.id,
             fromMetadata: needsSubscriptionFromMetadata,
+            needsOnboarding: needsOnboardingFromTenant,
             hasAccess: subscriptionCheck.hasAccess,
             message: subscriptionCheck.message
           }
@@ -106,6 +112,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         
         // Set local state
         setNeedsSubscription(needsSubscriptionFromMetadata || !subscriptionCheck.hasAccess);
+        setNeedsOnboarding(needsOnboardingFromTenant === true);
         setCheckedSubscription(true);
         
       } catch (error) {
@@ -121,7 +128,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     };
     
     checkSubscription();
-  }, [user, loading, location.pathname, tenantLoading, isRoleLoading]);
+  }, [user, loading, location.pathname, tenantLoading, isRoleLoading, currentTenant]);
   
   // Don't render or redirect until all loading states are resolved
   if (loading || isRoleLoading || tenantLoading || !checkedSubscription) {
@@ -148,8 +155,27 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to={`${redirectTo}?returnTo=${currentPath}`} replace />;
   }
   
-  // Check if user needs to subscribe or has an active subscription
-  if (needsSubscription && location.pathname !== '/payment' && location.pathname !== '/customer-onboarding') {
+  // First check if the user needs to complete onboarding (higher priority than subscription)
+  if (needsOnboarding && 
+      location.pathname !== '/onboarding' && 
+      location.pathname !== '/customer-onboarding' && 
+      location.pathname !== '/payment') {
+    logAuth('PROTECTED-ROUTE', `Redirecting user ${user.id} to customer onboarding page`, {
+      level: AUTH_LOG_LEVELS.INFO,
+      data: {
+        needsOnboarding,
+        currentPath: location.pathname,
+      }
+    });
+    
+    return <Navigate to="/customer-onboarding" replace />;
+  }
+  
+  // Then check if user needs to subscribe or has an active subscription
+  if (needsSubscription && 
+      location.pathname !== '/payment' && 
+      location.pathname !== '/customer-onboarding' && 
+      location.pathname !== '/onboarding') {
     logAuth('PROTECTED-ROUTE', `Redirecting user ${user.id} to payment page to select a plan`, {
       level: AUTH_LOG_LEVELS.INFO,
       data: {

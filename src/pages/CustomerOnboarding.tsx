@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,7 +28,8 @@ const CustomerOnboarding: React.FC = () => {
         referrer: document.referrer,
         hasTenant: !!currentTenant?.id,
         tenantId: currentTenant?.id || 'none',
-        tenantSubscriptionStatus: currentTenant?.subscription_status || 'none'
+        tenantSubscriptionStatus: currentTenant?.subscription_status || 'none',
+        tenantOnboardingStatus: currentTenant?.onboarding_completed
       }
     });
     
@@ -41,7 +41,7 @@ const CustomerOnboarding: React.FC = () => {
         description: "Your 7-day Premium tier trial has begun. Enjoy all Premium features!",
       });
     }
-  }, [currentTenant?.id, currentTenant?.subscription_status]);
+  }, [currentTenant?.id, currentTenant?.subscription_status, currentTenant?.onboarding_completed]);
   
   const completionSteps = [
     { id: 'account', label: 'Account created', completed: true },

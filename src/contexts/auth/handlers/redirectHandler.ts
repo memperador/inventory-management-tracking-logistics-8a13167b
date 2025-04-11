@@ -10,6 +10,7 @@ interface RedirectParams {
   hasActiveSubscription: boolean;
   inTrialPeriod: boolean;
   needsSubscription: boolean;
+  onboardingCompleted?: boolean; // Added parameter for onboarding status
 }
 
 /**
@@ -21,10 +22,19 @@ export function determineRedirectPath({
   returnTo,
   hasActiveSubscription,
   inTrialPeriod,
-  needsSubscription
+  needsSubscription,
+  onboardingCompleted
 }: RedirectParams): string | null {
-  // Redirect logic
-  if (needsSubscription && !hasActiveSubscription && !inTrialPeriod) {
+  // First check if onboarding is required (unless we're already on the onboarding page)
+  if (onboardingCompleted === false && currentPath !== '/onboarding' && currentPath !== '/customer-onboarding') {
+    logAuth('REDIRECT-HANDLER', 'User needs onboarding, redirecting to onboarding page', {
+      level: AUTH_LOG_LEVELS.INFO
+    });
+    return '/customer-onboarding';
+  }
+  
+  // Then check subscription status
+  if (needsSubscription && !hasActiveSubscription && !inTrialPeriod && currentPath !== '/payment') {
     logAuth('REDIRECT-HANDLER', 'User needs subscription, redirecting to payment page', {
       level: AUTH_LOG_LEVELS.INFO
     });
@@ -70,6 +80,7 @@ export function checkSubscriptionStatus(tenantData: any, session: Session | null
   hasActiveSubscription: boolean;
   inTrialPeriod: boolean;
   needsSubscription: boolean;
+  onboardingCompleted?: boolean; // Added return value for onboarding status
 } {
   // Determine if subscription is active
   const hasActiveSubscription = tenantData && tenantData.subscription_status === 'active';
@@ -83,16 +94,21 @@ export function checkSubscriptionStatus(tenantData: any, session: Session | null
   // Check if this is a brand new signup with needs_subscription flag
   const needsSubscription = session?.user?.user_metadata?.needs_subscription === true;
   
+  // Check if onboarding is completed
+  const onboardingCompleted = tenantData ? tenantData.onboarding_completed : undefined;
+  
   logAuth('SUBSCRIPTION-CHECK', 'Subscription status:', {
     level: AUTH_LOG_LEVELS.INFO,
     data: {
       hasActiveSubscription,
       inTrialPeriod,
+      needsSubscription,
+      onboardingCompleted,
       subscriptionStatus: tenantData?.subscription_status || 'none',
       subscriptionTier: tenantData?.subscription_tier || 'none',
       trialEndsAt: tenantData?.trial_ends_at || 'none'
     }
   });
   
-  return { hasActiveSubscription, inTrialPeriod, needsSubscription };
+  return { hasActiveSubscription, inTrialPeriod, needsSubscription, onboardingCompleted };
 }
