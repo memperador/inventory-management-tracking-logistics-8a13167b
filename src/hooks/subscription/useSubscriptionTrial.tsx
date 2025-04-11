@@ -100,6 +100,24 @@ export const useSubscriptionTrial = () => {
             data: { tenantId: newTenantId }
           });
           
+          // Update the tenant with trial info
+          const { error: updateError } = await supabase
+            .from('tenants')
+            .update({
+              subscription_tier: 'premium',
+              subscription_status: 'trialing',
+              trial_ends_at: trialEndsAt
+            })
+            .eq('id', newTenantId);
+            
+          if (updateError) {
+            logAuth('TRIAL', `Error updating tenant with trial info: ${updateError.message}`, {
+              level: AUTH_LOG_LEVELS.WARN,
+              force: true,
+              data: updateError
+            });
+          }
+          
           // Clear subscription flag
           logAuth('TRIAL', 'Clearing subscription flag and setting tenant ID', {
             level: AUTH_LOG_LEVELS.INFO,
@@ -148,6 +166,26 @@ export const useSubscriptionTrial = () => {
           
           if (!migrationResult.success) {
             throw new Error(`Failed to create tenant: ${migrationResult.message}`);
+          }
+          
+          // Update the tenant with trial info
+          if (migrationResult.newTenantId) {
+            const { error: updateError } = await supabase
+              .from('tenants')
+              .update({
+                subscription_tier: 'premium',
+                subscription_status: 'trialing',
+                trial_ends_at: trialEndsAt
+              })
+              .eq('id', migrationResult.newTenantId);
+              
+            if (updateError) {
+              logAuth('TRIAL', `Error updating migrated tenant with trial info: ${updateError.message}`, {
+                level: AUTH_LOG_LEVELS.WARN,
+                force: true,
+                data: updateError
+              });
+            }
           }
         }
       } else if (currentTenant?.id) {
@@ -216,14 +254,17 @@ export const useSubscriptionTrial = () => {
         description: "Your 7-day Premium tier trial has begun. Enjoy all Premium features!",
       });
       
-      // Navigate to customer onboarding instead of dashboard
+      // Navigate to customer onboarding with a slight delay to ensure UI updates first
       logAuth('TRIAL', 'Redirecting to customer onboarding', {
         level: AUTH_LOG_LEVELS.INFO,
         force: true,
         data: { currentPath: window.location.pathname }
       });
       
-      navigate('/customer-onboarding');
+      // Force redirect with a slight delay to ensure all state updates complete
+      setTimeout(() => {
+        window.location.href = '/customer-onboarding';
+      }, 500);
     } catch (error) {
       // Fix for TypeScript error - ensure data is always a Record<string, any>
       const errorData: Record<string, any> = error instanceof Error 
@@ -251,3 +292,4 @@ export const useSubscriptionTrial = () => {
     isStartingTrial
   };
 };
+

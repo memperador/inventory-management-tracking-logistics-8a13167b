@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,12 +9,29 @@ import { Sparkles, CheckCircle2, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useTenant } from '@/hooks/useTenantContext';
+import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 
 const CustomerOnboarding: React.FC = () => {
   const navigate = useNavigate();
   const { currentTenant, setCurrentTenant } = useTenant();
   const [isLoading, setIsLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  
+  useEffect(() => {
+    // Log when component mounts to verify redirection
+    logAuth('ONBOARDING', 'CustomerOnboarding page mounted', {
+      level: AUTH_LOG_LEVELS.INFO,
+      force: true,
+      data: {
+        timestamp: new Date().toISOString(),
+        currentPath: window.location.pathname,
+        referrer: document.referrer,
+        hasTenant: !!currentTenant?.id,
+        tenantId: currentTenant?.id || 'none',
+        tenantSubscriptionStatus: currentTenant?.subscription_status || 'none'
+      }
+    });
+  }, [currentTenant?.id, currentTenant?.subscription_status]);
   
   const completionSteps = [
     { id: 'account', label: 'Account created', completed: true },
@@ -44,21 +61,45 @@ const CustomerOnboarding: React.FC = () => {
     setIsLoading(true);
     
     try {
+      logAuth('ONBOARDING', 'Completing customer onboarding', {
+        level: AUTH_LOG_LEVELS.INFO,
+        force: true,
+        data: {
+          tenantId: currentTenant.id,
+          timestamp: new Date().toISOString()
+        }
+      });
+      
       // Update tenant with onboarding completed
       const { error } = await supabase
         .from('tenants')
         .update({ onboarding_completed: true })
         .eq('id', currentTenant.id);
       
-      if (error) throw error;
+      if (error) {
+        logAuth('ONBOARDING', `Error updating tenant onboarding status: ${error.message}`, {
+          level: AUTH_LOG_LEVELS.ERROR,
+          force: true,
+          data: { error }
+        });
+        throw error;
+      }
       
       // Update user metadata
-      await supabase.auth.updateUser({
+      const { error: userError } = await supabase.auth.updateUser({
         data: { 
           onboarding_completed: true,
           needs_subscription: false
         }
       });
+      
+      if (userError) {
+        logAuth('ONBOARDING', `Error updating user metadata: ${userError.message}`, {
+          level: AUTH_LOG_LEVELS.ERROR,
+          force: true,
+          data: { userError }
+        });
+      }
       
       // Update tenant state
       if (currentTenant) {
@@ -67,6 +108,11 @@ const CustomerOnboarding: React.FC = () => {
           onboarding_completed: true
         });
       }
+      
+      logAuth('ONBOARDING', 'Onboarding completed successfully, redirecting to dashboard', {
+        level: AUTH_LOG_LEVELS.INFO,
+        force: true
+      });
       
       toast({
         title: "Setup Complete",
@@ -77,6 +123,15 @@ const CustomerOnboarding: React.FC = () => {
       navigate('/dashboard');
     } catch (error) {
       console.error("Error completing onboarding:", error);
+      
+      logAuth('ONBOARDING', 'Error completing onboarding', {
+        level: AUTH_LOG_LEVELS.ERROR,
+        force: true,
+        data: error instanceof Error ? 
+          { message: error.message, stack: error.stack } : 
+          { error: String(error) }
+      });
+      
       toast({
         title: "Error",
         description: "Failed to complete onboarding. Please try again.",

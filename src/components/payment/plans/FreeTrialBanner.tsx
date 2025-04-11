@@ -1,46 +1,71 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Sparkles } from 'lucide-react';
+import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 
 interface FreeTrialBannerProps {
   onStartTrial: () => void;
   isStartingTrial?: boolean;
 }
 
-export const FreeTrialBanner: React.FC<FreeTrialBannerProps> = ({ 
-  onStartTrial,
-  isStartingTrial = false
+const FreeTrialBanner: React.FC<FreeTrialBannerProps> = ({ 
+  onStartTrial, 
+  isStartingTrial = false 
 }) => {
+  const handleClick = () => {
+    logAuth('TRIAL_BANNER', 'User clicked Start Free Trial button', {
+      level: AUTH_LOG_LEVELS.INFO,
+      force: true,
+      data: {
+        timestamp: new Date().toISOString(),
+        currentPath: window.location.pathname
+      }
+    });
+    
+    onStartTrial();
+  };
+  
   return (
-    <div className="mb-8 bg-gradient-to-r from-purple-100 to-cyan-100 border border-purple-200 rounded-lg p-6 relative overflow-hidden">
-      <div className="absolute top-0 right-0 h-40 w-40 opacity-10 -mt-12 -mr-12">
-        <Sparkles className="h-full w-full text-purple-500" />
-      </div>
-      <h2 className="text-2xl font-bold mb-2 text-purple-800">Try Premium Free for 7 Days</h2>
-      <p className="mb-4 text-purple-700">
-        Experience all Premium tier features without commitment. During your trial, each feature will be labeled with its corresponding tier, so you'll know exactly what's included in each plan.
-      </p>
-      <div className="flex flex-col sm:flex-row gap-3 items-center">
+    <div className="relative overflow-hidden rounded-lg border bg-white shadow-sm mb-6">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-6">
+        <div className="flex items-center gap-3">
+          <div className="rounded-full bg-primary/10 p-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-semibold">Try Premium for 7 days</h3>
+            <p className="text-sm text-muted-foreground max-w-md">
+              All features unlocked. No credit card required.
+            </p>
+          </div>
+        </div>
         <Button 
-          onClick={onStartTrial}
-          size="lg" 
+          className="w-full md:w-auto"
+          onClick={handleClick}
           disabled={isStartingTrial}
-          className="bg-purple-600 hover:bg-purple-700 text-white"
         >
           {isStartingTrial ? (
             <>
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Starting Trial...
+              <span className="animate-spin mr-2">⏳</span> Starting trial...
             </>
           ) : (
-            <>
-              <Sparkles className="mr-2 h-5 w-5" />
-              Start 7-Day Free Trial
-            </>
+            'Start Free Trial'
           )}
         </Button>
-        <span className="text-purple-700 text-sm">No credit card required</span>
+      </div>
+      <div className="absolute top-0 right-0">
+        <svg
+          className="h-24 w-24 text-primary/10"
+          viewBox="0 0 100 100"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M100 0H0V100C0 55.2 44.8 0 100 0Z"
+            fill="currentColor"
+          />
+        </svg>
       </div>
     </div>
   );
