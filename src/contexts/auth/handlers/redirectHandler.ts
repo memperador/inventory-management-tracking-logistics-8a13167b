@@ -80,7 +80,7 @@ export function checkSubscriptionStatus(tenantData: any, session: Session | null
   hasActiveSubscription: boolean;
   inTrialPeriod: boolean;
   needsSubscription: boolean;
-  onboardingCompleted?: boolean; // Added return value for onboarding status
+  onboardingCompleted?: boolean;
 } {
   // Determine if subscription is active
   const hasActiveSubscription = tenantData && tenantData.subscription_status === 'active';
@@ -94,8 +94,15 @@ export function checkSubscriptionStatus(tenantData: any, session: Session | null
   // Check if this is a brand new signup with needs_subscription flag
   const needsSubscription = session?.user?.user_metadata?.needs_subscription === true;
   
-  // Check if onboarding is completed
-  const onboardingCompleted = tenantData ? tenantData.onboarding_completed : undefined;
+  // Check if onboarding is completed - explicitly compare with true/false
+  let onboardingCompleted;
+  if (tenantData && tenantData.onboarding_completed === true) {
+    onboardingCompleted = true;
+  } else if (tenantData && tenantData.onboarding_completed === false) {
+    onboardingCompleted = false;
+  } else {
+    onboardingCompleted = false; // Default to false if undefined
+  }
   
   logAuth('SUBSCRIPTION-CHECK', 'Subscription status:', {
     level: AUTH_LOG_LEVELS.INFO,
@@ -104,6 +111,7 @@ export function checkSubscriptionStatus(tenantData: any, session: Session | null
       inTrialPeriod,
       needsSubscription,
       onboardingCompleted,
+      onboardingCompletedRawValue: tenantData?.onboarding_completed,
       subscriptionStatus: tenantData?.subscription_status || 'none',
       subscriptionTier: tenantData?.subscription_tier || 'none',
       trialEndsAt: tenantData?.trial_ends_at || 'none'

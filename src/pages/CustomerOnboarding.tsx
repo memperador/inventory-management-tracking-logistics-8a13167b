@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Sparkles, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Sparkles, CheckCircle2, ArrowRight, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useTenant } from '@/hooks/useTenantContext';
@@ -15,6 +16,7 @@ const CustomerOnboarding: React.FC = () => {
   const { currentTenant, setCurrentTenant } = useTenant();
   const [isLoading, setIsLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [onboardingStatus, setOnboardingStatus] = useState<boolean | undefined>(undefined);
   
   useEffect(() => {
     // Log when component mounts to verify redirection works
@@ -33,6 +35,48 @@ const CustomerOnboarding: React.FC = () => {
       }
     });
     
+    // Check actual onboarding status from database if we have a tenant
+    const verifyOnboardingStatus = async () => {
+      if (currentTenant?.id) {
+        try {
+          const { data, error } = await supabase
+            .from('tenants')
+            .select('onboarding_completed')
+            .eq('id', currentTenant.id)
+            .single();
+          
+          if (error) {
+            throw error;
+          }
+          
+          // Log the actual value from database for debugging
+          logAuth('ONBOARDING', `Database onboarding status: ${data.onboarding_completed}`, {
+            level: AUTH_LOG_LEVELS.INFO,
+            force: true,
+            data: {
+              fromDb: data.onboarding_completed,
+              fromContext: currentTenant?.onboarding_completed,
+              tenantId: currentTenant.id
+            }
+          });
+          
+          setOnboardingStatus(data.onboarding_completed);
+          
+          // If tenant is already onboarded but the context doesn't reflect it, update the context
+          if (data.onboarding_completed === true && currentTenant.onboarding_completed !== true) {
+            setCurrentTenant({
+              ...currentTenant,
+              onboarding_completed: true
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching onboarding status:", error);
+        }
+      }
+    };
+    
+    verifyOnboardingStatus();
+    
     // Check if we need to show a notification for successful trial start
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('trial') === 'started') {
@@ -41,7 +85,7 @@ const CustomerOnboarding: React.FC = () => {
         description: "Your 7-day Premium tier trial has begun. Enjoy all Premium features!",
       });
     }
-  }, [currentTenant?.id, currentTenant?.subscription_status, currentTenant?.onboarding_completed]);
+  }, [currentTenant?.id, currentTenant?.subscription_status, currentTenant?.onboarding_completed, setCurrentTenant]);
   
   const completionSteps = [
     { id: 'account', label: 'Account created', completed: true },
@@ -152,6 +196,40 @@ const CustomerOnboarding: React.FC = () => {
     }
   };
   
+  // If onboarding is already completed, show alternate view
+  if (onboardingStatus === true) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
+        <Card className="w-full max-w-2xl">
+          <CardHeader className="text-center bg-gradient-to-r from-green-50 to-blue-50 rounded-t-lg">
+            <CardTitle className="text-2xl flex items-center justify-center gap-2">
+              <CheckCircle2 className="h-6 w-6 text-green-600" />
+              Onboarding Already Completed
+            </CardTitle>
+            <CardDescription>
+              Your account is already set up and ready to use
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <p>You have already completed the onboarding process for your account. You can now access all features of the platform.</p>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-end">
+            <Button 
+              onClick={() => navigate('/dashboard')}
+              className="space-x-2"
+            >
+              <span>Go to Dashboard</span>
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+  
+  // Standard view for uncompleted onboarding
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
       <Card className="w-full max-w-2xl">
