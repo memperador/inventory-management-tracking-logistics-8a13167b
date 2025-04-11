@@ -120,7 +120,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     };
     
     checkSubscription();
-  }, [user, loading, location.pathname, tenantLoading, isRoleLoading, checkedSubscription]);
+  }, [user, loading, location.pathname, tenantLoading, isRoleLoading]);
   
   // Don't render or redirect until all loading states are resolved
   if (loading || isRoleLoading || tenantLoading || !checkedSubscription) {
