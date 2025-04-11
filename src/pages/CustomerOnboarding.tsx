@@ -16,7 +16,7 @@ const CustomerOnboarding: React.FC = () => {
   const { currentTenant, setCurrentTenant } = useTenant();
   const [isLoading, setIsLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [onboardingStatus, setOnboardingStatus] = useState<boolean | undefined>(undefined);
+  const [onboardingStatus, setOnboardingStatus] = useState<boolean | null>(null);
   
   useEffect(() => {
     // Log when component mounts to verify redirection works
@@ -60,7 +60,8 @@ const CustomerOnboarding: React.FC = () => {
             }
           });
           
-          setOnboardingStatus(data.onboarding_completed);
+          // Set the onboarding status - explicitly store null, true, or false
+          setOnboardingStatus(data.onboarding_completed === true ? true : data.onboarding_completed === false ? false : null);
           
           // If tenant is already onboarded but the context doesn't reflect it, update the context
           if (data.onboarding_completed === true && currentTenant.onboarding_completed !== true) {
@@ -236,10 +237,10 @@ const CustomerOnboarding: React.FC = () => {
         <CardHeader className="text-center bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
           <CardTitle className="text-2xl flex items-center justify-center gap-2">
             <Sparkles className="h-6 w-6 text-blue-600" />
-            Setup Complete
+            Complete Your Setup
           </CardTitle>
           <CardDescription>
-            Your account is ready to go!
+            Just one more step to get started!
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
