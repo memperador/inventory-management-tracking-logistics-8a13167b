@@ -24,8 +24,30 @@ import { LABRAT_EMAIL, LABRAT_USER_ID } from '@/utils/auth/labratUserUtils';
       }
     }
 
-    // Set an emergency flag that will force dashboard redirect
-    sessionStorage.setItem('force_dashboard_redirect', 'true');
+    // Set emergency flags that will force dashboard redirect for labrat
+    if (typeof window !== 'undefined') {
+      // Check if this is from the /auth page
+      const isAuthPage = window.location.pathname === '/auth' || 
+                         window.location.pathname === '/login' ||
+                         window.location.pathname === '/';
+                         
+      // If on auth page, set up detection for labrat login
+      if (isAuthPage) {
+        // Set up listener for form submissions
+        document.addEventListener('submit', async (e) => {
+          const form = e.target as HTMLFormElement;
+          const emailInput = form.querySelector('input[type="email"]') as HTMLInputElement;
+          
+          // If this is the labrat email, set special flags
+          if (emailInput && emailInput.value === LABRAT_EMAIL) {
+            console.log('EMERGENCY: Detected labrat login attempt, setting bypass flags');
+            sessionStorage.setItem('labrat_login_detected', 'true');
+            sessionStorage.setItem('force_dashboard_redirect', 'true');
+            sessionStorage.setItem('bypass_auth_checks', 'true');
+          }
+        });
+      }
+    }
   } catch (error) {
     console.error('Error in emergency labrat fix:', error);
   }
@@ -34,15 +56,20 @@ import { LABRAT_EMAIL, LABRAT_USER_ID } from '@/utils/auth/labratUserUtils';
 // Export a function to manually fix the labrat user (for use in components)
 export const emergencyFixLabratAdmin = async () => {
   try {
+    console.log('Running emergency fix for labrat admin...');
+    
     // Get the current session
     const { data: sessionData } = await supabase.auth.getSession();
     
     // Skip if not logged in
     if (!sessionData?.session || sessionData.session.user.email !== LABRAT_EMAIL) {
+      console.log('Not the labrat user or not logged in, skipping fix');
       return;
     }
     
-    // Fix user role in database
+    console.log('Fixing labrat admin role in database...');
+    
+    // Fix user role in database - multiple attempts
     await supabase
       .from('users')
       .update({ role: 'admin' })
@@ -56,8 +83,12 @@ export const emergencyFixLabratAdmin = async () => {
     // Force session refresh
     await supabase.auth.refreshSession();
     
-    // Set force flag
+    // Set force flags
     sessionStorage.setItem('force_dashboard_redirect', 'true');
+    sessionStorage.setItem('bypass_auth_checks', 'true');
+    sessionStorage.setItem('labrat_fixed', Date.now().toString());
+    
+    console.log('Admin role fixed. Redirecting to dashboard...');
     
     // Force redirect to dashboard
     window.location.href = '/dashboard';
@@ -65,3 +96,9 @@ export const emergencyFixLabratAdmin = async () => {
     console.error('Error in emergency fix function:', error);
   }
 };
+
+// Add to window for emergency access from console
+if (typeof window !== 'undefined') {
+  (window as any).fixLabratAdmin = emergencyFixLabratAdmin;
+}
+

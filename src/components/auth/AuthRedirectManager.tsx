@@ -18,6 +18,36 @@ const AuthRedirectManager: React.FC = () => {
   // Add a check for redirect loop
   const [redirectAttempts, setRedirectAttempts] = useState(0);
   
+  // Special effect for labrat user to force dashboard redirect on auth page
+  useEffect(() => {
+    if (!loading && user && user.email === LABRAT_EMAIL) {
+      if (location.pathname === '/auth' || location.pathname === '/login' || location.pathname === '/') {
+        logAuth('AUTH', 'Labrat user on auth page detected, force redirect to dashboard', {
+          level: AUTH_LOG_LEVELS.WARN,
+          force: true
+        });
+        
+        // Give a small delay for other processes to complete
+        setTimeout(() => {
+          // Clear any session storage that might cause loops
+          for (let i = 0; i < sessionStorage.length; i++) {
+            const key = sessionStorage.key(i);
+            if (key && (key.startsWith('auth_processed_') || key.startsWith('processing_'))) {
+              sessionStorage.removeItem(key);
+            }
+          }
+          
+          sessionStorage.setItem('force_dashboard_redirect', 'true');
+          sessionStorage.setItem('bypass_auth_checks', 'true');
+          
+          ensureLabratAdminRole(false).then(() => {
+            navigate('/dashboard', { replace: true });
+          });
+        }, 100);
+      }
+    }
+  }, [user, loading, location.pathname, navigate]);
+  
   useEffect(() => {
     // Check if user is verified and needs to go to onboarding
     if (user && !navigationProcessed && !loading) {
@@ -43,6 +73,10 @@ const AuthRedirectManager: React.FC = () => {
             sessionStorage.removeItem(key);
           }
         }
+        
+        // Add special flags for labrat
+        sessionStorage.setItem('force_dashboard_redirect', 'true');
+        sessionStorage.setItem('bypass_auth_checks', 'true');
         
         // If we're already on dashboard, don't redirect
         if (location.pathname === '/dashboard') {
@@ -92,7 +126,7 @@ const AuthRedirectManager: React.FC = () => {
               });
             }
             
-            navigate(finalPath);
+            navigate(finalPath, { replace: true });
           }
         } catch (error) {
           logAuth('AUTH', `Error during navigation processing: ${error instanceof Error ? error.message : 'Unknown error'}`, {

@@ -107,6 +107,7 @@ export function redirectLabratToDashboard(): void {
   // Set flag to prevent redirect loop detection
   sessionStorage.setItem('labrat_force_redirect', 'true');
   sessionStorage.setItem('force_dashboard_redirect', 'true');
+  sessionStorage.setItem('bypass_auth_checks', 'true');
   
   // Use direct location change for more reliable redirect
   window.location.href = '/dashboard';
@@ -122,6 +123,7 @@ export async function isLabratUser(): Promise<boolean> {
 
 /**
  * Emergency fix for when labrat user is stuck in a redirect loop
+ * This function can be called from console or components
  */
 export function emergencyLabratFix(): void {
   logAuth('LABRAT-UTILS', 'Executing emergency labrat fix', {
@@ -131,9 +133,23 @@ export function emergencyLabratFix(): void {
   // Clear all session storage
   emergencyClearAllAuthStorage();
   
-  // Set force flag
+  // Set force flags
   sessionStorage.setItem('force_dashboard_redirect', 'true');
+  sessionStorage.setItem('bypass_auth_checks', 'true');
+  sessionStorage.setItem('labrat_emergency', Date.now().toString());
   
   // Force reload to clean slate
   window.location.href = '/dashboard';
 }
+
+/**
+ * CRITICAL: Apply emergency fix for labrat auth - this runs immediately
+ */
+(function initLabratFix() {
+  // Make emergency function available globally
+  if (typeof window !== 'undefined') {
+    (window as any).fixLabrat = emergencyLabratFix;
+    (window as any).ensureLabratAdmin = ensureLabratAdminRole;
+  }
+})();
+

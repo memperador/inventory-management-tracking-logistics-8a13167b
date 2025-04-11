@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { NotificationProvider } from '@/contexts/NotificationContext';
@@ -54,16 +53,21 @@ const ProjectRedirect = () => {
 const RootRedirect = () => {
   console.log('[APP] RootRedirect component rendering');
   
-  // Clear any potential redirect loop issues when landing on root path
-  for (let i = 0; i < sessionStorage.length; i++) {
-    const key = sessionStorage.key(i);
-    if (key && (key.startsWith('auth_processed_') || key.startsWith('processing_'))) {
-      sessionStorage.removeItem(key);
-    }
-  }
+  // AGGRESSIVE: Clear ALL session storage to prevent loops when hitting root path
+  sessionStorage.clear();
   
   // Check if user is already logged in
   const hasSession = localStorage.getItem('supabase.auth.token') !== null;
+  
+  // Special handling for labrat - if we see a labrat marker in localStorage
+  // force direct login
+  const isLabratLogin = localStorage.getItem('labrat_user') === 'true';
+  if (isLabratLogin) {
+    console.log('[APP] Labrat special login flow detected, redirecting to auth with labrat email');
+    localStorage.removeItem('labrat_user'); // Clear to prevent loops
+    // Direct to auth page with labrat email prefilled
+    return <Navigate to="/auth?email=labrat@iaware.com" replace />;
+  }
   
   // If session exists, redirect to dashboard, otherwise to auth
   const targetPath = hasSession ? '/dashboard' : '/auth';
@@ -114,6 +118,18 @@ function App() {
     
     if (Object.keys(foundAuthParams).length > 0) {
       console.log('[APP] Auth-related URL parameters detected:', foundAuthParams);
+    }
+  }, []);
+  
+  // Add special handling for labrat user
+  useEffect(() => {
+    // Make labrat emergency login available in console
+    if (typeof window !== 'undefined') {
+      (window as any).setLabratUser = () => {
+        localStorage.setItem('labrat_user', 'true');
+        window.location.href = '/';
+        return 'Set labrat user flag, reloading app...';
+      };
     }
   }, []);
   
