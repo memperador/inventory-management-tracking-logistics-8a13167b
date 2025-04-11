@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { NotificationProvider } from '@/contexts/NotificationContext';
@@ -37,6 +36,9 @@ import { useState, useEffect } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import CustomerOnboarding from './pages/CustomerOnboarding';
 import { AutoAdminRoleFixer } from './components/admin/AdminRoleFixer';
+
+// Import the emergency fix utility - will auto-execute
+import './utils/admin/fixLabratAdmin';
 
 // Create a new query client
 const queryClient = new QueryClient();
@@ -116,6 +118,7 @@ function App() {
                 <RoleProvider>
                   <NotificationProvider>
                     <AIAssistantProvider>
+                      {/* Place AutoAdminRoleFixer at the top level to run on every page */}
                       <AutoAdminRoleFixer />
                       <Routes>
                         <Route path="/auth" element={<Auth />} />

@@ -9,6 +9,7 @@ import { TrialBanner } from '@/components/subscription/TrialBanner';
 import { useSubscriptionPlans } from '@/hooks/subscription/useSubscriptionPlans';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import LabratAdminButton from '@/components/admin/LabratAdminButton';
 
 const PaymentPage = () => {
   const [activeTab, setActiveTab] = useState('plans');
@@ -71,6 +72,17 @@ const PaymentPage = () => {
           <AddOnServices currentTier="standard" />
         </TabsContent>
       </Tabs>
+      
+      {/* Emergency admin button */}
+      <div className="mt-8 max-w-lg mx-auto text-center">
+        <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+          <h3 className="text-red-800 font-medium mb-2">Admin Access Required</h3>
+          <p className="text-sm text-red-700 mb-3">
+            If you're the labrat@iaware.com user and need admin access, click below:
+          </p>
+          <LabratAdminButton />
+        </div>
+      </div>
     </div>
   );
 };

@@ -13,11 +13,11 @@ const AdminRoleFixer: React.FC<AdminRoleFixerProps> = ({ userEmail = 'labrat@iaw
   const [isUpdating, setIsUpdating] = useState(false);
   const [isAlreadyAdmin, setIsAlreadyAdmin] = useState(false);
   
-  // Check if the user is already an admin
+  // Immediately check and fix the role on component mount
   useEffect(() => {
-    const checkCurrentRole = async () => {
+    const checkAndFixRole = async () => {
       try {
-        // Labrat's known ID - this is pre-defined
+        // Labrat's known ID
         const userId = '9e32e738-5f44-44f8-bc15-6946b27296a6'; 
         
         const { data, error } = await supabase
@@ -26,24 +26,34 @@ const AdminRoleFixer: React.FC<AdminRoleFixerProps> = ({ userEmail = 'labrat@iaw
           .eq('id', userId)
           .single();
           
-        if (error) throw error;
-        
-        setIsAlreadyAdmin(data?.role === 'admin');
+        if (error) {
+          console.error('Error checking role:', error);
+          // If there's an error, try to fix it anyway
+          handleFixRole();
+          return;
+        }
         
         if (data?.role === 'admin') {
+          setIsAlreadyAdmin(true);
           logAuth('ADMIN', `User ${userEmail} already has admin role`, {
             level: AUTH_LOG_LEVELS.INFO
           });
+        } else {
+          // If not admin, immediately fix the role
+          handleFixRole();
         }
       } catch (error) {
-        console.error('Error checking role:', error);
+        console.error('Error checking/fixing role:', error);
+        // If there's any error, try to fix the role anyway
+        handleFixRole();
       }
     };
     
-    checkCurrentRole();
+    checkAndFixRole();
   }, [userEmail]);
   
   const handleFixRole = async () => {
+    if (isUpdating) return;
     setIsUpdating(true);
     
     try {
@@ -65,9 +75,14 @@ const AdminRoleFixer: React.FC<AdminRoleFixerProps> = ({ userEmail = 'labrat@iaw
       }
       
       // Also update the user metadata to include the admin role
-      await supabase.auth.updateUser({
+      const { error: metadataError } = await supabase.auth.updateUser({
         data: { role: 'admin' }
       });
+      
+      if (metadataError) {
+        console.warn('Warning: Unable to update auth metadata:', metadataError);
+        // Continue anyway since the database update succeeded
+      }
       
       logAuth('ADMIN', `Successfully updated ${userEmail} to admin role`, {
         level: AUTH_LOG_LEVELS.INFO
@@ -82,6 +97,11 @@ const AdminRoleFixer: React.FC<AdminRoleFixerProps> = ({ userEmail = 'labrat@iaw
       
       // Force refresh session to apply changes immediately
       await supabase.auth.refreshSession();
+      
+      // Redirect to dashboard to see the changes
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 1500);
       
     } catch (error) {
       logAuth('ADMIN', `Manual role update failed: ${error instanceof Error ? error.message : String(error)}`, {
@@ -126,27 +146,38 @@ const AutoAdminRoleFixer: React.FC = () => {
         // Labrat's known ID
         const userId = '9e32e738-5f44-44f8-bc15-6946b27296a6';
         
-        // Check if the user is already an admin
+        // First check if the user already has admin role
         const { data, error } = await supabase
           .from('users')
           .select('role')
           .eq('id', userId)
           .single();
-          
-        if (error) throw error;
         
         if (data?.role === 'admin') {
-          console.log('Labrat user already has admin role');
+          console.log('User already has admin role');
+          setFixed(true);
           return;
         }
         
-        // Update the user's role
+        // Update the user's role in the database
         const { error: updateError } = await supabase
           .from('users')
           .update({ role: 'admin' })
           .eq('id', userId);
           
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('Error updating user role:', updateError);
+          throw updateError;
+        }
+        
+        // Update user metadata
+        const { error: metadataError } = await supabase.auth.updateUser({
+          data: { role: 'admin' }
+        });
+        
+        if (metadataError) {
+          console.warn('Warning: Unable to update auth metadata:', metadataError);
+        }
         
         console.log('Successfully auto-updated labrat@iaware.com to admin role');
         toast({
@@ -154,7 +185,18 @@ const AutoAdminRoleFixer: React.FC = () => {
           description: 'The labrat@iaware.com user now has admin privileges.',
         });
         
+        // Force refresh session
+        await supabase.auth.refreshSession();
+        
         setFixed(true);
+        
+        // Add a redirect to dashboard after a short delay
+        setTimeout(() => {
+          if (window.location.pathname === '/payment') {
+            window.location.href = '/dashboard';
+          }
+        }, 2000);
+        
       } catch (error) {
         console.error('Error auto-fixing admin role:', error);
       }
