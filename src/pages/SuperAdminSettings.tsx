@@ -1,4 +1,3 @@
-
 import React from 'react';
 import PageHeader from '@/components/common/PageHeader';
 import { useRole } from '@/hooks/useRoleContext';
@@ -7,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import AIConfigurationPanel from '@/components/ai/admin/AIConfigurationPanel';
 import SuperadminUserManagement from '@/components/account/SuperadminUserManagement';
 import TenantsManagementPanel from '@/components/account/superadmin/TenantsManagementPanel';
-import { Shield, Users, Buildings } from 'lucide-react';
+import { Shield, Users, Building } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const SuperAdminSettings: React.FC = () => {
@@ -15,7 +14,6 @@ const SuperAdminSettings: React.FC = () => {
   const navigate = useNavigate();
   const isSuperAdmin = userRole === 'superadmin';
   
-  // Redirect non-superadmins away from this page
   React.useEffect(() => {
     if (userRole && !isSuperAdmin) {
       navigate('/unauthorized');
@@ -55,7 +53,7 @@ const SuperAdminSettings: React.FC = () => {
             User Management
           </TabsTrigger>
           <TabsTrigger value="tenants">
-            <Buildings className="h-4 w-4 mr-2" />
+            <Building className="h-4 w-4 mr-2" />
             Tenant Management
           </TabsTrigger>
           <TabsTrigger value="ai">

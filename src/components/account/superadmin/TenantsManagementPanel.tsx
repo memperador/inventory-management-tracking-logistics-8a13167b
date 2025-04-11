@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Buildings } from 'lucide-react';
+import { Search, Building } from 'lucide-react';
 import TenantsTable from '@/components/users/migration/TenantsTable';
 import { Separator } from '@/components/ui/separator';
 import LoadingIndicator from '@/components/common/LoadingIndicator';
@@ -16,7 +15,6 @@ const TenantsManagementPanel: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
-  // Fetch tenants on component mount
   useEffect(() => {
     fetchTenants();
   }, []);
@@ -56,7 +54,7 @@ const TenantsManagementPanel: React.FC = () => {
     <Card className="mt-6 border-green-200">
       <CardHeader className="bg-green-50">
         <div className="flex items-center gap-2">
-          <Buildings className="h-5 w-5 text-green-600" />
+          <Building className="h-5 w-5 text-green-600" />
           <CardTitle className="text-green-800">Tenant Management</CardTitle>
         </div>
         <CardDescription>View and manage all organization tenants</CardDescription>
