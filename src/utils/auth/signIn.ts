@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
+import { findTenantByEmail } from '@/contexts/auth/handlers/checkTenant';
 
 export const signIn = async (email: string, password: string) => {
   logAuth('AUTH-SIGNIN', `Sign in initiated for email: ${email}`, {
@@ -37,8 +38,22 @@ export const signIn = async (email: string, password: string) => {
       sessionStorage.removeItem(key);
     });
     
-    logAuth('AUTH-SIGNIN', 'Calling supabase.auth.signInWithPassword', {
+    // Check if there is an existing tenant for this email before signing in
+    // This will help with returning users who already have a tenant
+    logAuth('AUTH-SIGNIN', `Checking for existing tenant before login for email: ${email}`, {
       level: AUTH_LOG_LEVELS.INFO
+    });
+    
+    const preLoginTenantCheck = await findTenantByEmail(email);
+    const existingTenantId = preLoginTenantCheck.tenantId;
+    const existingTenantName = preLoginTenantCheck.tenantName;
+    
+    logAuth('AUTH-SIGNIN', `Calling supabase.auth.signInWithPassword`, {
+      level: AUTH_LOG_LEVELS.INFO,
+      data: {
+        existingTenantFound: !!existingTenantId,
+        tenantName: existingTenantName
+      }
     });
     
     const { data, error } = await supabase.auth.signInWithPassword({ 
@@ -82,30 +97,65 @@ export const signIn = async (email: string, password: string) => {
         level: AUTH_LOG_LEVELS.INFO
       });
       
-      // Query for existing tenant association
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('tenant_id')
-        .eq('id', userId)
-        .single();
-        
-      if (!userError && userData?.tenant_id) {
-        logAuth('AUTH-SIGNIN', `Found existing tenant for user: ${userData.tenant_id}`, {
+      // If we already found a tenant before login, use that
+      if (existingTenantId) {
+        logAuth('AUTH-SIGNIN', `Using tenant found before login: ${existingTenantId}`, {
           level: AUTH_LOG_LEVELS.INFO
         });
         
-        // Store tenant information in user metadata if it's not already there
-        if (!data.user.user_metadata?.tenant_id) {
-          await supabase.auth.updateUser({
-            data: { 
-              tenant_id: userData.tenant_id,
-              needs_subscription: false
-            }
-          });
+        // Associate this user with the existing tenant if needed
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('tenant_id')
+          .eq('id', userId)
+          .single();
           
-          logAuth('AUTH-SIGNIN', `Updated user metadata with existing tenant_id: ${userData.tenant_id}`, {
+        if (!userError && !userData?.tenant_id) {
+          // User exists but doesn't have a tenant association, connect them
+          logAuth('AUTH-SIGNIN', `Associating user with existing tenant: ${existingTenantId}`, {
             level: AUTH_LOG_LEVELS.INFO
           });
+          
+          await supabase
+            .from('users')
+            .update({ tenant_id: existingTenantId })
+            .eq('id', userId);
+        }
+        
+        // Store tenant information in user metadata
+        await supabase.auth.updateUser({
+          data: { 
+            tenant_id: existingTenantId,
+            tenant_name: existingTenantName,
+            needs_subscription: false // They're joining an existing tenant, so no subscription needed
+          }
+        });
+      } else {
+        // Query for existing tenant association if we didn't find one earlier
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('tenant_id')
+          .eq('id', userId)
+          .single();
+          
+        if (!userError && userData?.tenant_id) {
+          logAuth('AUTH-SIGNIN', `Found existing tenant for user: ${userData.tenant_id}`, {
+            level: AUTH_LOG_LEVELS.INFO
+          });
+          
+          // Store tenant information in user metadata if it's not already there
+          if (!data.user.user_metadata?.tenant_id) {
+            await supabase.auth.updateUser({
+              data: { 
+                tenant_id: userData.tenant_id,
+                needs_subscription: false
+              }
+            });
+            
+            logAuth('AUTH-SIGNIN', `Updated user metadata with existing tenant_id: ${userData.tenant_id}`, {
+              level: AUTH_LOG_LEVELS.INFO
+            });
+          }
         }
       }
     }

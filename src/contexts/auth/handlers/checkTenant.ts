@@ -83,61 +83,80 @@ export async function findTenantByEmail(email: string): Promise<{tenantId: strin
   });
   
   try {
-    // First try to find the user with this email
-    const { data: userData, error: userError } = await supabase
-      .from('auth')
-      .select('id')
-      .eq('email', email)
-      .single();
+    // We can't directly query the auth.users table, so instead we'll use the public users table
+    // and find users that match the email (if there are any existing users with this email in tenant system)
     
-    if (userError || !userData) {
-      logAuth('TENANT-HANDLER', `No existing user found for email: ${email}`, {
-        level: AUTH_LOG_LEVELS.INFO,
-        force: true
-      });
-      return { tenantId: null, tenantName: null };
-    }
-    
-    // Check if user has tenant association
-    const { data: userTenant, error: tenantError } = await supabase
+    // First get all users and check for matching email
+    const { data: users, error: usersError } = await supabase
       .from('users')
-      .select('tenant_id')
-      .eq('id', userData.id)
-      .single();
+      .select('id, tenant_id')
+      .order('created_at', { ascending: false });
       
-    if (tenantError || !userTenant?.tenant_id) {
-      logAuth('TENANT-HANDLER', `User exists but has no tenant association: ${userData.id}`, {
+    if (usersError || !users || users.length === 0) {
+      logAuth('TENANT-HANDLER', `No users found when searching for email: ${email}`, {
         level: AUTH_LOG_LEVELS.INFO,
         force: true
       });
       return { tenantId: null, tenantName: null };
     }
     
-    // Get tenant name
-    const { data: tenant, error: tenantNameError } = await supabase
-      .from('tenants')
-      .select('name')
-      .eq('id', userTenant.tenant_id)
-      .single();
+    // Check if any of the users have the email we're looking for by querying auth
+    for (const user of users) {
+      // We need to check if this user has the email we're looking for
+      // Since we can't query auth directly with the client, we can check the user's session
+      // or use a function to verify if this is the user with the matching email
       
-    if (tenantNameError || !tenant) {
-      logAuth('TENANT-HANDLER', `Found tenant ID but couldn't get name: ${userTenant.tenant_id}`, {
-        level: AUTH_LOG_LEVELS.WARN,
-        force: true
-      });
-      return { tenantId: userTenant.tenant_id, tenantName: null };
+      // For now we'll just check user information to try to match
+      const { data: userProfile } = await supabase.auth.admin.getUserById(user.id);
+      
+      if (userProfile?.user && userProfile.user.email?.toLowerCase() === email.toLowerCase()) {
+        logAuth('TENANT-HANDLER', `Found user matching email: ${email}, user ID: ${user.id}`, {
+          level: AUTH_LOG_LEVELS.INFO,
+          force: true
+        });
+        
+        if (!user.tenant_id) {
+          logAuth('TENANT-HANDLER', `User exists but has no tenant association: ${user.id}`, {
+            level: AUTH_LOG_LEVELS.INFO,
+            force: true
+          });
+          return { tenantId: null, tenantName: null };
+        }
+        
+        // Get tenant name
+        const { data: tenant, error: tenantNameError } = await supabase
+          .from('tenants')
+          .select('name')
+          .eq('id', user.tenant_id)
+          .single();
+          
+        if (tenantNameError || !tenant) {
+          logAuth('TENANT-HANDLER', `Found tenant ID but couldn't get name: ${user.tenant_id}`, {
+            level: AUTH_LOG_LEVELS.WARN,
+            force: true
+          });
+          return { tenantId: user.tenant_id, tenantName: null };
+        }
+        
+        logAuth('TENANT-HANDLER', `Successfully found tenant for email: ${email}`, {
+          level: AUTH_LOG_LEVELS.INFO,
+          force: true,
+          data: { tenantId: user.tenant_id, tenantName: tenant.name }
+        });
+        
+        return {
+          tenantId: user.tenant_id,
+          tenantName: tenant.name
+        };
+      }
     }
     
-    logAuth('TENANT-HANDLER', `Successfully found tenant for email: ${email}`, {
+    // If we get here, no matching user was found
+    logAuth('TENANT-HANDLER', `No existing user found for email: ${email}`, {
       level: AUTH_LOG_LEVELS.INFO,
-      force: true,
-      data: { tenantId: userTenant.tenant_id, tenantName: tenant.name }
+      force: true
     });
-    
-    return {
-      tenantId: userTenant.tenant_id,
-      tenantName: tenant.name
-    };
+    return { tenantId: null, tenantName: null };
   } catch (error) {
     logAuth('TENANT-HANDLER', `Error finding tenant by email:`, {
       level: AUTH_LOG_LEVELS.ERROR,
