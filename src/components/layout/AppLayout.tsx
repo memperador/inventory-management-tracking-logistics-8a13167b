@@ -1,6 +1,6 @@
 
 import React from 'react';
-import AppHeader from './AppHeader';
+import { AppHeader } from './AppHeader';
 import AppSidebar from './AppSidebar';
 import { useAuth } from '@/contexts/auth';
 import DebugPanel from '@/components/debug/DebugPanel';
@@ -28,7 +28,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     <div className="flex h-screen">
       <AppSidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
-        <AppHeader />
+        <AppHeader toggleMenu={() => {}} isMenuOpen={false} />
         <main className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-4">
           {children}
         </main>

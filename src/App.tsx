@@ -127,7 +127,7 @@ function App() {
                         <Route path="/customer-onboarding" element={<ProtectedRoute redirectTo="/auth"><CustomerOnboarding /></ProtectedRoute>} />
                         <Route path="/project/:projectId" element={<ProjectRedirect />} />
                         <Route path="/payment" element={<PaymentPage />} />
-                        <Route element={<ProtectedRoute redirectTo="/auth"><AppLayout /></ProtectedRoute>}>
+                        <Route path="/" element={<ProtectedRoute redirectTo="/auth"><AppLayout>Outlet placeholder</AppLayout></ProtectedRoute>}>
                           <Route path="/dashboard" element={<Dashboard />} />
                           <Route path="/projects" element={<Projects />} />
                           <Route path="/projects/:projectId" element={<ProjectDetail />} />
