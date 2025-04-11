@@ -10,7 +10,7 @@ interface RedirectParams {
   hasActiveSubscription: boolean;
   inTrialPeriod: boolean;
   needsSubscription: boolean;
-  onboardingCompleted?: boolean; // Added parameter for onboarding status
+  onboardingCompleted?: boolean;
 }
 
 /**
@@ -25,10 +25,24 @@ export function determineRedirectPath({
   needsSubscription,
   onboardingCompleted
 }: RedirectParams): string | null {
-  // First check if onboarding is required (unless we're already on the onboarding page)
-  if (onboardingCompleted === false && currentPath !== '/onboarding' && currentPath !== '/customer-onboarding') {
-    logAuth('REDIRECT-HANDLER', 'User needs onboarding, redirecting to onboarding page', {
+  // Don't redirect if we're already on the customer onboarding page
+  // This prevents redirect loops with /customer-onboarding
+  if (currentPath === '/customer-onboarding') {
+    logAuth('REDIRECT-HANDLER', 'Already on customer onboarding page, no redirect needed', {
       level: AUTH_LOG_LEVELS.INFO
+    });
+    return null;
+  }
+  
+  // First check if onboarding is required (unless we're already on the onboarding page)
+  if (onboardingCompleted === false && currentPath !== '/onboarding') {
+    logAuth('REDIRECT-HANDLER', 'User needs onboarding, redirecting to onboarding page', {
+      level: AUTH_LOG_LEVELS.INFO,
+      data: {
+        currentPath,
+        onboardingCompleted,
+        explicitFalse: onboardingCompleted === false
+      }
     });
     return '/customer-onboarding';
   }
@@ -52,7 +66,7 @@ export function determineRedirectPath({
   }
   
   // No redirect needed
-  logAuth('REDIRECT-HANDLER', `No redirect needed, staying on current page: ${currentPath}`, {
+  logAuth('REDIRECT-HANDLER', `No redirect needed, staying on current path: ${currentPath}`, {
     level: AUTH_LOG_LEVELS.INFO
   });
   return null;
@@ -101,7 +115,8 @@ export function checkSubscriptionStatus(tenantData: any, session: Session | null
   } else if (tenantData && tenantData.onboarding_completed === false) {
     onboardingCompleted = false;
   } else {
-    onboardingCompleted = false; // Default to false if undefined
+    // If the value is undefined or null, default to false
+    onboardingCompleted = false;
   }
   
   logAuth('SUBSCRIPTION-CHECK', 'Subscription status:', {

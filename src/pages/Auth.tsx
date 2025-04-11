@@ -6,6 +6,7 @@ import AuthCard from '@/components/auth/AuthCard';
 import { useAuthVerification } from '@/hooks/useAuthVerification';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -38,6 +39,25 @@ const Auth = () => {
     setVerificationSent(true);
     setVerificationEmail(email);
   };
+  
+  // Clear any flags that might be preventing navigation
+  useEffect(() => {
+    const clearNavigationFlags = () => {
+      // Clear any session storage keys that might prevent navigation
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key && key.startsWith('auth_processed_')) {
+          sessionStorage.removeItem(key);
+          logAuth('AUTH', `Cleared navigation flag: ${key}`, {
+            level: AUTH_LOG_LEVELS.INFO,
+            force: true
+          });
+        }
+      }
+    };
+    
+    clearNavigationFlags();
+  }, []);
   
   useEffect(() => {
     // Check if user is verified and needs to go to onboarding
@@ -109,18 +129,39 @@ const Auth = () => {
           }
           
           // Then check if onboarding is completed
-          if (tenantData.onboarding_completed === false) {
+          const isOnboardingCompleted = tenantData.onboarding_completed === true;
+          
+          logAuth('AUTH', `User onboarding status: ${isOnboardingCompleted ? 'completed' : 'not completed'}`, {
+            level: AUTH_LOG_LEVELS.INFO,
+            force: true,
+            data: {
+              onboardingCompleted: tenantData.onboarding_completed,
+              explicitTrueCheck: tenantData.onboarding_completed === true
+            }
+          });
+          
+          if (!isOnboardingCompleted) {
             logAuth('AUTH', `User needs onboarding, redirecting to customer onboarding`, {
               level: AUTH_LOG_LEVELS.INFO,
               force: true
             });
             navigate('/customer-onboarding');
           } else {
-            logAuth('AUTH', `User already onboarded, redirecting to dashboard`, {
+            // Get return URL from query params
+            const returnTo = searchParams.get('returnTo');
+            const targetPath = returnTo ? decodeURIComponent(returnTo) : '/dashboard';
+            
+            logAuth('AUTH', `User already onboarded, redirecting to ${targetPath}`, {
               level: AUTH_LOG_LEVELS.INFO,
               force: true
             });
-            navigate('/dashboard');
+            
+            toast({
+              title: "Welcome back!",
+              description: "You've been signed in successfully.",
+            });
+            
+            navigate(targetPath);
           }
         } catch (error) {
           logAuth('AUTH', `Error during tenant/onboarding check: ${error instanceof Error ? error.message : 'Unknown error'}`, {
@@ -136,7 +177,7 @@ const Auth = () => {
     return () => {
       setNavigationProcessed(false);
     };
-  }, [user, emailVerified, navigate]);
+  }, [user, emailVerified, navigate, searchParams]);
   
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">

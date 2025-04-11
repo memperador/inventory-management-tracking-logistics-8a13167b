@@ -173,7 +173,7 @@ const CustomerOnboarding: React.FC = () => {
         description: "Your account has been fully configured, welcome!",
       });
       
-      // Navigate to dashboard
+      // Navigate to dashboard using React Router's navigate
       navigate('/dashboard');
     } catch (error) {
       console.error("Error completing onboarding:", error);
@@ -204,10 +204,10 @@ const CustomerOnboarding: React.FC = () => {
           <CardHeader className="text-center bg-gradient-to-r from-green-50 to-blue-50 rounded-t-lg">
             <CardTitle className="text-2xl flex items-center justify-center gap-2">
               <CheckCircle2 className="h-6 w-6 text-green-600" />
-              Onboarding Already Completed
+              Setup Complete
             </CardTitle>
             <CardDescription>
-              Your account is already set up and ready to use
+              Your account is ready to go!
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
