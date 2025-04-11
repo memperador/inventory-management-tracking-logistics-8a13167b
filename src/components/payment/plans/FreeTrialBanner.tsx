@@ -1,13 +1,17 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Loader2 } from 'lucide-react';
 
 interface FreeTrialBannerProps {
   onStartTrial: () => void;
+  isStartingTrial?: boolean;
 }
 
-export const FreeTrialBanner: React.FC<FreeTrialBannerProps> = ({ onStartTrial }) => {
+export const FreeTrialBanner: React.FC<FreeTrialBannerProps> = ({ 
+  onStartTrial,
+  isStartingTrial = false
+}) => {
   return (
     <div className="mb-8 bg-gradient-to-r from-purple-100 to-cyan-100 border border-purple-200 rounded-lg p-6 relative overflow-hidden">
       <div className="absolute top-0 right-0 h-40 w-40 opacity-10 -mt-12 -mr-12">
@@ -21,10 +25,20 @@ export const FreeTrialBanner: React.FC<FreeTrialBannerProps> = ({ onStartTrial }
         <Button 
           onClick={onStartTrial}
           size="lg" 
+          disabled={isStartingTrial}
           className="bg-purple-600 hover:bg-purple-700 text-white"
         >
-          <Sparkles className="mr-2 h-5 w-5" />
-          Start 7-Day Free Trial
+          {isStartingTrial ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Starting Trial...
+            </>
+          ) : (
+            <>
+              <Sparkles className="mr-2 h-5 w-5" />
+              Start 7-Day Free Trial
+            </>
+          )}
         </Button>
         <span className="text-purple-700 text-sm">No credit card required</span>
       </div>

@@ -1,77 +1,58 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PageHeader from '@/components/common/PageHeader';
-import OnboardingAssistant from '@/components/onboarding/OnboardingAssistant';
-import TieredAIAssistant from '@/components/ai/TieredAIAssistant';
-import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useOnboardingState } from '@/components/onboarding/hooks/useOnboardingState';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import OnboardingWorkflow from '@/components/onboarding/OnboardingWorkflow';
-import { useAuth } from '@/hooks/useAuthContext';
-import { useTenant } from '@/hooks/useTenantContext';
-import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Sparkles, CheckCircle2, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { useTenant } from '@/hooks/useTenantContext';
 
 const CustomerOnboarding: React.FC = () => {
-  const { onboardingState } = useOnboardingState();
-  const [aiInput, setAiInput] = useState('');
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<string>('guide');
-  const { user, refreshSession } = useAuth();
   const { currentTenant, setCurrentTenant } = useTenant();
+  const [isLoading, setIsLoading] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
   
-  // Check if this is a first-time setup
-  useEffect(() => {
-    if (user && currentTenant) {
-      logAuth('ONBOARDING', 'User accessed onboarding page', {
-        level: AUTH_LOG_LEVELS.INFO,
-        force: true,
-        data: {
-          userId: user.id,
-          tenantId: currentTenant.id,
-          tenantName: currentTenant.name,
-          isFirstVisit: !currentTenant.onboarding_completed
-        }
-      });
-    }
-  }, [user, currentTenant]);
+  const completionSteps = [
+    { id: 'account', label: 'Account created', completed: true },
+    { id: 'subscription', label: 'Subscription activated', completed: true },
+    { id: 'tenant', label: 'Organization setup', completed: !!currentTenant?.id }
+  ];
   
-  // Function to be passed to OnboardingAssistant to set AI prompt
-  const handleOpenAIAssistant = (prompt?: string) => {
-    if (prompt) {
-      setAiInput(prompt);
+  const handleComplete = async () => {
+    if (!acceptTerms) {
       toast({
-        title: "AI Assistant",
-        description: "Your question has been sent to the AI Assistant. You can modify it if needed.",
+        title: "Please accept the terms",
+        description: "You must accept the terms and conditions to continue.",
+        variant: "destructive"
       });
+      return;
     }
-  };
-
-  // When onboarding is complete
-  const handleOnboardingComplete = async () => {
-    if (!user || !currentTenant) return;
+    
+    if (!currentTenant?.id) {
+      toast({
+        title: "Setup error",
+        description: "There was an error with your account setup. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsLoading(true);
     
     try {
-      // Mark onboarding as completed in tenant
-      if (currentTenant?.id) {
-        const { error } = await supabase
-          .from('tenants')
-          .update({ onboarding_completed: true })
-          .eq('id', currentTenant.id);
-          
-        if (error) throw error;
-        
-        // Update local tenant data
-        setCurrentTenant({
-          ...currentTenant,
-          onboarding_completed: true
-        });
-      }
+      // Update tenant with onboarding completed
+      const { error } = await supabase
+        .from('tenants')
+        .update({ onboarding_completed: true })
+        .eq('id', currentTenant.id);
       
-      // Mark onboarding as completed in user metadata
+      if (error) throw error;
+      
+      // Update user metadata
       await supabase.auth.updateUser({
         data: { 
           onboarding_completed: true,
@@ -79,93 +60,93 @@ const CustomerOnboarding: React.FC = () => {
         }
       });
       
-      // Refresh session to get updated metadata
-      await refreshSession();
-      
-      logAuth('ONBOARDING', 'User completed onboarding', {
-        level: AUTH_LOG_LEVELS.INFO,
-        force: true,
-        data: {
-          userId: user.id,
-          tenantId: currentTenant?.id
-        }
-      });
+      // Update tenant state
+      if (currentTenant) {
+        setCurrentTenant({
+          ...currentTenant,
+          onboarding_completed: true
+        });
+      }
       
       toast({
-        title: "Onboarding Complete!",
-        description: "You've successfully completed the onboarding process. Enjoy using our platform!",
+        title: "Setup Complete",
+        description: "Your account has been fully configured, welcome!",
       });
       
+      // Navigate to dashboard
       navigate('/dashboard');
     } catch (error) {
-      console.error('Error completing onboarding:', error);
+      console.error("Error completing onboarding:", error);
       toast({
         title: "Error",
-        description: "Failed to save onboarding status. Please try again.",
+        description: "Failed to complete onboarding. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
-
+  
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <PageHeader
-        title="Customer Onboarding"
-        description="Let's get your account set up and ready to use"
-        actions={
-          <Button onClick={handleOnboardingComplete} variant="default">
-            Complete Onboarding
-          </Button>
-        }
-      />
-      
-      {onboardingState.isComplete ? (
-        <div className="flex flex-col items-center justify-center p-8 text-center">
-          <h2 className="text-2xl font-bold mb-4">Onboarding Complete! 🎉</h2>
-          <p className="text-muted-foreground mb-6 max-w-md">
-            You've successfully set up your account. You can now start using all the features of our platform.
-          </p>
-          <Button onClick={() => navigate('/dashboard')}>Go to Dashboard</Button>
-        </div>
-      ) : (
-        <>
-          <Tabs 
-            defaultValue="guide" 
-            value={activeTab} 
-            onValueChange={setActiveTab} 
-            className="w-full"
+    <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
+      <Card className="w-full max-w-2xl">
+        <CardHeader className="text-center bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
+          <CardTitle className="text-2xl flex items-center justify-center gap-2">
+            <Sparkles className="h-6 w-6 text-blue-600" />
+            Setup Complete
+          </CardTitle>
+          <CardDescription>
+            Your account is ready to go!
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="space-y-6">
+            <div className="space-y-4">
+              {completionSteps.map((step) => (
+                <div key={step.id} className="flex items-center">
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                    step.completed ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
+                  }`}>
+                    <CheckCircle2 className="h-5 w-5" />
+                  </div>
+                  <span className="ml-3 text-sm font-medium">{step.label}</span>
+                </div>
+              ))}
+            </div>
+            
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h3 className="font-medium mb-2">What's Next?</h3>
+              <ul className="list-disc pl-5 space-y-1 text-sm">
+                <li>Add your organization details</li>
+                <li>Invite team members</li>
+                <li>Start managing your inventory items</li>
+                <li>Create your first project</li>
+              </ul>
+            </div>
+            
+            <div className="flex items-top space-x-2 pt-4">
+              <Checkbox 
+                id="accept-terms" 
+                checked={acceptTerms}
+                onCheckedChange={(checked) => setAcceptTerms(checked === true)}
+              />
+              <Label htmlFor="accept-terms" className="text-sm text-muted-foreground">
+                I accept the terms of service and have read the privacy policy.
+              </Label>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-end">
+          <Button 
+            onClick={handleComplete}
+            disabled={isLoading || !acceptTerms}
+            className="space-x-2"
           >
-            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
-              <TabsTrigger value="guide">Step-by-Step Guide</TabsTrigger>
-              <TabsTrigger value="workflow">Workflow View</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="guide">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                  <OnboardingAssistant onOpenAIAssistant={handleOpenAIAssistant} />
-                </div>
-                
-                <div>
-                  <TieredAIAssistant initialInput={aiInput} />
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="workflow">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                  <OnboardingWorkflow />
-                </div>
-                
-                <div>
-                  <TieredAIAssistant initialInput={aiInput} />
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </>
-      )}
+            <span>Continue to Dashboard</span>
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 };

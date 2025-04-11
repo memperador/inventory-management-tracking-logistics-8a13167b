@@ -31,7 +31,7 @@ export const useSubscriptionPlans = () => {
   
   const { handleEnterpriseInquiry } = useEnterpriseInquiry(updateSubscription);
   
-  const { handleStartTrial } = useSubscriptionTrial();
+  const { handleStartTrial, isStartingTrial } = useSubscriptionTrial();
 
   const isUpgrade = !!currentTenant?.subscription_tier;
   const isNewSignup = user?.user_metadata?.needs_subscription === true;
@@ -46,6 +46,7 @@ export const useSubscriptionPlans = () => {
     isUpgrade,
     isNewSignup,
     currentTenant,
+    isStartingTrial,
     handleTierChange,
     handlePaymentTypeChange,
     setAgreeToFees,

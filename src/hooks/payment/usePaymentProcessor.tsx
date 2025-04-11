@@ -73,13 +73,127 @@ export const usePaymentProcessor = ({
         paymentMethod
       };
       
-      // Update existing tenant if already created
-      if (selectedTier && currentTenant?.id) {
-        logAuth('PAYMENT', `Updating existing tenant ${currentTenant.id} with subscription tier ${selectedTier}`, {
+      // Check if user needs migration after subscription
+      const needsMigration = user?.user_metadata?.needs_subscription === true;
+      
+      if (needsMigration) {
+        logAuth('PAYMENT_MIGRATION', 'User needs migration after subscription', {
           level: AUTH_LOG_LEVELS.INFO,
-          force: true
+          force: true,
+          data: {
+            userId: user?.id,
+            email: user?.email,
+          }
         });
-        
+
+        try {
+          // Create tenant name based on email or company info
+          const emailPrefix = user?.email?.split('@')[0] || '';
+          const companyName = user?.user_metadata?.company_name;
+          const tenantName = companyName || `${emailPrefix}'s Organization`;
+          
+          // Try direct RPC function call first for better reliability
+          const { data, error } = await supabase.rpc(
+            'create_tenant_and_migrate_user',
+            { p_tenant_name: tenantName, p_user_id: user.id }
+          );
+          
+          if (error) {
+            throw new Error(`Failed to create tenant: ${error.message}`);
+          }
+          
+          if (!data || !data.success) {
+            throw new Error("No tenant ID returned from function");
+          }
+          
+          const newTenantId = data.tenant_id as string;
+          
+          // Update tenant with subscription info
+          if (selectedTier) {
+            const { error: updateError } = await supabase
+              .from('tenants')
+              .update({
+                subscription_tier: selectedTier,
+                subscription_status: 'active',
+                trial_ends_at: null
+              })
+              .eq('id', newTenantId);
+              
+            if (updateError) {
+              console.warn("Error updating subscription info:", updateError.message);
+            }
+          }
+          
+          // Clear the needs_subscription flag
+          await supabase.auth.updateUser({
+            data: { 
+              needs_subscription: false,
+              tenant_id: newTenantId
+            }
+          });
+          
+          // Refresh session
+          await refreshSession();
+          
+          logAuth('PAYMENT', `Created tenant with direct RPC: ${newTenantId}`, {
+            level: AUTH_LOG_LEVELS.INFO,
+            force: true
+          });
+          
+        } catch (directError) {
+          // Fallback to the migration approach
+          logAuth('PAYMENT', `Direct RPC failed, falling back to migration: ${directError instanceof Error ? directError.message : String(directError)}`, {
+            level: AUTH_LOG_LEVELS.WARN,
+            force: true
+          });
+          
+          // Log session state before migration
+          logMigrationSessionState(await supabase.auth.getSession().then(res => res.data.session), 
+            'Session state before migration');
+            
+          // Create tenant name
+          const emailPrefix = user.email?.split('@')[0] || '';
+          const companyName = user.user_metadata?.company_name;
+          const tenantName = companyName || `${emailPrefix}'s Organization`;
+          
+          // Migrate user to new tenant
+          const migrationResult = await migrateToNewTenant(tenantName);
+          
+          if (migrationResult.success && migrationResult.newTenantId) {
+            // Update tenant with subscription info
+            if (selectedTier) {
+              const { error: updateError } = await supabase
+                .from('tenants')
+                .update({
+                  subscription_tier: selectedTier,
+                  subscription_status: 'active',
+                  trial_ends_at: null
+                })
+                .eq('id', migrationResult.newTenantId);
+                
+              if (updateError) {
+                console.warn("Error updating subscription info:", updateError.message);
+              }
+            }
+            
+            // Clear the needs_subscription flag
+            await supabase.auth.updateUser({
+              data: { needs_subscription: false }
+            });
+            
+            // Refresh session
+            await refreshSession();
+            
+            logAuth('PAYMENT', `Migration successful: ${JSON.stringify(migrationResult)}`, {
+              level: AUTH_LOG_LEVELS.INFO,
+              force: true
+            });
+          } else {
+            throw new Error(`Migration failed: ${migrationResult.message}`);
+          }
+        }
+      } else if (currentTenant?.id && selectedTier) {
+        // Update existing tenant subscription info
         const { error: updateError } = await supabase
           .from('tenants')
           .update({
@@ -88,133 +202,27 @@ export const usePaymentProcessor = ({
             trial_ends_at: null
           })
           .eq('id', currentTenant.id);
-        
+          
         if (updateError) {
           throw new Error(`Failed to update subscription: ${updateError.message}`);
         }
         
-        if (currentTenant) {
-          setCurrentTenant({
-            ...currentTenant,
-            subscription_tier: selectedTier as any,
-            subscription_status: 'active',
-            trial_ends_at: null
-          });
-        }
-
-        // Check if user needs migration after subscription
-        const needsMigration = user?.user_metadata?.needs_subscription === true;
-        if (needsMigration) {
-          logAuth('PAYMENT', 'User needs migration after subscription', {
-            level: AUTH_LOG_LEVELS.INFO,
-            force: true
-          });
-
-          logAuth('PAYMENT_MIGRATION', 'Attempting to migrate user to new tenant', {
-            level: AUTH_LOG_LEVELS.INFO,
-            force: true,
-            data: {
-              userId: user?.id,
-              email: user?.email,
-              subscriptionTier: selectedTier,
-              paymentMethod,
-              currentTimestamp: new Date().toISOString()
-            }
-          });
-
-          // Create tenant name based on email or company info
-          const emailPrefix = user.email?.split('@')[0] || '';
-          const companyName = user.user_metadata?.company_name;
-          const tenantName = companyName || `${emailPrefix}'s Organization`;
-          
-          try {
-            // Log session state before migration
-            logMigrationSessionState(await supabase.auth.getSession().then(res => res.data.session), 
-              'Session state before migration');
-            
-            // Migrate user to new tenant and set as admin
-            const migrationResult = await migrateToNewTenant(tenantName);
-            
-            if (migrationResult.success) {
-              logAuth('PAYMENT', `Migration successful: ${JSON.stringify(migrationResult)}`, {
-                level: AUTH_LOG_LEVELS.INFO,
-                force: true
-              });
-              
-              const logs = dumpAuthLogs();
-              logAuth('PAYMENT_DEBUG', `Auth logs prior to session refresh: ${logs.length} entries`, {
-                level: AUTH_LOG_LEVELS.DEBUG,
-                force: true
-              });
-              
-              logAuth('PAYMENT_SESSION', 'Refreshing user session after migration', {
-                level: AUTH_LOG_LEVELS.INFO,
-                force: true
-              });
-              
-              // Clear the needs_subscription flag
-              await supabase.auth.updateUser({
-                data: { needs_subscription: false }
-              });
-              
-              // Refresh the session to get the latest metadata and tenant ID
-              await refreshSession();
-              
-              // Log session state after migration
-              logMigrationSessionState(await supabase.auth.getSession().then(res => res.data.session), 
-                'Session state after migration and refresh');
-              
-              logAuth('PAYMENT_SESSION', 'Session refresh complete', {
-                level: AUTH_LOG_LEVELS.INFO,
-                force: true,
-                data: {
-                  newTenantId: migrationResult.newTenantId,
-                  userHasTenant: !!user?.user_metadata?.tenant_id
-                }
-              });
-
-              toast({
-                title: "Account Setup Complete",
-                description: "Your account has been set up with your new subscription!"
-              });
-              
-              // Clear any session storage flags that might cause redirect loops
-              sessionStorage.removeItem('authRedirectHandled');
-              sessionStorage.removeItem('processingAuth');
-            } else {
-              logAuth('PAYMENT', `Migration failed: ${migrationResult.message}`, {
-                level: AUTH_LOG_LEVELS.ERROR,
-                force: true
-              });
-              
-              toast({
-                title: "Subscription Activated",
-                description: "Your subscription has been activated, but account setup needs attention.",
-                variant: "destructive"
-              });
-            }
-          } catch (migrationError) {
-            const errorData = migrationError instanceof Error 
-              ? { message: migrationError.message, stack: migrationError.stack }
-              : { stringError: String(migrationError) };
-              
-            logAuth('PAYMENT', 'Migration error:', {
-              level: AUTH_LOG_LEVELS.ERROR,
-              data: errorData,
-              force: true
-            });
-          }
-        } else {
-          // Just refresh the session to get latest tenant data
-          await refreshSession();
-        }
+        // Update tenant state
+        setCurrentTenant({
+          ...currentTenant,
+          subscription_tier: selectedTier as any,
+          subscription_status: 'active',
+          trial_ends_at: null
+        });
       }
-
+      
+      // Log success
       toast({
-        title: "Subscription updated",
-        description: `Your ${selectedTier} subscription has been activated using ${paymentMethod === 'stripe' ? 'credit card' : 'PayPal'}.`,
+        title: "Payment Successful",
+        description: `Your ${selectedTier} subscription has been activated.`,
       });
       
+      // Log event
       await logEvent({
         userId: user?.id || 'unknown-user',
         action: 'mock_payment_processed',
@@ -229,12 +237,12 @@ export const usePaymentProcessor = ({
         },
       });
       
-      // Redirect to onboarding after successful payment
+      // Call success callback if provided
       if (onSuccess) {
         onSuccess(mockPaymentIntent);
       }
 
-      // Redirect to customer onboarding instead of dashboard
+      // Redirect to customer onboarding
       navigate('/customer-onboarding');
       
     } catch (err) {

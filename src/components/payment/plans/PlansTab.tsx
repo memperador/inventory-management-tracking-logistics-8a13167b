@@ -21,7 +21,8 @@ export const PlansTab: React.FC = () => {
     handleSuccess,
     handleError,
     handleEnterpriseInquiry,
-    handleStartTrial
+    handleStartTrial,
+    isStartingTrial
   } = useSubscriptionPlans();
   
   // Display banners
@@ -29,6 +30,7 @@ export const PlansTab: React.FC = () => {
     <PlanBanners 
       isNewSignup={isNewSignup}
       onStartTrial={handleStartTrial}
+      isStartingTrial={isStartingTrial}
     />
   );
 

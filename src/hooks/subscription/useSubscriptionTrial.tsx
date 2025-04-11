@@ -16,26 +16,21 @@ export const useSubscriptionTrial = () => {
   const navigate = useNavigate();
   const { session, refreshSession, user } = useAuth();
   const { migrateToNewTenant } = useUserMigration();
+  const [isStartingTrial, setIsStartingTrial] = React.useState(false);
 
   // Trial handler
   const handleStartTrial = async () => {
-    if (!currentTenant?.id) {
-      toast({
-        title: "Error",
-        description: "Unable to start trial - no tenant information found",
-        variant: "destructive"
-      });
-      return;
-    }
+    if (isStartingTrial) return;
+    setIsStartingTrial(true);
     
     try {
       logAuth('TRIAL', 'Starting free trial process', {
         level: AUTH_LOG_LEVELS.INFO,
         force: true,
         data: {
-          tenantId: currentTenant.id,
           userId: session?.user?.id,
-          currentState: currentTenant.subscription_status
+          currentTenant: currentTenant?.id || 'none',
+          email: user?.email
         }
       });
 
@@ -55,48 +50,58 @@ export const useSubscriptionTrial = () => {
           data: { email: user?.email }
         });
         
-        // Create tenant name based on email or company info
-        const emailPrefix = user?.email?.split('@')[0] || '';
-        const companyName = user?.user_metadata?.company_name;
-        const tenantName = companyName || `${emailPrefix}'s Organization`;
-        
-        // Migrate user to new tenant with trial
-        const migrationResult = await migrateToNewTenant(tenantName);
-        
-        if (migrationResult.success && migrationResult.newTenantId) {
-          // Update the new tenant with trial info
-          const { error } = await supabase
-            .from('tenants')
-            .update({
-              subscription_tier: 'premium',
-              subscription_status: 'trialing',
-              trial_ends_at: trialEndsAt
-            })
-            .eq('id', migrationResult.newTenantId);
-            
-          if (error) throw error;
+        try {
+          // Create tenant name based on email or company info
+          const emailPrefix = user?.email?.split('@')[0] || '';
+          const companyName = user?.user_metadata?.company_name || `${emailPrefix}'s Organization`;
+          
+          // Direct tenant creation for more reliability in trial flow
+          const { data, error } = await supabase.rpc(
+            'create_tenant_and_migrate_user',
+            { p_tenant_name: companyName, p_user_id: user.id }
+          );
+          
+          if (error) {
+            throw new Error(`Failed to create tenant: ${error.message}`);
+          }
+          
+          if (!data || !data.success) {
+            throw new Error('Failed to create tenant: No response from server');
+          }
+          
+          const newTenantId = data.tenant_id;
+          
+          logAuth('TRIAL', `Created tenant with ID: ${newTenantId}`, {
+            level: AUTH_LOG_LEVELS.INFO,
+            force: true
+          });
           
           // Clear subscription flag
           await supabase.auth.updateUser({
-            data: { needs_subscription: false }
+            data: { 
+              needs_subscription: false,
+              tenant_id: newTenantId
+            }
           });
           
           // Refresh session to get updated info
           await refreshSession();
           
-          // Log success
-          logAuth('TRIAL', 'Successfully created new tenant with trial', {
-            level: AUTH_LOG_LEVELS.INFO,
+        } catch (error) {
+          logAuth('TRIAL', `Failed to create tenant directly: ${error instanceof Error ? error.message : String(error)}`, {
+            level: AUTH_LOG_LEVELS.ERROR,
             force: true,
-            data: { 
-              newTenantId: migrationResult.newTenantId,
-              trialEndsAt
-            }
+            data: error
           });
-        } else {
-          throw new Error(`Failed to create new tenant: ${migrationResult.message}`);
+          
+          // Fall back to tenant migration
+          const migrationResult = await migrateToNewTenant(`${emailPrefix || 'New'}'s Organization`);
+          
+          if (!migrationResult.success) {
+            throw new Error(`Failed to create tenant: ${migrationResult.message}`);
+          }
         }
-      } else {
+      } else if (currentTenant?.id) {
         // Update existing tenant with trial info
         const { error } = await supabase
           .from('tenants')
@@ -116,6 +121,8 @@ export const useSubscriptionTrial = () => {
           subscription_status: 'trialing',
           trial_ends_at: trialEndsAt
         });
+      } else {
+        throw new Error('No tenant found and user is not new - cannot start trial');
       }
       
       // Refresh session to ensure latest tenant data
@@ -153,10 +160,13 @@ export const useSubscriptionTrial = () => {
         description: `Failed to start trial: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
+    } finally {
+      setIsStartingTrial(false);
     }
   };
 
   return {
-    handleStartTrial
+    handleStartTrial,
+    isStartingTrial
   };
 };
