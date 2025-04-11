@@ -36,6 +36,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import { useState, useEffect } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import CustomerOnboarding from './pages/CustomerOnboarding';
+import { AutoAdminRoleFixer } from './components/admin/AdminRoleFixer';
 
 // Create a new query client
 const queryClient = new QueryClient();
@@ -115,6 +116,7 @@ function App() {
                 <RoleProvider>
                   <NotificationProvider>
                     <AIAssistantProvider>
+                      <AutoAdminRoleFixer />
                       <Routes>
                         <Route path="/auth" element={<Auth />} />
                         <Route path="/auth/reset-password" element={<ResetPassword />} />
