@@ -35,7 +35,8 @@ export function determineRedirectPath({
   }
   
   // First check if onboarding is required (unless we're already on the onboarding page)
-  if (onboardingCompleted === false && currentPath !== '/onboarding') {
+  // Force onboarding if onboardingCompleted is explicitly false (not just falsy)
+  if (onboardingCompleted === false && currentPath !== '/customer-onboarding') {
     logAuth('REDIRECT-HANDLER', 'User needs onboarding, redirecting to onboarding page', {
       level: AUTH_LOG_LEVELS.INFO,
       data: {
@@ -109,6 +110,7 @@ export function checkSubscriptionStatus(tenantData: any, session: Session | null
   const needsSubscription = session?.user?.user_metadata?.needs_subscription === true;
   
   // Check if onboarding is completed - explicitly compare with true/false
+  // IMPORTANT: This logic needs to be very explicit to handle the onboarding_completed field properly
   let onboardingCompleted;
   if (tenantData && tenantData.onboarding_completed === true) {
     onboardingCompleted = true;
