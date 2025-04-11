@@ -57,7 +57,7 @@ export const useSubscriptionTrial = () => {
           
           // Direct tenant creation for more reliability in trial flow
           const { data, error } = await supabase.rpc(
-            'create_tenant_and_migrate_user',
+            'create_tenant_and_migrate_user' as any,
             { p_tenant_name: companyName, p_user_id: user.id }
           );
           
@@ -65,11 +65,13 @@ export const useSubscriptionTrial = () => {
             throw new Error(`Failed to create tenant: ${error.message}`);
           }
           
-          if (!data || !data.success) {
+          // Type assertion for response data
+          const responseData = data as any;
+          if (!responseData || responseData.success !== true) {
             throw new Error('Failed to create tenant: No response from server');
           }
           
-          const newTenantId = data.tenant_id;
+          const newTenantId = responseData.tenant_id as string;
           
           logAuth('TRIAL', `Created tenant with ID: ${newTenantId}`, {
             level: AUTH_LOG_LEVELS.INFO,
@@ -95,7 +97,9 @@ export const useSubscriptionTrial = () => {
           });
           
           // Fall back to tenant migration
-          const migrationResult = await migrateToNewTenant(`${emailPrefix || 'New'}'s Organization`);
+          // Extract email prefix here so it's defined in this scope
+          const userEmailPrefix = user?.email?.split('@')[0] || '';
+          const migrationResult = await migrateToNewTenant(`${userEmailPrefix || 'New'}'s Organization`);
           
           if (!migrationResult.success) {
             throw new Error(`Failed to create tenant: ${migrationResult.message}`);

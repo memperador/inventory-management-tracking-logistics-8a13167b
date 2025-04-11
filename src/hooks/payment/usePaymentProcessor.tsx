@@ -92,9 +92,9 @@ export const usePaymentProcessor = ({
           const companyName = user?.user_metadata?.company_name;
           const tenantName = companyName || `${emailPrefix}'s Organization`;
           
-          // Try direct RPC function call first for better reliability
+          // Use type assertion to handle RPC function call
           const { data, error } = await supabase.rpc(
-            'create_tenant_and_migrate_user',
+            'create_tenant_and_migrate_user' as any,
             { p_tenant_name: tenantName, p_user_id: user.id }
           );
           
@@ -102,11 +102,13 @@ export const usePaymentProcessor = ({
             throw new Error(`Failed to create tenant: ${error.message}`);
           }
           
-          if (!data || !data.success) {
+          // Use type assertion for response data
+          const responseData = data as any;
+          if (!responseData || responseData.success !== true) {
             throw new Error("No tenant ID returned from function");
           }
           
-          const newTenantId = data.tenant_id as string;
+          const newTenantId = responseData.tenant_id as string;
           
           // Update tenant with subscription info
           if (selectedTier) {
