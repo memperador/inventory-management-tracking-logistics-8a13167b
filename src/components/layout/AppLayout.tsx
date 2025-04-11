@@ -4,6 +4,7 @@ import { AppHeader } from './AppHeader';
 import AppSidebar from './AppSidebar';
 import { useAuth } from '@/contexts/auth';
 import DebugPanel from '@/components/debug/DebugPanel';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -25,16 +26,18 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   }
 
   return (
-    <div className="flex h-screen">
-      <AppSidebar />
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <AppHeader toggleMenu={() => {}} isMenuOpen={false} />
-        <main className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-4">
-          {children}
-        </main>
-        <DebugPanel />
+    <SidebarProvider>
+      <div className="flex h-screen w-full">
+        <AppSidebar />
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <AppHeader toggleMenu={() => {}} isMenuOpen={false} />
+          <main className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-4">
+            {children}
+          </main>
+          <DebugPanel />
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
