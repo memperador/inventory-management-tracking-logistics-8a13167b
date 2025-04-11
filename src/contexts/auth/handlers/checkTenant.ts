@@ -83,10 +83,14 @@ export async function findTenantByEmail(email: string): Promise<{tenantId: strin
   });
   
   try {
-    // First check if user exists with this email
-    const { data: userData, error: userError } = await supabase.auth.admin.getUserByEmail(email);
+    // First try to find the user with this email
+    const { data: userData, error: userError } = await supabase
+      .from('auth')
+      .select('id')
+      .eq('email', email)
+      .single();
     
-    if (userError || !userData?.user) {
+    if (userError || !userData) {
       logAuth('TENANT-HANDLER', `No existing user found for email: ${email}`, {
         level: AUTH_LOG_LEVELS.INFO,
         force: true
@@ -98,11 +102,11 @@ export async function findTenantByEmail(email: string): Promise<{tenantId: strin
     const { data: userTenant, error: tenantError } = await supabase
       .from('users')
       .select('tenant_id')
-      .eq('id', userData.user.id)
+      .eq('id', userData.id)
       .single();
       
     if (tenantError || !userTenant?.tenant_id) {
-      logAuth('TENANT-HANDLER', `User exists but has no tenant association: ${userData.user.id}`, {
+      logAuth('TENANT-HANDLER', `User exists but has no tenant association: ${userData.id}`, {
         level: AUTH_LOG_LEVELS.INFO,
         force: true
       });
