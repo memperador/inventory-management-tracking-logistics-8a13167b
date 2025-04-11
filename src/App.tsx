@@ -35,6 +35,7 @@ import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import { useState, useEffect } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import CustomerOnboarding from './pages/CustomerOnboarding';
 
 // Create a new query client
 const queryClient = new QueryClient();
@@ -123,6 +124,7 @@ function App() {
                         <Route path="/" element={<RootRedirect />} />
                         <Route path="/404" element={<NotFound />} />
                         <Route path="/onboarding" element={<ProtectedRoute redirectTo="/auth"><Onboarding /></ProtectedRoute>} />
+                        <Route path="/customer-onboarding" element={<ProtectedRoute redirectTo="/auth"><CustomerOnboarding /></ProtectedRoute>} />
                         <Route path="/project/:projectId" element={<ProjectRedirect />} />
                         <Route path="/payment" element={<PaymentPage />} />
                         <Route element={<ProtectedRoute redirectTo="/auth"><AppLayout /></ProtectedRoute>}>

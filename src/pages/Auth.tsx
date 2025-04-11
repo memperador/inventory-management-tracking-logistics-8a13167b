@@ -51,11 +51,11 @@ const Auth = () => {
       
       // Check if this is a new user that needs onboarding
       if (user.user_metadata?.needs_subscription === true) {
-        logAuth('AUTH', `New user needs subscription, redirecting to subscription page`, {
+        logAuth('AUTH', `New user needs subscription, redirecting to payment page`, {
           level: AUTH_LOG_LEVELS.INFO,
           force: true
         });
-        navigate('/subscription');
+        navigate('/payment');
       } else if (!user.user_metadata?.onboarding_completed) {
         logAuth('AUTH', `User needs onboarding, redirecting to customer onboarding`, {
           level: AUTH_LOG_LEVELS.INFO,

@@ -52,7 +52,7 @@ export async function handleSpaVerification(
     
     console.log("After verification, needsSubscription:", needsSubscription);
     
-    // Use replace to avoid adding to history stack
+    // Always redirect to payment page for new signups
     if (needsSubscription) {
       console.log("User needs subscription, navigating to payment page");
       // Use direct URL update for more reliable redirect
@@ -91,7 +91,7 @@ export async function handleEmailVerification(
     setIsVerifying(true);
     console.log("Verifying email with token:", token.substring(0, 10) + "...");
     
-    const { error } = await supabase.auth.verifyOtp({
+    const { error, data } = await supabase.auth.verifyOtp({
       token_hash: token,
       type: 'signup',
     });
@@ -110,6 +110,7 @@ export async function handleEmailVerification(
       console.log("Email verified successfully");
       setEmailVerified(true);
       
+      // Always redirect to payment for email verification
       console.log("Navigating to payment after email verification");
       // Use direct URL update for more reliable redirect
       window.location.href = '/payment';

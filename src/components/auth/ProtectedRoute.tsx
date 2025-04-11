@@ -78,7 +78,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           location.pathname === '/payment' ||
           location.pathname === '/auth' ||
           location.pathname === '/unauthorized' ||
-          location.pathname === '/logout'
+          location.pathname === '/logout' ||
+          location.pathname === '/customer-onboarding'
         ) {
           setCheckedSubscription(true);
           checkingSubscriptionRef.current = false;
