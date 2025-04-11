@@ -66,11 +66,36 @@ export const signIn = async (email: string, password: string) => {
       data: {
         success: !error,
         hasSession: !!data?.session,
-        hasUser: !!data?.user
+        hasUser: !!data?.user,
+        email: email
       }
     });
     
     if (error) throw error;
+    
+    // Handle special case for labrat user
+    if (email === 'labrat@iaware.com' && data?.session) {
+      logAuth('AUTH-SIGNIN', 'Detected labrat user login, ensuring admin role', {
+        level: AUTH_LOG_LEVELS.INFO
+      });
+      
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ role: 'admin' })
+        .eq('id', data.user?.id);
+        
+      if (updateError) {
+        console.warn('Warning: Unable to update labrat role in database:', updateError);
+      }
+      
+      // Update user metadata with admin role
+      await supabase.auth.updateUser({
+        data: { role: 'admin' }
+      });
+      
+      // Store success flag to prevent redirect loops
+      sessionStorage.setItem('labrat_login_success', 'true');
+    }
     
     if (data?.session === null && data?.user !== null) {
       logAuth('AUTH-SIGNIN', 'Session is null but user is not null - checking for MFA', {
@@ -186,6 +211,16 @@ export const signIn = async (email: string, password: string) => {
           sessionStorage.removeItem('login_toast_shown');
         }
       }, 5000);
+    }
+    
+    // Force redirect to dashboard for labrat user
+    if (email === 'labrat@iaware.com') {
+      logAuth('AUTH-SIGNIN', 'Forcing dashboard redirect for labrat user', {
+        level: AUTH_LOG_LEVELS.INFO
+      });
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 500);
     }
     
     logAuth('AUTH-SIGNIN', 'Sign in process completed successfully', {

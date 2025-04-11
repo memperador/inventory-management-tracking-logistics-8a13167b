@@ -16,7 +16,8 @@ import {
   hasProcessedPathForSession, 
   isAlreadyProcessing, 
   setProcessingFlag, 
-  removeProcessingFlag 
+  removeProcessingFlag,
+  clearAuthSessionStorage
 } from './handlers/sessionUtils';
 import {
   determineRedirectPath,
@@ -52,10 +53,24 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
     logAuth('AUTH-HANDLER', 'User signed in, checking tenant and subscription status', {
       level: AUTH_LOG_LEVELS.INFO
     });
+    
+    // Clear any session storage items that might cause loops
+    clearAuthSessionStorage();
   }
   
   // Get current path
   const currentPath = window.location.pathname;
+  
+  // Special case for /auth path - always redirect to dashboard on successful login
+  if (event === 'SIGNED_IN' && (currentPath === '/auth' || currentPath === '/login')) {
+    logAuth('AUTH-HANDLER', `User signed in on auth page, redirecting to dashboard`, {
+      level: AUTH_LOG_LEVELS.INFO
+    });
+    
+    // Short circuit to dashboard
+    executeRedirect('/dashboard', currentSession?.user?.id);
+    return;
+  }
   
   // Prevent redirect loops by checking if we've already processed this session
   if (hasProcessedPathForSession(currentSession?.user?.id, currentPath)) {
@@ -159,6 +174,17 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
         level: AUTH_LOG_LEVELS.INFO,
         data: { tenantId, onboardingCompleted }
       });
+      
+      // Special case for labrat user to force dashboard redirect
+      if (currentSession.user.email === 'labrat@iaware.com' && currentPath === '/auth') {
+        logAuth('AUTH-HANDLER', 'Labrat user detected on auth page - forcing redirect to dashboard', {
+          level: AUTH_LOG_LEVELS.INFO
+        });
+        
+        executeRedirect('/dashboard', currentSession.user.id);
+        removeProcessingFlag(processingFlag);
+        return;
+      }
       
       // Determine redirect path with onboarding status
       const targetPath = determineRedirectPath({

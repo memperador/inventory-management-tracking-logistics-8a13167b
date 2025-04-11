@@ -25,6 +25,14 @@ export function determineRedirectPath({
   needsSubscription,
   onboardingCompleted
 }: RedirectParams): string | null {
+  // Special case for auth page - always redirect to dashboard
+  if (currentPath === '/auth' || currentPath === '/login') {
+    logAuth('REDIRECT-HANDLER', 'User is on auth page, redirecting to dashboard', {
+      level: AUTH_LOG_LEVELS.INFO
+    });
+    return '/dashboard';
+  }
+  
   // Don't redirect if we're already on the customer onboarding page
   // This prevents redirect loops with /customer-onboarding
   if (currentPath === '/customer-onboarding') {
@@ -85,6 +93,7 @@ export function executeRedirect(targetPath: string, userId?: string): void {
     setProcessedPath(userId, targetPath);
   }
   
+  // Use direct window location for more reliable redirect
   window.location.href = targetPath;
 }
 
@@ -117,8 +126,8 @@ export function checkSubscriptionStatus(tenantData: any, session: Session | null
   } else if (tenantData && tenantData.onboarding_completed === false) {
     onboardingCompleted = false;
   } else {
-    // If the value is undefined or null, default to false
-    onboardingCompleted = false;
+    // If the value is undefined or null, default to true to avoid redirections
+    onboardingCompleted = true;
   }
   
   logAuth('SUBSCRIPTION-CHECK', 'Subscription status:', {

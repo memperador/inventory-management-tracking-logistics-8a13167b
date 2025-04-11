@@ -40,6 +40,11 @@ export function setProcessedPath(userId: string, path: string): void {
 export function hasProcessedPathForSession(userId: string | undefined, currentPath: string): boolean {
   if (!userId) return false;
   
+  // Special case - never consider auth page as processed
+  if (currentPath === '/auth' || currentPath === '/login') {
+    return false;
+  }
+  
   const sessionKey = `auth_processed_${userId}`;
   const processedPath = sessionStorage.getItem(sessionKey);
   
