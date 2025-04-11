@@ -74,6 +74,41 @@ export const signIn = async (email: string, password: string) => {
         return;
       }
     }
+
+    // Check if this is a returning user who already has a tenant
+    const userId = data?.user?.id;
+    if (userId) {
+      logAuth('AUTH-SIGNIN', `Checking for existing tenant for user: ${userId}`, {
+        level: AUTH_LOG_LEVELS.INFO
+      });
+      
+      // Query for existing tenant association
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('tenant_id')
+        .eq('id', userId)
+        .single();
+        
+      if (!userError && userData?.tenant_id) {
+        logAuth('AUTH-SIGNIN', `Found existing tenant for user: ${userData.tenant_id}`, {
+          level: AUTH_LOG_LEVELS.INFO
+        });
+        
+        // Store tenant information in user metadata if it's not already there
+        if (!data.user.user_metadata?.tenant_id) {
+          await supabase.auth.updateUser({
+            data: { 
+              tenant_id: userData.tenant_id,
+              needs_subscription: false
+            }
+          });
+          
+          logAuth('AUTH-SIGNIN', `Updated user metadata with existing tenant_id: ${userData.tenant_id}`, {
+            level: AUTH_LOG_LEVELS.INFO
+          });
+        }
+      }
+    }
     
     // Set a flag to prevent duplicate toasts with a unique timestamp
     const toastId = `login_toast_${Date.now()}`;

@@ -25,7 +25,7 @@ export async function checkUserTenant(userId: string): Promise<string | null> {
       return null;
     }
     
-    logAuth('TENANT-HANDLER', `Fetching tenant with ID: ${data.tenant_id}`, {
+    logAuth('TENANT-HANDLER', `Found tenant with ID: ${data.tenant_id}`, {
       level: AUTH_LOG_LEVELS.INFO
     });
     
@@ -69,5 +69,77 @@ export async function getTenantDetails(tenantId: string): Promise<any | null> {
       data: error
     });
     return null;
+  }
+}
+
+/**
+ * Find tenant by name or email
+ * This helps with finding existing tenants for returning users
+ */
+export async function findTenantByEmail(email: string): Promise<{tenantId: string | null, tenantName: string | null}> {
+  logAuth('TENANT-HANDLER', `Finding tenant by email: ${email}`, {
+    level: AUTH_LOG_LEVELS.INFO,
+    force: true
+  });
+  
+  try {
+    // First check if user exists with this email
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserByEmail(email);
+    
+    if (userError || !userData?.user) {
+      logAuth('TENANT-HANDLER', `No existing user found for email: ${email}`, {
+        level: AUTH_LOG_LEVELS.INFO,
+        force: true
+      });
+      return { tenantId: null, tenantName: null };
+    }
+    
+    // Check if user has tenant association
+    const { data: userTenant, error: tenantError } = await supabase
+      .from('users')
+      .select('tenant_id')
+      .eq('id', userData.user.id)
+      .single();
+      
+    if (tenantError || !userTenant?.tenant_id) {
+      logAuth('TENANT-HANDLER', `User exists but has no tenant association: ${userData.user.id}`, {
+        level: AUTH_LOG_LEVELS.INFO,
+        force: true
+      });
+      return { tenantId: null, tenantName: null };
+    }
+    
+    // Get tenant name
+    const { data: tenant, error: tenantNameError } = await supabase
+      .from('tenants')
+      .select('name')
+      .eq('id', userTenant.tenant_id)
+      .single();
+      
+    if (tenantNameError || !tenant) {
+      logAuth('TENANT-HANDLER', `Found tenant ID but couldn't get name: ${userTenant.tenant_id}`, {
+        level: AUTH_LOG_LEVELS.WARN,
+        force: true
+      });
+      return { tenantId: userTenant.tenant_id, tenantName: null };
+    }
+    
+    logAuth('TENANT-HANDLER', `Successfully found tenant for email: ${email}`, {
+      level: AUTH_LOG_LEVELS.INFO,
+      force: true,
+      data: { tenantId: userTenant.tenant_id, tenantName: tenant.name }
+    });
+    
+    return {
+      tenantId: userTenant.tenant_id,
+      tenantName: tenant.name
+    };
+  } catch (error) {
+    logAuth('TENANT-HANDLER', `Error finding tenant by email:`, {
+      level: AUTH_LOG_LEVELS.ERROR,
+      force: true,
+      data: error
+    });
+    return { tenantId: null, tenantName: null };
   }
 }
