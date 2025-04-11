@@ -17,7 +17,7 @@ const AdminRoleFixer: React.FC<AdminRoleFixerProps> = ({ userEmail = 'labrat@iaw
   useEffect(() => {
     const checkCurrentRole = async () => {
       try {
-        // Labrat's known ID
+        // Labrat's known ID - this is pre-defined
         const userId = '9e32e738-5f44-44f8-bc15-6946b27296a6'; 
         
         const { data, error } = await supabase
@@ -47,10 +47,9 @@ const AdminRoleFixer: React.FC<AdminRoleFixerProps> = ({ userEmail = 'labrat@iaw
     setIsUpdating(true);
     
     try {
-      // Update the user's role in both the users table
+      // Update the user's role in the users table
       const userId = '9e32e738-5f44-44f8-bc15-6946b27296a6'; // Labrat's known ID
       
-      // Update user role in the users table
       const { error } = await supabase
         .from('users')
         .update({ role: 'admin' })
@@ -66,13 +65,9 @@ const AdminRoleFixer: React.FC<AdminRoleFixerProps> = ({ userEmail = 'labrat@iaw
       }
       
       // Also update the user metadata to include the admin role
-      const { error: metadataError } = await supabase.auth.updateUser({
+      await supabase.auth.updateUser({
         data: { role: 'admin' }
       });
-      
-      if (metadataError) {
-        console.warn('Unable to update auth metadata, but DB update succeeded:', metadataError);
-      }
       
       logAuth('ADMIN', `Successfully updated ${userEmail} to admin role`, {
         level: AUTH_LOG_LEVELS.INFO
@@ -87,6 +82,7 @@ const AdminRoleFixer: React.FC<AdminRoleFixerProps> = ({ userEmail = 'labrat@iaw
       
       // Force refresh session to apply changes immediately
       await supabase.auth.refreshSession();
+      
     } catch (error) {
       logAuth('ADMIN', `Manual role update failed: ${error instanceof Error ? error.message : String(error)}`, {
         level: AUTH_LOG_LEVELS.ERROR,
@@ -118,7 +114,7 @@ const AdminRoleFixer: React.FC<AdminRoleFixerProps> = ({ userEmail = 'labrat@iaw
   );
 };
 
-// Execute the role fix immediately on component mount
+// Add an auto-fixing component that runs automatically
 const AutoAdminRoleFixer: React.FC = () => {
   const [fixed, setFixed] = useState(false);
   
