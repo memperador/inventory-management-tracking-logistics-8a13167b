@@ -6,7 +6,9 @@ import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import AIConfigurationPanel from '@/components/ai/admin/AIConfigurationPanel';
 import SuperadminUserManagement from '@/components/account/SuperadminUserManagement';
-import { Shield, Users } from 'lucide-react';
+import TenantsManagementPanel from '@/components/account/superadmin/TenantsManagementPanel';
+import { Shield, Users, Buildings } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const SuperAdminSettings: React.FC = () => {
   const { userRole } = useRole();
@@ -46,10 +48,34 @@ const SuperAdminSettings: React.FC = () => {
         description="Configure global system settings" 
       />
       
-      <div className="mt-6 grid gap-8">
-        <AIConfigurationPanel />
-        <SuperadminUserManagement />
-      </div>
+      <Tabs defaultValue="users" className="mt-6">
+        <TabsList className="mb-4">
+          <TabsTrigger value="users">
+            <Users className="h-4 w-4 mr-2" />
+            User Management
+          </TabsTrigger>
+          <TabsTrigger value="tenants">
+            <Buildings className="h-4 w-4 mr-2" />
+            Tenant Management
+          </TabsTrigger>
+          <TabsTrigger value="ai">
+            <Shield className="h-4 w-4 mr-2" />
+            AI Configuration
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="users">
+          <SuperadminUserManagement />
+        </TabsContent>
+        
+        <TabsContent value="tenants">
+          <TenantsManagementPanel />
+        </TabsContent>
+        
+        <TabsContent value="ai">
+          <AIConfigurationPanel />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
