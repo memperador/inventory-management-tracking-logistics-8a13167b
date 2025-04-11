@@ -15,8 +15,8 @@ export const RoleProvider = ({ children }: { children: ReactNode }) => {
   const [lastRefreshed, setLastRefreshed] = useState(Date.now());
   const [forceRefreshCounter, setForceRefreshCounter] = useState(0);
 
-  // Function to refresh user role
-  const refreshRole = useCallback(async (showToast = true) => {
+  // Function to refresh user role - now accepts an optional parameter
+  const refreshRole = useCallback(async (showToast: boolean = true) => {
     try {
       console.log('RoleContext: Refreshing user role');
       // First refresh the session to get latest metadata

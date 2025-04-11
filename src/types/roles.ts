@@ -17,5 +17,5 @@ export interface RoleContextType {
   hasPermission: (requiredRoles: UserRole[]) => boolean;
   isAdmin: () => boolean;
   isManager: () => boolean;
-  refreshRole: () => void;
+  refreshRole: (showToast?: boolean) => Promise<void>;
 }
