@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import AuthTabs from '@/components/auth/AuthTabs';
 import ResetPasswordDialog from '@/components/auth/ResetPasswordDialog';
@@ -40,6 +40,23 @@ const AuthCard: React.FC<AuthCardProps> = ({
   const [activeTab, setActiveTab] = useState("login");
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const { user } = useAuth();
+  
+  // Pre-fill the login form with labrat credentials if URL contains ?preset=labrat
+  const urlParams = new URLSearchParams(window.location.search);
+  const useLabratPreset = urlParams.get('preset') === 'labrat';
+  
+  useEffect(() => {
+    if (useLabratPreset && activeTab === 'login') {
+      // Find the email input
+      const emailInput = document.querySelector('input[type="email"]') as HTMLInputElement;
+      const passwordInput = document.querySelector('input[type="password"]') as HTMLInputElement;
+      
+      if (emailInput && passwordInput) {
+        emailInput.value = 'labrat@iaware.com';
+        passwordInput.value = 'testpassword1';
+      }
+    }
+  }, [useLabratPreset, activeTab]);
 
   return (
     <Card className="w-full max-w-md">

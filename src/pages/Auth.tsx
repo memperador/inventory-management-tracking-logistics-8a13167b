@@ -8,6 +8,7 @@ import AuthRedirectManager from '@/components/auth/AuthRedirectManager';
 import AuthLoadingState from '@/components/auth/AuthLoadingState';
 import { LABRAT_EMAIL } from '@/utils/auth/labratUserUtils';
 import { emergencyFixLabratAdmin } from '@/utils/admin/fixLabratAdmin';
+import LabratLoginButton from '@/components/auth/LabratLoginButton';
 
 const Auth = () => {
   const { user, loading: authLoading } = useAuth();
@@ -30,6 +31,9 @@ const Auth = () => {
   
   // Special handling for labrat user on auth page
   useEffect(() => {
+    // Clear any existing session storage to prevent login loops
+    sessionStorage.removeItem('auth_processed_labrat@iaware.com');
+    
     // Check if we're coming back to auth page after a labrat login attempt
     const labratLoginDetected = sessionStorage.getItem('labrat_login_detected');
     
@@ -84,7 +88,7 @@ const Auth = () => {
       {isLoading ? (
         <AuthLoadingState />
       ) : (
-        <>
+        <div className="w-full max-w-md space-y-3">
           <AuthCard 
             authError={authError}
             emailVerified={emailVerified}
@@ -98,8 +102,9 @@ const Auth = () => {
             setVerificationEmail={setVerificationEmail}
             onSignupComplete={handleSignupComplete}
           />
+          <LabratLoginButton />
           <AuthRedirectManager />
-        </>
+        </div>
       )}
     </div>
   );

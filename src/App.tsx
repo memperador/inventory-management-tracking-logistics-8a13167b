@@ -59,6 +59,12 @@ const RootRedirect = () => {
   // Check if user is already logged in
   const hasSession = localStorage.getItem('supabase.auth.token') !== null;
   
+  // Direct labrat access - explicit flow for testing
+  if (window.location.search.includes('labrat=true')) {
+    console.log('[APP] Direct labrat access detected, redirecting to auth with preset');
+    return <Navigate to="/auth?preset=labrat" replace />;
+  }
+  
   // Special handling for labrat - if we see a labrat marker in localStorage
   // force direct login
   const isLabratLogin = localStorage.getItem('labrat_user') === 'true';

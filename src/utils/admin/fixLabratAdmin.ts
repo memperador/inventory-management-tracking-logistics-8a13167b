@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 import { LABRAT_EMAIL, LABRAT_USER_ID } from '@/utils/auth/labratUserUtils';
@@ -58,13 +57,31 @@ export const emergencyFixLabratAdmin = async () => {
   try {
     console.log('Running emergency fix for labrat admin...');
     
+    // Clear ALL session storage
+    sessionStorage.clear();
+    
     // Get the current session
     const { data: sessionData } = await supabase.auth.getSession();
     
-    // Skip if not logged in
+    // If not logged in as labrat, log in first
     if (!sessionData?.session || sessionData.session.user.email !== LABRAT_EMAIL) {
-      console.log('Not the labrat user or not logged in, skipping fix');
-      return;
+      console.log('Not logged in as labrat, attempting login');
+      
+      // Sign out any existing user
+      await supabase.auth.signOut();
+      
+      // Sign in as labrat
+      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+        email: LABRAT_EMAIL,
+        password: 'testpassword1'
+      });
+      
+      if (loginError) {
+        console.error('Failed to log in as labrat:', loginError);
+        return;
+      }
+      
+      console.log('Successfully logged in as labrat user');
     }
     
     console.log('Fixing labrat admin role in database...');
@@ -100,5 +117,12 @@ export const emergencyFixLabratAdmin = async () => {
 // Add to window for emergency access from console
 if (typeof window !== 'undefined') {
   (window as any).fixLabratAdmin = emergencyFixLabratAdmin;
+  
+  // Add shortcut version
+  (window as any).fixLabrat = () => {
+    sessionStorage.clear();
+    localStorage.setItem('labrat_user', 'true');
+    window.location.href = '/auth?preset=labrat';
+    return "Redirecting to labrat login...";
+  };
 }
-
