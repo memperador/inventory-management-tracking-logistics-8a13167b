@@ -43,6 +43,27 @@ export const useTenantCreation = () => {
       // Start trial for the new tenant
       await startUserTrial(newTenantId);
       
+      // Ensure the user is set as admin
+      const { error: roleError } = await supabase
+        .from('users')
+        .update({
+          role: 'admin'
+        })
+        .eq('id', userId);
+        
+      if (roleError) {
+        logAuth('MIGRATION', `Warning: Failed to set user as admin: ${roleError.message}`, {
+          level: AUTH_LOG_LEVELS.WARN,
+          force: true
+        });
+        // Don't throw here, just log the warning
+      } else {
+        logAuth('MIGRATION', `Successfully set user ${userId} as admin for tenant ${newTenantId}`, {
+          level: AUTH_LOG_LEVELS.INFO,
+          force: true
+        });
+      }
+      
       const successResult = {
         success: true,
         message: `Successfully created tenant "${tenantName}" and moved user`,
