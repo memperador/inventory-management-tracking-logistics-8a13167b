@@ -262,7 +262,7 @@ export const useSubscriptionTrial = () => {
         force: true,
         data: { 
           currentPath: window.location.pathname,
-          redirectTo: '/customer-onboarding',
+          redirectTo: '/customer-onboarding?trial=started',
           redirectMethod: 'window.location.href'
         }
       });
@@ -273,7 +273,7 @@ export const useSubscriptionTrial = () => {
           level: AUTH_LOG_LEVELS.INFO,
           force: true
         });
-        window.location.href = '/customer-onboarding';
+        window.location.href = '/customer-onboarding?trial=started';
       }, 800);
       
     } catch (error) {

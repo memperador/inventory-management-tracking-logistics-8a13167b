@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { OrganizationDetailsForm } from '@/components/tenant/OrganizationDetailsForm';
 import { IndustryCodeCustomization } from '@/components/tenant/IndustryCodeCustomization';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,62 +7,112 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle } from 'lucide-react';
+import { useTenant } from '@/hooks/useTenantContext';
+import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 
 const Onboarding: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
+  const { currentTenant } = useTenant();
   const [tenantId, setTenantId] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const initializeOnboarding = async () => {
+      setIsInitializing(true);
       try {
-        // Fetch or create tenant for the current user
+        // Log component mount
+        logAuth('ONBOARDING', 'Onboarding page mounted', {
+          level: AUTH_LOG_LEVELS.INFO,
+          force: true,
+          data: {
+            timestamp: new Date().toISOString(),
+            currentPath: window.location.pathname,
+            currentUrl: window.location.href,
+            hasTenant: !!currentTenant?.id,
+            tenantId: currentTenant?.id || 'none'
+          }
+        });
+
+        // Check if we already have a tenant from context
+        if (currentTenant?.id) {
+          logAuth('ONBOARDING', `Using existing tenant from context: ${currentTenant.id}`, {
+            level: AUTH_LOG_LEVELS.INFO,
+            force: true
+          });
+          setTenantId(currentTenant.id);
+          setIsInitializing(false);
+          return;
+        }
+
+        // If no tenant in context, try to fetch the user's tenant
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
           throw new Error('No user found');
         }
 
-        const { data: existingTenant, error: tenantError } = await supabase
-          .from('tenants')
-          .select('*')
-          .eq('name', user.email)
+        logAuth('ONBOARDING', `Fetching tenant for user: ${user.id}`, {
+          level: AUTH_LOG_LEVELS.INFO,
+          force: true
+        });
+
+        const { data: userTenant, error: userTenantError } = await supabase
+          .from('users')
+          .select('tenant_id')
+          .eq('id', user.id)
           .single();
 
-        if (tenantError && tenantError.code !== 'PGRST116') {
-          throw tenantError;
+        if (userTenantError) {
+          logAuth('ONBOARDING', `Error fetching user tenant: ${userTenantError.message}`, {
+            level: AUTH_LOG_LEVELS.ERROR,
+            force: true,
+            data: userTenantError
+          });
+          throw userTenantError;
         }
 
-        let tenantRecord;
-        if (!existingTenant) {
-          // Create a new tenant if not exists
-          const { data, error } = await supabase
-            .from('tenants')
-            .insert({ 
-              name: user.email || 'New Tenant',
-              created_at: new Date().toISOString()
-            })
-            .select()
-            .single();
-
-          if (error) throw error;
-          tenantRecord = data;
-        } else {
-          tenantRecord = existingTenant;
+        if (userTenant?.tenant_id) {
+          logAuth('ONBOARDING', `Found user tenant: ${userTenant.tenant_id}`, {
+            level: AUTH_LOG_LEVELS.INFO,
+            force: true
+          });
+          setTenantId(userTenant.tenant_id);
+          setIsInitializing(false);
+          return;
         }
 
-        setTenantId(tenantRecord.id);
+        // If somehow we got here without a tenant, log an error
+        logAuth('ONBOARDING', 'No tenant found for user, application should have redirected', {
+          level: AUTH_LOG_LEVELS.ERROR,
+          force: true
+        });
+        
+        toast({
+          title: 'Error',
+          description: 'No organization found. Please contact support.',
+          variant: 'destructive'
+        });
+
       } catch (error) {
         console.error('Onboarding initialization error:', error);
+        logAuth('ONBOARDING', 'Onboarding initialization error', {
+          level: AUTH_LOG_LEVELS.ERROR,
+          force: true,
+          data: error
+        });
+        
         toast({
           title: 'Error',
           description: 'Failed to initialize onboarding process.',
           variant: 'destructive'
         });
+      } finally {
+        setIsInitializing(false);
       }
     };
 
     initializeOnboarding();
-  }, []);
+  }, [currentTenant]);
 
   const steps = [
     {
@@ -84,6 +134,36 @@ const Onboarding: React.FC = () => {
 
   const progress = ((currentStep + 1) / steps.length) * 100;
   const CurrentStepComponent = steps[currentStep].component;
+
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+        <div className="bg-white shadow-md rounded-lg p-8 text-center">
+          <h2 className="text-xl font-semibold mb-4">Loading Onboarding...</h2>
+          <Progress value={100} className="h-2 animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!tenantId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+        <div className="bg-white shadow-md rounded-lg p-8 text-center">
+          <h2 className="text-xl font-semibold mb-4">Organization Setup Required</h2>
+          <p className="mb-4 text-muted-foreground">
+            We couldn't find an organization associated with your account.
+          </p>
+          <Button 
+            onClick={() => window.location.href = '/dashboard'}
+            className="mt-4"
+          >
+            Go to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
@@ -132,12 +212,10 @@ const Onboarding: React.FC = () => {
           {steps[currentStep].title}
         </h2>
         
-        {tenantId && (
-          <CurrentStepComponent 
-            tenantId={tenantId} 
-            onNextStep={handleNextStep} 
-          />
-        )}
+        <CurrentStepComponent 
+          tenantId={tenantId} 
+          onNextStep={handleNextStep} 
+        />
       </div>
     </div>
   );

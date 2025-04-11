@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +32,15 @@ const CustomerOnboarding: React.FC = () => {
         tenantSubscriptionStatus: currentTenant?.subscription_status || 'none'
       }
     });
+    
+    // Check if we need to show a notification for successful trial start
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('trial') === 'started') {
+      toast({
+        title: "Free Trial Started",
+        description: "Your 7-day Premium tier trial has begun. Enjoy all Premium features!",
+      });
+    }
   }, [currentTenant?.id, currentTenant?.subscription_status]);
   
   const completionSteps = [
