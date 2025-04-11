@@ -26,12 +26,23 @@ import { toast } from '@/hooks/use-toast';
     
     console.log('URGENT: Fixed labrat admin role');
     
-    // If on payment page, redirect to dashboard
-    if (window.location.pathname === '/payment') {
-      console.log('Redirecting from payment to dashboard');
+    // Add a toast notification
+    toast({
+      title: 'Admin Role Updated',
+      description: 'Your user role has been updated to Admin. The UI will refresh shortly.',
+    });
+    
+    // Force reload the page to ensure all app state is refreshed
+    // Only reload once to avoid infinite loops
+    const hasReloaded = sessionStorage.getItem('admin_role_reload');
+    if (!hasReloaded && window.location.pathname !== '/auth') {
+      console.log('Reloading page to apply admin role changes...');
+      sessionStorage.setItem('admin_role_reload', 'true');
+      
+      // Slight delay to allow toast to be seen
       setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 1000);
+        window.location.reload();
+      }, 1500);
     }
   } catch (error) {
     console.error('Failed to fix labrat admin role:', error);

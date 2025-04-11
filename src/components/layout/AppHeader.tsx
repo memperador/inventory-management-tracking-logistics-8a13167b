@@ -1,80 +1,75 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ModeToggle } from '@/components/layout/ModeToggle';
+import { useSidebar } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/auth/AuthContext';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, Settings, User } from 'lucide-react';
-import { EmailVerificationIndicator } from '@/components/layout/EmailVerificationIndicator';
-import { NotificationBadge } from '@/components/notifications/NotificationBadge';
-import { NotificationCenter } from '@/components/notifications/NotificationCenter';
+import { UserNav } from './UserNav';
+import { MenuIcon, X } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuthContext';
+import { useRole } from '@/hooks/useRoleContext';
+import { UserRole } from '@/types/roles';
+import { Badge } from '@/components/ui/badge';
 
-interface AppHeaderProps {
+const getRoleBadgeColor = (role: UserRole | null) => {
+  switch (role) {
+    case 'admin':
+      return 'bg-blue-100 text-blue-800 border-blue-300';
+    case 'manager':
+      return 'bg-green-100 text-green-800 border-green-300';
+    case 'editor':
+      return 'bg-amber-100 text-amber-700 border-amber-300';
+    case 'viewer':
+      return 'bg-gray-100 text-gray-700 border-gray-300';
+    case 'superadmin':
+      return 'bg-purple-100 text-purple-700 border-purple-300';
+    default:
+      return 'bg-gray-100 text-gray-700 border-gray-300';
+  }
+};
+
+interface HeaderProps {
   toggleMenu: () => void;
   isMenuOpen: boolean;
 }
 
-export const AppHeader: React.FC<AppHeaderProps> = ({ toggleMenu, isMenuOpen }) => {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
+export function AppHeader({ toggleMenu, isMenuOpen }: HeaderProps) {
+  const { toggleSidebar } = useSidebar();
+  const { user } = useAuth();
+  const { userRole, refreshRole } = useRole();
   
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/auth');
+  const handleRoleRefresh = () => {
+    refreshRole();
   };
-
-  // Get user display name and avatar from Supabase user metadata or defaults
-  const userDisplayName = user?.user_metadata?.first_name || user?.email?.split('@')[0] || 'User';
-  const userInitial = userDisplayName.charAt(0).toUpperCase();
-
+  
   return (
-    <div className="bg-white dark:bg-gray-900 border-b dark:border-gray-800 py-2 px-4 flex items-center justify-between">
-      <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')}>
-          Inventory Track Pro
-        </Button>
-        <EmailVerificationIndicator />
+    <header className="sticky top-0 z-40 w-full bg-white dark:bg-gray-950 border-b">
+      <div className="flex h-16 items-center justify-between px-4 md:px-6">
+        <div className="flex items-center sm:hidden">
+          <Button variant="ghost" size="icon" onClick={toggleSidebar}>
+            <MenuIcon className="h-5 w-5" />
+          </Button>
+        </div>
+        <div className="flex items-center justify-end flex-1 space-x-4">
+          {userRole && (
+            <div className="hidden md:flex items-center space-x-2">
+              <Badge 
+                variant="outline" 
+                className={`${getRoleBadgeColor(userRole)} px-3 py-1 text-xs font-medium cursor-pointer`}
+                onClick={handleRoleRefresh}
+              >
+                {userRole?.toUpperCase()}
+              </Badge>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-xs"
+                onClick={handleRoleRefresh}
+              >
+                Refresh Role
+              </Button>
+            </div>
+          )}
+          <UserNav />
+        </div>
       </div>
-      
-      <div className="flex items-center space-x-4">
-        <ModeToggle />
-        
-        <NotificationBadge onClick={() => setIsNotificationCenterOpen(true)} />
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0 rounded-full">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.user_metadata?.avatar_url || ""} alt={userDisplayName} />
-                <AvatarFallback>{userInitial}</AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => navigate('/account')}>
-              <User className="h-4 w-4 mr-2" />
-              <span>My Account</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/settings')}>
-              <Settings className="h-4 w-4 mr-2" />
-              <span>Settings</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      
-      <NotificationCenter 
-        isOpen={isNotificationCenterOpen} 
-        onClose={() => setIsNotificationCenterOpen(false)} 
-      />
-    </div>
+    </header>
   );
-};
+}

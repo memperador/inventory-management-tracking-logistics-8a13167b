@@ -3,9 +3,13 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useRole } from '@/hooks/useRoleContext';
+import { useAuth } from '@/hooks/useAuthContext';
 
 const LabratAdminButton: React.FC = () => {
   const [isFixing, setIsFixing] = React.useState(false);
+  const { refreshRole } = useRole();
+  const { refreshSession } = useAuth();
   
   const handleFix = async () => {
     setIsFixing(true);
@@ -27,16 +31,19 @@ const LabratAdminButton: React.FC = () => {
       });
       
       // Refresh session
-      await supabase.auth.refreshSession();
+      await refreshSession();
+      
+      // Refresh role context
+      await refreshRole();
       
       toast({
         title: 'Admin Role Applied',
-        description: 'The labrat@iaware.com user now has admin privileges.',
+        description: 'The labrat@iaware.com user now has admin privileges. UI will update shortly.',
       });
       
-      // Redirect to dashboard
+      // Force reload the application to ensure all context is updated
       setTimeout(() => {
-        window.location.href = '/dashboard';
+        window.location.reload();
       }, 1000);
       
     } catch (error) {
