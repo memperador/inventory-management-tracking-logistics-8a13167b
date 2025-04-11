@@ -1,3 +1,4 @@
+
 /**
  * AuthLogger utility provides enhanced debugging for authentication flows
  * This can be used in any file for consistent logging of auth events
@@ -106,4 +107,65 @@ export const dumpAuthLogs = () => {
   });
   console.groupEnd();
   return logs;
+};
+
+// Extract logs by prefix
+export const getLogsByPrefix = (prefix: string): any[] => {
+  try {
+    const logs = getAuthLogs();
+    return logs.filter(log => log.prefix === prefix);
+  } catch (e) {
+    return [];
+  }
+};
+
+// Extract logs with specified level
+export const getLogsByLevel = (level: LogLevel): any[] => {
+  try {
+    const logs = getAuthLogs();
+    return logs.filter(log => log.level === level);
+  } catch (e) {
+    return [];
+  }
+};
+
+// Search logs by message content
+export const searchLogs = (searchTerm: string): any[] => {
+  try {
+    const logs = getAuthLogs();
+    return logs.filter(log => 
+      log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (log.data && JSON.stringify(log.data).toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  } catch (e) {
+    return [];
+  }
+};
+
+// Get the most recent logs, limited by count
+export const getRecentLogs = (count: number = 20): any[] => {
+  try {
+    const logs = getAuthLogs();
+    return logs.slice(-count);
+  } catch (e) {
+    return [];
+  }
+};
+
+// Download logs as JSON
+export const downloadLogs = () => {
+  try {
+    const logs = getAuthLogs();
+    const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `auth-logs-${new Date().toISOString()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    console.error('Failed to download logs:', e);
+  }
 };

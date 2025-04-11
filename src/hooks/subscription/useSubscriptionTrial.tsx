@@ -30,7 +30,9 @@ export const useSubscriptionTrial = () => {
         data: {
           userId: session?.user?.id,
           currentTenant: currentTenant?.id || 'none',
-          email: user?.email
+          email: user?.email,
+          timestamp: new Date().toISOString(),
+          userMetadata: user?.user_metadata
         }
       });
 
@@ -47,13 +49,22 @@ export const useSubscriptionTrial = () => {
         logAuth('TRIAL', 'New user needs migration for trial setup', {
           level: AUTH_LOG_LEVELS.INFO, 
           force: true,
-          data: { email: user?.email }
+          data: { 
+            email: user?.email,
+            userMetadata: user?.user_metadata,
+            currentPath: window.location.pathname
+          }
         });
         
         try {
           // Create tenant name based on email or company info
           const emailPrefix = user?.email?.split('@')[0] || '';
           const companyName = user?.user_metadata?.company_name || `${emailPrefix}'s Organization`;
+          
+          logAuth('TRIAL', `Creating tenant with name: ${companyName}`, {
+            level: AUTH_LOG_LEVELS.INFO,
+            force: true
+          });
           
           // Direct tenant creation for more reliability in trial flow
           const { data, error } = await supabase.rpc(
@@ -62,12 +73,22 @@ export const useSubscriptionTrial = () => {
           );
           
           if (error) {
+            logAuth('TRIAL', `RPC error during tenant creation: ${error.message}`, {
+              level: AUTH_LOG_LEVELS.ERROR,
+              force: true,
+              data: error
+            });
             throw new Error(`Failed to create tenant: ${error.message}`);
           }
           
           // Type assertion for response data
           const responseData = data as any;
           if (!responseData || responseData.success !== true) {
+            logAuth('TRIAL', 'Invalid response from create_tenant_and_migrate_user', {
+              level: AUTH_LOG_LEVELS.ERROR,
+              force: true,
+              data: { responseData }
+            });
             throw new Error('Failed to create tenant: No response from server');
           }
           
@@ -75,10 +96,16 @@ export const useSubscriptionTrial = () => {
           
           logAuth('TRIAL', `Created tenant with ID: ${newTenantId}`, {
             level: AUTH_LOG_LEVELS.INFO,
-            force: true
+            force: true,
+            data: { tenantId: newTenantId }
           });
           
           // Clear subscription flag
+          logAuth('TRIAL', 'Clearing subscription flag and setting tenant ID', {
+            level: AUTH_LOG_LEVELS.INFO,
+            force: true
+          });
+          
           await supabase.auth.updateUser({
             data: { 
               needs_subscription: false,
@@ -87,6 +114,11 @@ export const useSubscriptionTrial = () => {
           });
           
           // Refresh session to get updated info
+          logAuth('TRIAL', 'Refreshing session after tenant creation', {
+            level: AUTH_LOG_LEVELS.INFO,
+            force: true
+          });
+          
           await refreshSession();
           
         } catch (error) {
@@ -99,7 +131,20 @@ export const useSubscriptionTrial = () => {
           // Fall back to tenant migration
           // Extract email prefix here so it's defined in this scope
           const userEmailPrefix = user?.email?.split('@')[0] || '';
+
+          logAuth('TRIAL', 'Falling back to tenant migration', {
+            level: AUTH_LOG_LEVELS.INFO,
+            force: true,
+            data: { emailPrefix: userEmailPrefix }
+          });
+          
           const migrationResult = await migrateToNewTenant(`${userEmailPrefix || 'New'}'s Organization`);
+          
+          logAuth('TRIAL', `Migration result: ${migrationResult.success ? 'Success' : 'Failed'}`, {
+            level: migrationResult.success ? AUTH_LOG_LEVELS.INFO : AUTH_LOG_LEVELS.ERROR,
+            force: true,
+            data: migrationResult
+          });
           
           if (!migrationResult.success) {
             throw new Error(`Failed to create tenant: ${migrationResult.message}`);
@@ -107,6 +152,15 @@ export const useSubscriptionTrial = () => {
         }
       } else if (currentTenant?.id) {
         // Update existing tenant with trial info
+        logAuth('TRIAL', `Updating existing tenant ${currentTenant.id} with trial info`, {
+          level: AUTH_LOG_LEVELS.INFO,
+          force: true,
+          data: { 
+            tenantId: currentTenant.id,
+            trialEndsAt 
+          }
+        });
+        
         const { error } = await supabase
           .from('tenants')
           .update({
@@ -116,7 +170,14 @@ export const useSubscriptionTrial = () => {
           })
           .eq('id', currentTenant.id);
           
-        if (error) throw error;
+        if (error) {
+          logAuth('TRIAL', `Failed to update tenant with trial info: ${error.message}`, {
+            level: AUTH_LOG_LEVELS.ERROR,
+            force: true,
+            data: error
+          });
+          throw error;
+        }
         
         // Update the local tenant state
         setCurrentTenant({
@@ -125,7 +186,17 @@ export const useSubscriptionTrial = () => {
           subscription_status: 'trialing',
           trial_ends_at: trialEndsAt
         });
+
+        logAuth('TRIAL', 'Updated local tenant state with trial info', {
+          level: AUTH_LOG_LEVELS.INFO,
+          force: true
+        });
       } else {
+        logAuth('TRIAL', 'No tenant found and user is not new - cannot start trial', {
+          level: AUTH_LOG_LEVELS.ERROR,
+          force: true,
+          data: { currentTenant, userMetadata: user?.user_metadata }
+        });
         throw new Error('No tenant found and user is not new - cannot start trial');
       }
       
@@ -146,6 +217,12 @@ export const useSubscriptionTrial = () => {
       });
       
       // Navigate to customer onboarding instead of dashboard
+      logAuth('TRIAL', 'Redirecting to customer onboarding', {
+        level: AUTH_LOG_LEVELS.INFO,
+        force: true,
+        data: { currentPath: window.location.pathname }
+      });
+      
       navigate('/customer-onboarding');
     } catch (error) {
       // Fix for TypeScript error - ensure data is always a Record<string, any>
