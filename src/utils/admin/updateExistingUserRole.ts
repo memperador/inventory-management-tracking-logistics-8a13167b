@@ -9,30 +9,30 @@ import { toast } from '@/hooks/use-toast';
  */
 export async function updateUserToAdmin(userEmail: string): Promise<boolean> {
   try {
-    // First we need to get the user ID from the email
-    const { data: { users }, error: getUserError } = await supabase.auth.admin.listUsers();
+    // First we need to get the user ID for this email
+    // This would normally require an edge function or a server-side component
+    // For demo purposes, we'll try to find the user directly in the users table
+    // Note: In a production app, you should use an edge function to get user data
+    const { data: userData, error: userError } = await supabase
+      .functions.invoke('get-user-by-email', {
+        body: { email: userEmail }
+      });
     
-    if (getUserError) {
-      logAuth('ADMIN', `Failed to list users: ${getUserError.message}`, {
+    if (userError || !userData) {
+      logAuth('ADMIN', `Failed to find user with email ${userEmail}`, {
         level: AUTH_LOG_LEVELS.ERROR,
-        data: getUserError
+        data: userError
       });
       return false;
     }
     
-    const targetUser = users.find(user => user.email === userEmail);
-    if (!targetUser) {
-      logAuth('ADMIN', `User with email ${userEmail} not found`, {
-        level: AUTH_LOG_LEVELS.ERROR
-      });
-      return false;
-    }
+    const userId = userData.id;
     
     // Update the user's role in the users table
     const { error: updateError } = await supabase
       .from('users')
       .update({ role: 'admin' })
-      .eq('id', targetUser.id);
+      .eq('id', userId);
     
     if (updateError) {
       logAuth('ADMIN', `Failed to update user role: ${updateError.message}`, {
@@ -66,11 +66,13 @@ export async function updateUserToAdmin(userEmail: string): Promise<boolean> {
  */
 export async function fixLabratUserRole(): Promise<void> {
   try {
-    // This is a specific fix for the labrat@iaware.com user
+    // This is a specific fix for the labrat@iaware.com user with known ID
+    const labratUserId = '9e32e738-5f44-44f8-bc15-6946b27296a6';
+    
     const { data, error } = await supabase
       .from('users')
       .update({ role: 'admin' })
-      .eq('id', '9e32e738-5f44-44f8-bc15-6946b27296a6') // If you know the user ID, use it directly
+      .eq('id', labratUserId)
       .select();
     
     if (error) {

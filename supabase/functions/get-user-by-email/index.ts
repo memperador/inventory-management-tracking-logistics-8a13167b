@@ -1,73 +1,95 @@
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.3';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    // Parse request body (optional email parameter)
-    const requestData = await req.json().catch(() => ({}));
-    const { email } = requestData;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') as string
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string
     
-    if (email) {
-      // If email is provided, search for specific user
-      const { data: user, error } = await supabaseClient.auth.admin.getUserByEmail(email);
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase credentials for edge function')
+    }
 
-      if (error) {
-        return new Response(
-          JSON.stringify({ error: error.message }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-        );
-      }
-
+    const supabaseAdmin = createClient(supabaseUrl, supabaseKey)
+    
+    // Parse request body
+    const requestData = await req.json()
+    const { email } = requestData
+    
+    if (!email) {
       return new Response(
-        JSON.stringify({
-          id: user?.id,
-          email: user?.email,
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } else {
-      // If no email provided, return all users (for admin purposes)
-      const { data: users, error } = await supabaseClient.auth.admin.listUsers();
-
-      if (error) {
-        return new Response(
-          JSON.stringify({ error: error.message }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-        );
-      }
-
-      // Map to safe fields only
-      const safeUsers = users.users.map(user => ({
+        JSON.stringify({ error: 'Email parameter is required' }),
+        { 
+          status: 400, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      )
+    }
+    
+    // Query for user with the specified email
+    const { data: users, error: userError } = await supabaseAdmin.auth.admin.listUsers()
+    
+    if (userError) {
+      throw userError
+    }
+    
+    // Find the specific user by email
+    const user = users?.users?.find(u => u.email === email)
+    
+    if (!user) {
+      return new Response(
+        JSON.stringify({ message: 'User not found', email }),
+        { 
+          status: 404, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      )
+    }
+    
+    // Return only necessary user information to protect sensitive data
+    return new Response(
+      JSON.stringify({
         id: user.id,
         email: user.email,
-        createdAt: user.created_at
-      }));
-
-      return new Response(
-        JSON.stringify(safeUsers),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+        display_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+      }),
+      {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
+      }
+    )
   } catch (error) {
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    );
+      JSON.stringify({ 
+        error: error.message || 'An error occurred while processing the request' 
+      }),
+      { 
+        status: 500, 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
+    )
   }
-});
+})

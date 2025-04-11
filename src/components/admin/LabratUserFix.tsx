@@ -18,15 +18,14 @@ const LabratUserFix = () => {
   useEffect(() => {
     const checkLabratUser = async () => {
       try {
+        // Use the known ID for Labrat user instead of querying auth.users
+        const labratUserId = '9e32e738-5f44-44f8-bc15-6946b27296a6';
+        
         // This query will work if run by superadmin or admin
         const { data, error } = await supabase
           .from('users')
           .select('id, role')
-          .eq('id', (await supabase
-            .from('auth.users')
-            .select('id')
-            .eq('email', 'labrat@iaware.com')
-            .single()).data?.id)
+          .eq('id', labratUserId)
           .single();
           
         if (error) {

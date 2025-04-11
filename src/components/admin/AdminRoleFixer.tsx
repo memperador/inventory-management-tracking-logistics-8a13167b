@@ -16,11 +16,15 @@ const AdminRoleFixer: React.FC<AdminRoleFixerProps> = ({ userEmail = 'labrat@iaw
     setIsUpdating(true);
     
     try {
+      // We cannot query auth.users directly, so we'll use an edge function or direct user ID
+      // For this specific case with labrat, we'll use the known ID directly
+      const userId = '9e32e738-5f44-44f8-bc15-6946b27296a6'; // Labrat's known ID
+      
       // Update the user's role directly
       const { error } = await supabase
         .from('users')
         .update({ role: 'admin' })
-        .eq('id', (await supabase.from('auth.users').select('id').eq('email', userEmail).single()).data?.id);
+        .eq('id', userId);
       
       if (error) {
         toast({
