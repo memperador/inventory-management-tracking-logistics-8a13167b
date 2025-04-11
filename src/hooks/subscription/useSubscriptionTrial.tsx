@@ -32,6 +32,8 @@ export const useSubscriptionTrial = () => {
           currentTenant: currentTenant?.id || 'none',
           email: user?.email,
           timestamp: new Date().toISOString(),
+          currentPath: window.location.pathname,
+          currentUrl: window.location.href,
           userMetadata: user?.user_metadata
         }
       });
@@ -254,17 +256,26 @@ export const useSubscriptionTrial = () => {
         description: "Your 7-day Premium tier trial has begun. Enjoy all Premium features!",
       });
       
-      // Navigate to customer onboarding with a slight delay to ensure UI updates first
+      // FIXED: Navigate to customer onboarding with 100% reliability using window.location.href
       logAuth('TRIAL', 'Redirecting to customer onboarding', {
         level: AUTH_LOG_LEVELS.INFO,
         force: true,
-        data: { currentPath: window.location.pathname }
+        data: { 
+          currentPath: window.location.pathname,
+          redirectTo: '/customer-onboarding',
+          redirectMethod: 'window.location.href'
+        }
       });
       
-      // Force redirect with a slight delay to ensure all state updates complete
+      // Make redirection more reliable with a slight delay to ensure toast is shown
       setTimeout(() => {
+        logAuth('TRIAL', 'Executing redirect now', {
+          level: AUTH_LOG_LEVELS.INFO,
+          force: true
+        });
         window.location.href = '/customer-onboarding';
-      }, 500);
+      }, 800);
+      
     } catch (error) {
       // Fix for TypeScript error - ensure data is always a Record<string, any>
       const errorData: Record<string, any> = error instanceof Error 
@@ -282,7 +293,7 @@ export const useSubscriptionTrial = () => {
         description: `Failed to start trial: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
-    } finally {
+      
       setIsStartingTrial(false);
     }
   };
@@ -292,4 +303,3 @@ export const useSubscriptionTrial = () => {
     isStartingTrial
   };
 };
-

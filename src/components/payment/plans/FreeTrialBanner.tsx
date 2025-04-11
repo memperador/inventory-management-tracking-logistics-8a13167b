@@ -19,7 +19,8 @@ const FreeTrialBanner: React.FC<FreeTrialBannerProps> = ({
       force: true,
       data: {
         timestamp: new Date().toISOString(),
-        currentPath: window.location.pathname
+        currentPath: window.location.pathname,
+        currentUrl: window.location.href
       }
     });
     

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,13 +17,14 @@ const CustomerOnboarding: React.FC = () => {
   const [acceptTerms, setAcceptTerms] = useState(false);
   
   useEffect(() => {
-    // Log when component mounts to verify redirection
+    // Log when component mounts to verify redirection works
     logAuth('ONBOARDING', 'CustomerOnboarding page mounted', {
       level: AUTH_LOG_LEVELS.INFO,
       force: true,
       data: {
         timestamp: new Date().toISOString(),
         currentPath: window.location.pathname,
+        currentUrl: window.location.href,
         referrer: document.referrer,
         hasTenant: !!currentTenant?.id,
         tenantId: currentTenant?.id || 'none',
