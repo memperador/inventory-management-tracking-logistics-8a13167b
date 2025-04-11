@@ -51,7 +51,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         timestamp: new Date().toISOString()
       }
     });
-    
   }, [user, loading, location.pathname, tenantLoading, currentTenant, isRoleLoading, requiredRoles]);
   
   // Separate effect for subscription checking to prevent infinite loops
