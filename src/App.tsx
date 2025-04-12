@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { NotificationProvider } from '@/contexts/NotificationContext';
@@ -35,7 +36,8 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import { useState, useEffect } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import CustomerOnboarding from './pages/CustomerOnboarding';
-import { AutoAdminRoleFixer } from './components/admin/AdminRoleFixer';
+import { AutoAdminRoleFixer } from './components/admin/AutoAdminRoleFixer';
+import EmergencyLabratLogin from './components/admin/EmergencyLabratLogin';
 
 // Import our emergency fix utility - will auto-execute
 import './utils/admin/fixLabratAdmin';
@@ -45,6 +47,23 @@ import './utils/auth/breakLoginLoop';
 // Create a new query client
 const queryClient = new QueryClient();
 
+// Special direct login page for Labrat user
+const LabratLoginPage = () => {
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">FleetTrack</h1>
+        <EmergencyLabratLogin />
+        <p className="text-center mt-4">
+          <a href="/auth" className="text-blue-600 hover:underline">
+            Return to normal login
+          </a>
+        </p>
+      </div>
+    </div>
+  );
+};
+
 const ProjectRedirect = () => {
   const { projectId } = useParams();
   return <Navigate to={`/projects/${projectId}`} replace />;
@@ -53,34 +72,9 @@ const ProjectRedirect = () => {
 const RootRedirect = () => {
   console.log('[APP] RootRedirect component rendering');
   
-  // AGGRESSIVE: Clear ALL session storage to prevent loops when hitting root path
-  sessionStorage.clear();
-  
-  // Check if user is already logged in
-  const hasSession = localStorage.getItem('supabase.auth.token') !== null;
-  
-  // Direct labrat access - explicit flow for testing
-  if (window.location.search.includes('labrat=true')) {
-    console.log('[APP] Direct labrat access detected, redirecting to auth with preset');
-    return <Navigate to="/auth?preset=labrat" replace />;
-  }
-  
-  // Special handling for labrat - if we see a labrat marker in localStorage
-  // force direct login
-  const isLabratLogin = localStorage.getItem('labrat_user') === 'true';
-  if (isLabratLogin) {
-    console.log('[APP] Labrat special login flow detected, redirecting to auth with labrat email');
-    localStorage.removeItem('labrat_user'); // Clear to prevent loops
-    // Direct to auth page with labrat email prefilled
-    return <Navigate to="/auth?email=labrat@iaware.com" replace />;
-  }
-  
-  // If session exists, redirect to dashboard, otherwise to auth
-  const targetPath = hasSession ? '/dashboard' : '/auth';
-  console.log(`[APP] RootRedirect - User ${hasSession ? 'has' : 'does not have'} a session, redirecting to ${targetPath}`);
-  return hasSession ? 
-    <Navigate to="/dashboard" replace /> : 
-    <Navigate to="/auth" replace />;
+  // Direct to labrat emergency login page
+  // This bypasses all normal auth flow for easier debugging/testing
+  return <Navigate to="/labrat-login" replace />;
 };
 
 // Log uncaught errors
@@ -131,10 +125,14 @@ function App() {
   useEffect(() => {
     // Make labrat emergency login available in console
     if (typeof window !== 'undefined') {
-      (window as any).setLabratUser = () => {
-        localStorage.setItem('labrat_user', 'true');
-        window.location.href = '/';
-        return 'Set labrat user flag, reloading app...';
+      (window as any).emergencyLabratLogin = async () => {
+        // Clear ALL storage
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Go to labrat emergency login page
+        window.location.href = '/labrat-login';
+        return 'Redirecting to emergency labrat login page...';
       };
     }
   }, []);
@@ -155,6 +153,7 @@ function App() {
                       {/* Place AutoAdminRoleFixer at the top level to run on every page */}
                       <AutoAdminRoleFixer />
                       <Routes>
+                        <Route path="/labrat-login" element={<LabratLoginPage />} />
                         <Route path="/auth" element={<Auth />} />
                         <Route path="/auth/reset-password" element={<ResetPassword />} />
                         <Route path="/auth/two-factor" element={<TwoFactorAuth />} />
