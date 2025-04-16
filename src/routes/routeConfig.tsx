@@ -1,5 +1,6 @@
 
 import { RouteObject } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import Dashboard from '@/pages/Dashboard';
 import Auth from '@/pages/Auth';
 import NotFound from '@/pages/NotFound';
@@ -80,4 +81,3 @@ export const protectedRoutes: RouteObject[] = [
   },
   { path: '*', element: <NotFound /> }
 ];
-

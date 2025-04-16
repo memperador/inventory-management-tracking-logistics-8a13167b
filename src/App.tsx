@@ -12,12 +12,26 @@ function App() {
   return (
     <AppProviders>
       <Routes>
-        {publicRoutes.map((route) => (
-          <Route key={route.path} {...route} />
-        ))}
-        {protectedRoutes.map((route) => (
-          <Route key={route.path} {...route} />
-        ))}
+        {publicRoutes.map((route) => {
+          const { element, path, children } = route;
+          return (
+            <Route key={path} path={path} element={element}>
+              {children?.map(child => (
+                <Route key={child.path} path={child.path} element={child.element} />
+              ))}
+            </Route>
+          );
+        })}
+        {protectedRoutes.map((route) => {
+          const { element, path, children } = route;
+          return (
+            <Route key={path} path={path} element={element}>
+              {children?.map(child => (
+                <Route key={child.path} path={child.path} element={child.element} />
+              ))}
+            </Route>
+          );
+        })}
       </Routes>
     </AppProviders>
   );

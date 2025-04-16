@@ -19,7 +19,12 @@ interface TenantContextType {
 
 export const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
-export const TenantProvider = ({ children, userId }: { children: ReactNode, userId: string | null }) => {
+interface TenantProviderProps {
+  children: ReactNode;
+  userId?: string | null;
+}
+
+export const TenantProvider: React.FC<TenantProviderProps> = ({ children, userId = null }) => {
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
   const [loading, setLoading] = useState(true);
