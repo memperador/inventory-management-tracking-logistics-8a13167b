@@ -11,7 +11,7 @@ export function withErrorHandling<T extends (...args: any[]) => Promise<any>>(
   fn: T,
   options: {
     errorCode?: ConstructionErrorCode;
-    category?: ConstructionErrorResponse['category'];
+    category?: keyof typeof ERROR_CATEGORIES;
     location?: string;
     showToast?: boolean;
     retryable?: boolean;
@@ -29,7 +29,7 @@ export function withErrorHandling<T extends (...args: any[]) => Promise<any>>(
           })
         : createCustomErrorResponse({
             message: error instanceof Error ? error.message : 'An error occurred',
-            category: options.category || ERROR_CATEGORIES.SYSTEM,
+            category: options.category ? ERROR_CATEGORIES[options.category] : ERROR_CATEGORIES.SYSTEM,
             location: options.location,
             technicalDetails: error instanceof Error ? error.stack : String(error),
             recoveryStrategy: options.retryable ? RECOVERY_STRATEGY.AUTO_RETRY : RECOVERY_STRATEGY.NOTIFY
