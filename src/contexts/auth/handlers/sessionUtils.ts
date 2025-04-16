@@ -1,4 +1,3 @@
-
 // Create this file to centralize session management utilities
 
 /**
@@ -120,4 +119,58 @@ export const breakAuthLoop = (): void => {
   
   // Clear all auth related flags
   clearAuthSessionStorage();
+};
+
+/**
+ * Set a path as processed for this user session
+ */
+export const setProcessedPath = (userId: string | undefined, currentPath: string): void => {
+  if (!userId) return;
+  
+  // Create a unique key for this user+path combination
+  const processedKey = `auth_processed_${userId}_${currentPath}`;
+  
+  // Mark as processed
+  sessionStorage.setItem(processedKey, 'true');
+};
+
+/**
+ * Emergency clear all auth-related storage
+ */
+export const emergencyClearAllAuthStorage = (): void => {
+  // Find all auth-related items
+  const keysToRemove = [];
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const key = sessionStorage.key(i);
+    if (key && (
+      key.startsWith('auth_processed_') || 
+      key.startsWith('processing_') ||
+      key === 'login_toast_shown' ||
+      key === 'redirect_count' ||
+      key === 'last_redirect_attempt' ||
+      key === 'break_auth_loop' ||
+      key === 'auth_loop_detected' ||
+      key.includes('_timestamp')
+    )) {
+      keysToRemove.push(key);
+    }
+  }
+  
+  // Remove items
+  keysToRemove.forEach(key => {
+    sessionStorage.removeItem(key);
+  });
+  
+  // Also clear critical localStorage items
+  const localStorageKeysToRemove = [
+    'break_auth_loop',
+    'auth_loop_detected',
+    'last_successful_login',
+    'bypass_auth_checks',
+    'force_dashboard_redirect'
+  ];
+  
+  localStorageKeysToRemove.forEach(key => {
+    localStorage.removeItem(key);
+  });
 };
