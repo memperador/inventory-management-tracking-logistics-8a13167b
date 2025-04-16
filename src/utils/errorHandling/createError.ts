@@ -1,19 +1,17 @@
 
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from '../uuid';
 import { 
-  CONSTRUCTION_ERROR_CODES,
-  ConstructionErrorCode,
-  ConstructionErrorResponse,
-  ERROR_CATEGORIES,
-  ERROR_SEVERITY,
-  RECOVERY_STRATEGY
+  CONSTRUCTION_ERROR_CODES, 
+  ERROR_SEVERITY, 
+  RECOVERY_STRATEGY,
+  ConstructionErrorResponse
 } from './errorTypes';
 
 /**
  * Creates a structured error response based on predefined codes
  */
 export const createErrorResponse = (
-  errorCode: ConstructionErrorCode, 
+  errorCode: keyof typeof CONSTRUCTION_ERROR_CODES, 
   additionalDetails?: Partial<ConstructionErrorResponse>
 ): ConstructionErrorResponse => {
   const baseError = CONSTRUCTION_ERROR_CODES[errorCode];
@@ -33,7 +31,7 @@ export const createErrorResponse = (
     timestamp: new Date().toISOString(),
     technicalDetails: additionalDetails?.technicalDetails || '',
     location: additionalDetails?.location || '',
-    userGuidance: additionalDetails?.userGuidance || baseError.userGuidance || '',
+    userGuidance: additionalDetails?.userGuidance || (baseError as any).userGuidance || '',
     // Ensure these are always proper arrays, not readonly
     requiredRoles: [...(baseError.requiredRoles || [])],
     relatedRegulations: [...(baseError.relatedRegulations || [])],
