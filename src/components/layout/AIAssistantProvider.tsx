@@ -4,6 +4,7 @@ import FloatingAIAssistant from '@/components/ai/FloatingAIAssistant';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { useLocation } from 'react-router-dom';
 import { AI_ASSISTANT_FEATURES } from '@/utils/subscription/aiFeatures';
+import { FeatureAccessLevel } from '@/utils/subscriptionUtils';
 
 interface AIAssistantProviderProps {
   children: React.ReactNode;
@@ -53,7 +54,14 @@ export const AIAssistantProvider: React.FC<AIAssistantProviderProps> = ({ childr
   // Get AI features based on subscription tier
   const getAIFeatures = () => {
     if (!currentTier) return [];
-    return AI_ASSISTANT_FEATURES[currentTier as keyof typeof AI_ASSISTANT_FEATURES] || [];
+    // Ensure currentTier is one of the allowed values
+    const validTier = (currentTier as string) === 'premium' || 
+                       (currentTier as string) === 'standard' || 
+                       (currentTier as string) === 'enterprise' || 
+                       (currentTier as string) === 'basic' 
+                       ? currentTier as FeatureAccessLevel 
+                       : 'basic';
+    return AI_ASSISTANT_FEATURES[validTier] || [];
   };
   
   return (
@@ -63,7 +71,12 @@ export const AIAssistantProvider: React.FC<AIAssistantProviderProps> = ({ childr
         <FloatingAIAssistant 
           recentErrors={errors} 
           availableFeatures={getAIFeatures()}
-          tier={currentTier || 'basic'}
+          tier={(currentTier as string) === 'premium' || 
+                (currentTier as string) === 'standard' || 
+                (currentTier as string) === 'enterprise' || 
+                (currentTier as string) === 'basic' 
+                ? (currentTier as 'premium' | 'standard' | 'enterprise' | 'basic') 
+                : 'basic'}
         />
       )}
     </>

@@ -1,7 +1,7 @@
 
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 import { supabase } from '@/integrations/supabase/client';
-import { checkTrialStatus, calculateTrialDaysLeft } from './trialUtils';
+import { verifyTrialPeriod as checkTrialStatus, calculateTrialDaysLeft } from './trialUtils';
 
 /**
  * Verify that trial periods are correctly working for a tenant

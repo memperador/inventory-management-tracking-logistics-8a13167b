@@ -50,3 +50,17 @@ export const isTrialExpired = (tenant?: Tenant | null): boolean => {
   
   return trialEndDate <= now && tenant.subscription_status === 'trialing';
 };
+
+/**
+ * Check if a tenant's trial status is valid and active
+ */
+export const checkTrialStatus = (tenant?: Tenant | null): boolean => {
+  if (!tenant || tenant.subscription_status !== 'trialing' || !tenant.trial_ends_at) {
+    return false;
+  }
+  
+  const trialEndDate = new Date(tenant.trial_ends_at);
+  const now = new Date();
+  
+  return trialEndDate > now;
+};

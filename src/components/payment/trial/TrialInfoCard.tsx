@@ -1,93 +1,82 @@
 
 import React from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle } from "lucide-react";
-import StartTrialButton from './StartTrialButton';
-
-interface PremiumFeature {
-  name: string;
-  description: string;
-}
-
-const premiumFeatures: PremiumFeature[] = [
-  {
-    name: "Advanced GPS Tracking",
-    description: "Real-time tracking with history and analytics"
-  },
-  {
-    name: "Geofencing",
-    description: "Create virtual boundaries for equipment and projects"
-  },
-  {
-    name: "Route Optimization",
-    description: "Optimize routes for equipment transportation"
-  },
-  {
-    name: "Premium Analytics",
-    description: "Advanced insights into equipment usage and project progress"
-  },
-  {
-    name: "AI Assistance",
-    description: "Get smart recommendations for equipment management"
-  }
-];
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Sparkles } from 'lucide-react';
+import { useTenant } from '@/contexts/TenantContext';
+import { calculateTrialDaysLeft } from '@/utils/subscription/trialUtils';
 
 interface TrialInfoCardProps {
-  onStartTrial?: () => void;
+  onStartTrial: () => void;
 }
 
 const TrialInfoCard: React.FC<TrialInfoCardProps> = ({ onStartTrial }) => {
+  const { currentTenant } = useTenant();
+  
+  const isTrialActive = currentTenant?.subscription_status === 'trialing';
+  const trialDaysLeft = calculateTrialDaysLeft(currentTenant?.trial_ends_at);
+  
   return (
-    <Card className="w-full max-w-2xl border-2 border-primary/20">
-      <CardHeader className="bg-primary/5">
-        <div className="flex justify-between items-center">
-          <div>
-            <CardTitle className="text-2xl">Free 7-Day Trial</CardTitle>
-            <CardDescription>Experience all premium features at no cost</CardDescription>
-          </div>
-          <Badge variant="outline" className="bg-primary text-primary-foreground">
-            Premium Tier
-          </Badge>
+    <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+      <CardHeader className="flex flex-row items-center gap-4">
+        <div className="rounded-full p-2 bg-purple-100">
+          <Sparkles className="w-6 h-6 text-purple-600" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold">
+            {isTrialActive 
+              ? `Your Premium Trial: ${trialDaysLeft} Days Remaining` 
+              : "Try Premium Features Free for 7 Days"}
+          </h3>
+          <p className="text-muted-foreground">
+            {isTrialActive 
+              ? "You're currently accessing all premium features" 
+              : "Experience all features with no commitment required"}
+          </p>
         </div>
       </CardHeader>
       
-      <CardContent className="pt-6">
-        <h3 className="font-medium text-lg mb-4">Premium Features Included:</h3>
-        
-        <div className="grid gap-3">
-          {premiumFeatures.map((feature, index) => (
-            <div key={index} className="flex items-start gap-2">
-              <CheckCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium">{feature.name}</p>
-                <p className="text-sm text-muted-foreground">{feature.description}</p>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex items-start gap-2">
+              <div className="rounded-full p-1 bg-green-100">
+                <svg className="h-3 w-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
               </div>
+              <span className="text-sm">Advanced GPS Tracking</span>
             </div>
-          ))}
-        </div>
-        
-        <div className="mt-6 bg-muted/50 p-4 rounded-md">
-          <h4 className="font-medium">What happens after the trial?</h4>
-          <p className="text-sm text-muted-foreground mt-1">
-            After your 7-day trial ends, you'll automatically be switched to the Basic tier. 
-            No payment information is required and you won't be charged automatically.
-          </p>
+            
+            <div className="flex items-start gap-2">
+              <div className="rounded-full p-1 bg-green-100">
+                <svg className="h-3 w-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              <span className="text-sm">Premium Analytics</span>
+            </div>
+            
+            <div className="flex items-start gap-2">
+              <div className="rounded-full p-1 bg-green-100">
+                <svg className="h-3 w-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              <span className="text-sm">AI Assistant</span>
+            </div>
+          </div>
         </div>
       </CardContent>
       
-      <CardFooter className="flex flex-col">
-        <StartTrialButton onSuccess={onStartTrial} />
-        <p className="text-xs text-center mt-3 text-muted-foreground">
-          No credit card required. Cancel anytime.
-        </p>
+      <CardFooter>
+        <Button 
+          onClick={onStartTrial} 
+          className="w-full bg-purple-600 hover:bg-purple-700"
+          disabled={isTrialActive}
+        >
+          {isTrialActive ? 'Trial Already Active' : 'Start Free Trial'}
+        </Button>
       </CardFooter>
     </Card>
   );
