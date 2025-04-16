@@ -1,174 +1,123 @@
 
-import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
+// Create this file to centralize session management utilities
 
 /**
- * Manages auth session storage to prevent duplicates and loops
+ * Check if we've already processed the current path for this user session
  */
-export function setProcessingFlag(userId: string | undefined): string {
-  const processingFlag = `processing_${userId}_${Date.now()}`;
-  logAuth('SESSION-UTILS', `Setting processing flag: ${processingFlag}`, {
-    level: AUTH_LOG_LEVELS.DEBUG
-  });
-  
-  sessionStorage.setItem(processingFlag, 'true');
-  
-  // Set processing flag with 5s expiry to prevent concurrent processing
-  // Reduced from 10s to 5s to avoid long blocking periods
-  setTimeout(() => {
-    logAuth('SESSION-UTILS', `Removing expired processing flag: ${processingFlag}`, {
-      level: AUTH_LOG_LEVELS.DEBUG
-    });
-    sessionStorage.removeItem(processingFlag);
-  }, 5000);
-  
-  return processingFlag;
-}
-
-/**
- * Sets the processed path in session storage to prevent loops
- */
-export function setProcessedPath(userId: string, path: string): void {
-  // Force flag takes precedence over all other logic
-  if (sessionStorage.getItem('force_dashboard_redirect') === 'true' && path !== '/dashboard') {
-    logAuth('SESSION-UTILS', `Force dashboard redirect flag is set, overriding to /dashboard`, {
-      level: AUTH_LOG_LEVELS.INFO
-    });
-    path = '/dashboard';
-  }
-  
-  // Special case for the labrat user - allow multiple dashboard redirects
-  if (userId === '9e32e738-5f44-44f8-bc15-6946b27296a6' && path === '/dashboard') {
-    logAuth('SESSION-UTILS', `Skipping processed path for labrat user to dashboard`, {
-      level: AUTH_LOG_LEVELS.INFO
-    });
-    return;
-  }
-  
-  const sessionKey = `auth_processed_${userId}`;
-  logAuth('SESSION-UTILS', `Setting processed path in session storage: ${path}`, {
-    level: AUTH_LOG_LEVELS.INFO
-  });
-  sessionStorage.setItem(sessionKey, path);
-}
-
-/**
- * Checks if we've already processed this session for the current path
- */
-export function hasProcessedPathForSession(userId: string | undefined, currentPath: string): boolean {
+export const hasProcessedPathForSession = (userId: string | undefined, currentPath: string): boolean => {
   if (!userId) return false;
   
-  // Force flag overrides everything
-  if (sessionStorage.getItem('force_dashboard_redirect') === 'true') {
-    return false;
-  }
+  // Create a unique key for this user+path combination
+  const processedKey = `auth_processed_${userId}_${currentPath}`;
   
-  // Special case for labrat user - never consider dashboard as processed
-  if (userId === '9e32e738-5f44-44f8-bc15-6946b27296a6' && 
-     (currentPath === '/dashboard' || currentPath === '/auth' || currentPath === '/login')) {
-    return false;
-  }
-  
-  // Special case - never consider auth page as processed
-  if (currentPath === '/auth' || currentPath === '/login') {
-    return false;
-  }
-  
-  // Get the processed path from session storage
-  const sessionKey = `auth_processed_${userId}`;
-  const processedPath = sessionStorage.getItem(sessionKey);
-  
-  // If this path is already processed, log it
-  if (processedPath === currentPath) {
-    logAuth('SESSION-UTILS', `Path ${currentPath} already processed for user ${userId}`, {
-      level: AUTH_LOG_LEVELS.INFO
-    });
-  }
-  
-  return processedPath === currentPath;
-}
+  // Check if we already processed this path
+  return sessionStorage.getItem(processedKey) === 'true';
+};
 
 /**
- * Checks if we're already processing an auth change
+ * Mark a path as processed for this user session
  */
-export function isAlreadyProcessing(userId: string | undefined): boolean {
+export const markPathAsProcessed = (userId: string | undefined, currentPath: string): void => {
+  if (!userId) return;
+  
+  // Create a unique key for this user+path combination
+  const processedKey = `auth_processed_${userId}_${currentPath}`;
+  
+  // Mark as processed
+  sessionStorage.setItem(processedKey, 'true');
+};
+
+/**
+ * Check if an auth change is already being processed
+ */
+export const isAlreadyProcessing = (userId: string | undefined): boolean => {
   if (!userId) return false;
   
-  // Force flag overrides everything
-  if (sessionStorage.getItem('force_dashboard_redirect') === 'true') {
-    return false;
-  }
+  const processingKey = `processing_${userId}`;
   
-  // Special exception for labrat user to allow multiple processing attempts
-  if (userId === '9e32e738-5f44-44f8-bc15-6946b27296a6') {
-    // Check if we've just processed a request in the last second
-    for (let i = 0; i < sessionStorage.length; i++) {
-      const key = sessionStorage.key(i);
-      if (key && key.startsWith(`processing_${userId}_`)) {
-        const timestamp = parseInt(key.split('_')[2], 10);
-        const now = Date.now();
-        // If we're processing something within the last 1 second, don't allow another process
-        if (now - timestamp < 1000) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-  
-  // For normal users, check for any processing flags
-  for (let i = 0; i < sessionStorage.length; i++) {
-    const key = sessionStorage.key(i);
-    if (key && key.startsWith(`processing_${userId}_`)) {
-      return true;
-    }
-  }
-  
-  return false;
-}
+  return sessionStorage.getItem(processingKey) === 'true';
+};
 
 /**
- * Cleans up processing flags
+ * Set a processing flag to prevent duplicate processing
  */
-export function removeProcessingFlag(processingFlag: string): void {
-  sessionStorage.removeItem(processingFlag);
-}
+export const setProcessingFlag = (userId: string | undefined): string => {
+  if (!userId) return '';
+  
+  const processingKey = `processing_${userId}`;
+  const timestamp = Date.now().toString();
+  
+  // Set processing flag with timestamp
+  sessionStorage.setItem(processingKey, 'true');
+  sessionStorage.setItem(`${processingKey}_timestamp`, timestamp);
+  
+  return processingKey;
+};
 
 /**
- * Clears all auth-related session storage items
+ * Remove a processing flag
  */
-export function clearAuthSessionStorage(): void {
+export const removeProcessingFlag = (processingKey: string): void => {
+  if (!processingKey) return;
+  
+  // Remove processing flags
+  sessionStorage.removeItem(processingKey);
+  sessionStorage.removeItem(`${processingKey}_timestamp`);
+};
+
+/**
+ * Clear all auth-related session storage
+ */
+export const clearAuthSessionStorage = (): void => {
+  // Find all auth-related items
   const keysToRemove = [];
   for (let i = 0; i < sessionStorage.length; i++) {
     const key = sessionStorage.key(i);
     if (key && (
       key.startsWith('auth_processed_') || 
-      key.startsWith('processing_') || 
-      key === 'login_toast_shown'
+      key.startsWith('processing_') ||
+      key === 'login_toast_shown' ||
+      key === 'redirect_count' ||
+      key === 'last_redirect_attempt'
     )) {
       keysToRemove.push(key);
     }
   }
   
-  // Remove items in a separate loop to avoid index issues
+  // Remove items
   keysToRemove.forEach(key => {
-    logAuth('SESSION-UTILS', `Removing session storage key: ${key}`, {
-      level: AUTH_LOG_LEVELS.DEBUG
-    });
     sessionStorage.removeItem(key);
   });
-}
+};
 
 /**
- * Emergency clear all session storage to fix redirect loops
+ * Add a circuit breaker for authentication loops
  */
-export function emergencyClearAllAuthStorage(): void {
-  logAuth('SESSION-UTILS', 'EMERGENCY: Clearing all auth session storage', {
-    level: AUTH_LOG_LEVELS.WARN
-  });
+export const detectAuthLoop = (): boolean => {
+  const currentTime = Date.now();
+  const lastRedirectAttempt = parseInt(sessionStorage.getItem('last_redirect_attempt') || '0');
+  const redirectCount = parseInt(sessionStorage.getItem('redirect_count') || '0');
   
-  // Set force flag
+  // Update redirect tracking
+  sessionStorage.setItem('last_redirect_attempt', currentTime.toString());
+  sessionStorage.setItem('redirect_count', (redirectCount + 1).toString());
+  
+  // If redirects are happening too frequently (possible loop)
+  return (lastRedirectAttempt > 0 && 
+          currentTime - lastRedirectAttempt < 2000 && 
+          redirectCount > 3);
+};
+
+/**
+ * Break an authentication loop
+ */
+export const breakAuthLoop = (): void => {
+  // Set emergency flags to break the loop
+  sessionStorage.setItem('break_auth_loop', 'true');
+  sessionStorage.setItem('bypass_auth_checks', 'true');
   sessionStorage.setItem('force_dashboard_redirect', 'true');
+  sessionStorage.setItem('redirect_count', '0');
   
-  // Clear all processed flags
+  // Clear all auth related flags
   clearAuthSessionStorage();
-}
+};

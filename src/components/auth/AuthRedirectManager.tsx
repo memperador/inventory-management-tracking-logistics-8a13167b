@@ -14,13 +14,15 @@ const AuthRedirectManager: React.FC = () => {
   const { user, loading } = useAuth();
   const [navigationProcessed, setNavigationProcessed] = useState(false);
   
-  // Add a check for redirect loop
+  // Add a check for redirect loop with an increased threshold
   const [redirectAttempts, setRedirectAttempts] = useState(0);
   
-  // Special effect for retry prevention
+  // Add a timestamp check to detect rapid redirects
+  const [lastRedirectTime, setLastRedirectTime] = useState(0);
+  
   useEffect(() => {
     // If we've tried to navigate too many times, stop trying to prevent loops
-    if (redirectAttempts > 3) {
+    if (redirectAttempts > 5) {
       logAuth('AUTH', 'Too many redirect attempts, possible loop detected. Staying on current page.', {
         level: AUTH_LOG_LEVELS.WARN,
         force: true
@@ -49,6 +51,7 @@ const AuthRedirectManager: React.FC = () => {
         
         // Set a forced flag to bypass normal auth flow
         sessionStorage.setItem('bypass_auth_checks', 'true');
+        sessionStorage.setItem('force_dashboard_redirect', 'true');
         
         // Force redirect to dashboard as emergency measure
         setTimeout(() => {
@@ -61,24 +64,34 @@ const AuthRedirectManager: React.FC = () => {
   useEffect(() => {
     // Check if user is verified and needs to go to onboarding
     if (user && !navigationProcessed && !loading) {
+      const now = Date.now();
+      
+      // Check if we're getting redirected too fast (possible loop)
+      if (lastRedirectTime > 0 && now - lastRedirectTime < 1000) {
+        setRedirectAttempts(prev => prev + 1);
+      } else {
+        // Reset redirect attempts if it's been a while since last redirect
+        if (now - lastRedirectTime > 5000) {
+          setRedirectAttempts(0);
+        }
+      }
+      
+      setLastRedirectTime(now);
       setNavigationProcessed(true);
       
-      // Add loop prevention
-      setRedirectAttempts(prev => prev + 1);
-      
       // Emergency bailout if we detect we're in a loop
-      if (sessionStorage.getItem('bypass_auth_checks')) {
-        logAuth('AUTH', 'Using bypass_auth_checks flag to skip redirect checks', {
+      if (sessionStorage.getItem('bypass_auth_checks') || sessionStorage.getItem('force_dashboard_redirect')) {
+        logAuth('AUTH', 'Using bypass flags to skip redirect checks', {
           level: AUTH_LOG_LEVELS.WARN,
           force: true
         });
+        
+        // If we're on auth page, force dashboard redirect
+        if (location.pathname === '/auth') {
+          navigate('/dashboard', { replace: true });
+        }
         return;
       }
-      
-      logAuth('AUTH', `User authenticated, checking tenant and onboarding status`, {
-        level: AUTH_LOG_LEVELS.INFO,
-        data: { userId: user.id, metadata: user.user_metadata }
-      });
 
       // Special handling for test users
       if (user.email === LABRAT_EMAIL) {
@@ -91,9 +104,7 @@ const AuthRedirectManager: React.FC = () => {
           return;
         }
         
-        // Add special flags
-        sessionStorage.setItem('bypass_auth_checks', 'true');
-        
+        // Force dashboard redirect for test users
         navigate('/dashboard', { replace: true });
         return;
       }
@@ -116,20 +127,19 @@ const AuthRedirectManager: React.FC = () => {
           }
           
           if (finalPath !== location.pathname) {
-            // Show toast only for certain redirects
-            if (!needsSubscription && !needsOnboarding) {
-              toast({
-                title: "Welcome back!",
-                description: "You've been signed in successfully.",
-              });
-            }
-            
             navigate(finalPath, { replace: true });
           }
         } catch (error) {
           logAuth('AUTH', `Error during navigation processing: ${error instanceof Error ? error.message : 'Unknown error'}`, {
             level: AUTH_LOG_LEVELS.ERROR
           });
+          
+          // Force dashboard redirect on error to prevent loops
+          if (location.pathname === '/auth') {
+            setTimeout(() => {
+              navigate('/dashboard', { replace: true });
+            }, 200);
+          }
         }
       };
       
@@ -139,7 +149,7 @@ const AuthRedirectManager: React.FC = () => {
     return () => {
       setNavigationProcessed(false);
     };
-  }, [user, loading, navigate, searchParams, location.pathname, redirectAttempts]);
+  }, [user, loading, navigate, searchParams, location.pathname]);
   
   // This component doesn't render anything, it just handles the navigation logic
   return null;

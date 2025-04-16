@@ -1,6 +1,6 @@
 
 import { useTenant } from '@/hooks/useTenantContext';
-import { verifyTrialPeriod as checkTrialStatus, calculateTrialDaysLeft } from '@/utils/subscription/trialUtils';
+import { verifyTrialPeriod, calculateTrialDaysLeft } from '@/utils/subscription/trialUtils';
 
 export const useSubscriptionStatus = () => {
   const { currentTenant } = useTenant();
@@ -10,7 +10,7 @@ export const useSubscriptionStatus = () => {
     if (!currentTenant) return false;
     
     const isActive = currentTenant.subscription_status === 'active';
-    const inValidTrial = checkTrialStatus(currentTenant);
+    const inValidTrial = verifyTrialPeriod(currentTenant);
     
     return isActive || inValidTrial;
   };
