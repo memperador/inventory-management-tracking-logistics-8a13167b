@@ -5,8 +5,7 @@ import { useAuth } from '@/contexts/auth/AuthContext';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 import { checkTenantAndOnboarding, handleRedirect } from './verification/utils/authVerificationUtils';
 import { toast } from '@/hooks/use-toast';
-import { LABRAT_EMAIL, redirectLabratToDashboard, ensureLabratAdminRole } from '@/utils/auth/labratUserUtils';
-import { emergencyFixLabratAdmin } from '@/utils/admin/fixLabratAdmin';
+import { LABRAT_EMAIL } from '@/utils/auth/labratUserUtils';
 
 const AuthRedirectManager: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -18,83 +17,84 @@ const AuthRedirectManager: React.FC = () => {
   // Add a check for redirect loop
   const [redirectAttempts, setRedirectAttempts] = useState(0);
   
-  // Special effect for labrat user to force dashboard redirect on auth page
+  // Special effect for retry prevention
   useEffect(() => {
-    if (!loading && user && user.email === LABRAT_EMAIL) {
-      if (location.pathname === '/auth' || location.pathname === '/login' || location.pathname === '/') {
-        logAuth('AUTH', 'Labrat user on auth page detected, force redirect to dashboard', {
-          level: AUTH_LOG_LEVELS.WARN,
-          force: true
+    // If we've tried to navigate too many times, stop trying to prevent loops
+    if (redirectAttempts > 3) {
+      logAuth('AUTH', 'Too many redirect attempts, possible loop detected. Staying on current page.', {
+        level: AUTH_LOG_LEVELS.WARN,
+        force: true
+      });
+      
+      // Clear any session storage that might be causing loops
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key && (
+          key.startsWith('auth_processed_') || 
+          key.startsWith('processing_') || 
+          key.startsWith('redirect_') ||
+          key === 'login_toast_shown'
+        )) {
+          sessionStorage.removeItem(key);
+        }
+      }
+      
+      // Force reset of auth status to break loops
+      if (location.pathname === '/auth' && user) {
+        toast({
+          title: "Authentication Loop Detected",
+          description: "We've detected a possible login loop. Redirecting you to the dashboard.",
+          variant: "destructive"
         });
         
-        // Give a small delay for other processes to complete
+        // Set a forced flag to bypass normal auth flow
+        sessionStorage.setItem('bypass_auth_checks', 'true');
+        
+        // Force redirect to dashboard as emergency measure
         setTimeout(() => {
-          // Clear any session storage that might cause loops
-          for (let i = 0; i < sessionStorage.length; i++) {
-            const key = sessionStorage.key(i);
-            if (key && (key.startsWith('auth_processed_') || key.startsWith('processing_'))) {
-              sessionStorage.removeItem(key);
-            }
-          }
-          
-          sessionStorage.setItem('force_dashboard_redirect', 'true');
-          sessionStorage.setItem('bypass_auth_checks', 'true');
-          
-          ensureLabratAdminRole(false).then(() => {
-            navigate('/dashboard', { replace: true });
-          });
+          navigate('/dashboard', { replace: true });
         }, 100);
       }
     }
-  }, [user, loading, location.pathname, navigate]);
+  }, [redirectAttempts, location.pathname, user, navigate]);
   
   useEffect(() => {
     // Check if user is verified and needs to go to onboarding
     if (user && !navigationProcessed && !loading) {
       setNavigationProcessed(true);
       
+      // Add loop prevention
+      setRedirectAttempts(prev => prev + 1);
+      
+      // Emergency bailout if we detect we're in a loop
+      if (sessionStorage.getItem('bypass_auth_checks')) {
+        logAuth('AUTH', 'Using bypass_auth_checks flag to skip redirect checks', {
+          level: AUTH_LOG_LEVELS.WARN,
+          force: true
+        });
+        return;
+      }
+      
       logAuth('AUTH', `User authenticated, checking tenant and onboarding status`, {
         level: AUTH_LOG_LEVELS.INFO,
-        force: true,
         data: { userId: user.id, metadata: user.user_metadata }
       });
 
-      // Special handling for labrat user - HIGHEST PRIORITY
+      // Special handling for test users
       if (user.email === LABRAT_EMAIL) {
-        logAuth('AUTH', 'Labrat user detected, forcing dashboard redirect', {
-          level: AUTH_LOG_LEVELS.INFO,
-          force: true
+        logAuth('AUTH', 'Test user detected, forcing dashboard redirect', {
+          level: AUTH_LOG_LEVELS.INFO
         });
-        
-        // Clear session storage items that might cause loops
-        for (let i = 0; i < sessionStorage.length; i++) {
-          const key = sessionStorage.key(i);
-          if (key && (key.startsWith('auth_processed_') || key.startsWith('processing_'))) {
-            sessionStorage.removeItem(key);
-          }
-        }
-        
-        // Add special flags for labrat
-        sessionStorage.setItem('force_dashboard_redirect', 'true');
-        sessionStorage.setItem('bypass_auth_checks', 'true');
         
         // If we're already on dashboard, don't redirect
         if (location.pathname === '/dashboard') {
-          logAuth('AUTH', 'Labrat user already on dashboard, skipping redirect', {
-            level: AUTH_LOG_LEVELS.INFO,
-            force: true
-          });
           return;
         }
         
-        // Always ensure labrat has admin role
-        ensureLabratAdminRole(false);
+        // Add special flags
+        sessionStorage.setItem('bypass_auth_checks', 'true');
         
-        // Use setTimeout to ensure all state updates have completed
-        setTimeout(() => {
-          redirectLabratToDashboard();
-        }, 100);
-        
+        navigate('/dashboard', { replace: true });
         return;
       }
       
@@ -106,19 +106,17 @@ const AuthRedirectManager: React.FC = () => {
           // Get return URL from query params
           const returnTo = searchParams.get('returnTo');
           const finalPath = handleRedirect(targetPath, returnTo);
-          
-          // Set a flag to prevent redirect loop
-          if (redirectAttempts > 2) {
-            logAuth('AUTH', 'Too many redirect attempts, possible loop detected', {
-              level: AUTH_LOG_LEVELS.WARN,
-              force: true
+
+          // Check if we would redirect to the same page we're already on
+          if (finalPath === location.pathname) {
+            logAuth('AUTH', `Already on ${finalPath}, not redirecting`, {
+              level: AUTH_LOG_LEVELS.INFO
             });
             return;
           }
           
-          setRedirectAttempts(prev => prev + 1);
-
           if (finalPath !== location.pathname) {
+            // Show toast only for certain redirects
             if (!needsSubscription && !needsOnboarding) {
               toast({
                 title: "Welcome back!",
@@ -130,8 +128,7 @@ const AuthRedirectManager: React.FC = () => {
           }
         } catch (error) {
           logAuth('AUTH', `Error during navigation processing: ${error instanceof Error ? error.message : 'Unknown error'}`, {
-            level: AUTH_LOG_LEVELS.ERROR,
-            force: true
+            level: AUTH_LOG_LEVELS.ERROR
           });
         }
       };

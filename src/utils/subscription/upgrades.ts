@@ -1,91 +1,87 @@
 
-import { FeatureAccessLevel, UpgradePrompt } from './types';
+import { UpgradePrompt, FeatureAccessLevel } from './types';
 
-// Feature to upgrade prompt mapping
-const FEATURE_UPGRADE_MAP: Record<string, UpgradePrompt> = {
+// Map feature keys to their upgrade prompts
+const UPGRADE_PROMPTS: Record<string, UpgradePrompt> = {
   // Standard tier features
   'gps_tracking': {
-    title: 'GPS Tracking Available',
-    description: 'Track equipment location in real-time with our Standard plan',
-    requiredTier: 'standard'
-  },
-  'audit_logs': {
-    title: 'Access Audit Logs',
-    description: 'Track all equipment changes with detailed audit history',
+    title: 'GPS Tracking',
+    description: 'Track your equipment in real-time with our GPS tracking feature.',
     requiredTier: 'standard'
   },
   'advanced_alerts': {
     title: 'Advanced Alerts',
-    description: 'Set up customizable alerts and notifications',
+    description: 'Get notified instantly when equipment status changes or requires attention.',
     requiredTier: 'standard'
   },
-  'bulk_qr': {
-    title: 'Bulk QR Code Generation',
-    description: 'Generate multiple QR codes at once for efficient equipment tracking',
-    requiredTier: 'standard'
-  },
-  'location_history': {
-    title: 'Location History',
-    description: 'View historical location data for all your equipment',
+  'audit_logs': {
+    title: 'Audit Logs',
+    description: 'Detailed logs of all actions taken on your equipment.',
     requiredTier: 'standard'
   },
   
   // Premium tier features
-  'advanced_gps': {
-    title: 'Advanced GPS Features',
-    description: 'Access geofencing, route optimization and more',
-    requiredTier: 'premium'
-  },
   'geofencing': {
     title: 'Geofencing',
-    description: 'Set boundaries for your equipment and get alerts when they cross them',
+    description: 'Set up virtual boundaries and get notified when equipment crosses them.',
     requiredTier: 'premium'
   },
   'route_optimization': {
     title: 'Route Optimization',
-    description: 'Find the most efficient routes for your equipment',
+    description: 'Find the most efficient routes for your equipment and teams.',
     requiredTier: 'premium'
   },
   'premium_analytics': {
     title: 'Premium Analytics',
-    description: 'Access advanced analytics and reporting features',
+    description: 'Advanced analytics and insights for your equipment and projects.',
     requiredTier: 'premium'
   },
-  'premium_ai': {
-    title: 'Advanced AI Assistant',
-    description: 'Get AI-powered insights and recommendations',
+  'premium_ai_assistant': {
+    title: 'Premium AI Assistant',
+    description: 'Access advanced AI capabilities for equipment management.',
     requiredTier: 'premium'
   },
   
   // Enterprise tier features
   'white_labeling': {
     title: 'White Labeling',
-    description: 'Customize the application with your own branding',
+    description: 'Brand the platform with your company logo and colors.',
     requiredTier: 'enterprise'
   },
   'sso_integration': {
-    title: 'SSO Integration',
-    description: 'Integrate with your existing single sign-on solution',
+    title: 'Single Sign-On',
+    description: 'Integrate with your existing SSO provider.',
     requiredTier: 'enterprise'
   },
   'custom_api': {
     title: 'Custom API Access',
-    description: 'Build custom integrations with our API',
-    requiredTier: 'enterprise'
-  },
-  'dedicated_support': {
-    title: 'Dedicated Support',
-    description: 'Get priority support from our dedicated team',
-    requiredTier: 'enterprise'
-  },
-  'sla_guarantees': {
-    title: 'SLA Guarantees',
-    description: 'Service level agreement guarantees for enterprise customers',
+    description: 'Build custom integrations using our API.',
     requiredTier: 'enterprise'
   }
 };
 
-// Get the upgrade prompt for a feature
+/**
+ * Get an upgrade prompt for a feature
+ */
 export const getUpgradePromptForFeature = (featureKey: string): UpgradePrompt | null => {
-  return FEATURE_UPGRADE_MAP[featureKey] || null;
+  return UPGRADE_PROMPTS[featureKey] || null;
+};
+
+/**
+ * Get all upgrade prompts for a specific tier
+ */
+export const getUpgradePromptsForTier = (tier: FeatureAccessLevel): UpgradePrompt[] => {
+  const tierHierarchy: Record<FeatureAccessLevel, number> = {
+    'basic': 1,
+    'standard': 2,
+    'premium': 3,
+    'enterprise': 4
+  };
+  
+  const targetTierLevel = tierHierarchy[tier];
+  
+  return Object.values(UPGRADE_PROMPTS).filter(prompt => {
+    const promptTierLevel = tierHierarchy[prompt.requiredTier];
+    return promptTierLevel === targetTierLevel;
+  });
 };

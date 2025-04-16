@@ -1,9 +1,10 @@
+
 import React, { ReactNode } from 'react';
 import { useFeatureAccess } from '@/hooks/useFeatureAccess';
 import { UpgradePrompt } from './UpgradePrompt';
 import { getUpgradePromptForFeature } from '@/utils/subscriptionUtils';
 import { FeatureTierBadge } from './FeatureTierBadge';
-import { useTenant } from '@/hooks/useTenantContext';
+import { useTenant } from '@/contexts/TenantContext';
 
 interface FeatureGateProps {
   featureKey: string;
@@ -22,10 +23,10 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
   showTierBadge = true,
   className = ''
 }) => {
-  const { canAccessFeature, getFeatureTier, isTrialMode } = useFeatureAccess();
+  const { checkFeatureAccess, getFeatureTier, isTrialMode } = useFeatureAccess();
   const { currentTenant } = useTenant();
   
-  const hasAccess = canAccessFeature(featureKey);
+  const hasAccess = checkFeatureAccess(featureKey);
   
   // Get the tier this feature belongs to
   const featureTier = getFeatureTier(featureKey);

@@ -111,7 +111,7 @@ export async function handleExpiredTrial(tenantId: string, trialEndsAt: string):
       toast({
         title: 'Trial Expired',
         description: 'Your premium trial has expired. You have been downgraded to the basic plan.',
-        variant: 'warning',
+        variant: 'destructive', // Changed from 'warning' to valid 'destructive'
         duration: 10000 // Show for longer
       });
       

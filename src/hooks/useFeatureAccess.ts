@@ -26,7 +26,7 @@ export function useFeatureAccess() {
       toast({
         title: "Feature Unavailable",
         description: "This feature requires a higher subscription tier.",
-        variant: "warning"
+        variant: "destructive"  // Changed from "warning" to fix TS error
       });
       
       navigate('/payment');
@@ -43,9 +43,81 @@ export function useFeatureAccess() {
     return currentTenant?.subscription_tier || 'basic';
   };
   
+  /**
+   * Check if specific tier is active for the current tenant
+   */
+  const hasSubscriptionTier = (tier: 'basic' | 'standard' | 'premium' | 'enterprise'): boolean => {
+    if (!currentTenant || !currentTenant.subscription_tier) return tier === 'basic';
+    
+    const tierHierarchy: Record<string, number> = {
+      'basic': 1,
+      'standard': 2,
+      'premium': 3,
+      'enterprise': 4
+    };
+    
+    const userTierLevel = tierHierarchy[currentTenant.subscription_tier] || 0;
+    const requiredTierLevel = tierHierarchy[tier];
+    
+    return userTierLevel >= requiredTierLevel;
+  };
+  
+  /**
+   * Gets the tier that a specific feature belongs to
+   */
+  const getFeatureTier = (featureKey: string): string | null => {
+    const featureMap = {
+      // Basic tier features
+      'inventory_management': 'basic',
+      'qr_codes': 'basic',
+      'basic_alerts': 'basic',
+      'simple_analytics': 'basic',
+      
+      // Standard tier features
+      'gps_tracking': 'standard',
+      'audit_logs': 'standard',
+      'advanced_alerts': 'standard',
+      
+      // Premium tier features
+      'geofencing': 'premium',
+      'route_optimization': 'premium',
+      'premium_analytics': 'premium',
+      'premium_ai_assistant': 'premium',
+      
+      // Enterprise tier features
+      'white_labeling': 'enterprise',
+      'sso_integration': 'enterprise',
+      'custom_api': 'enterprise'
+    };
+    
+    return featureMap[featureKey as keyof typeof featureMap] || null;
+  };
+  
+  /**
+   * Check if the current tenant is in trial mode
+   */
+  const isTrialMode = (): boolean => {
+    return currentTenant?.subscription_status === 'trialing';
+  };
+  
+  /**
+   * Alias for checkFeatureAccess for compatibility with other components
+   */
+  const canAccessFeature = checkFeatureAccess;
+  
+  /**
+   * Current subscription tier
+   */
+  const currentTier = getCurrentTier();
+  
   return {
     checkFeatureAccess,
     guardFeature,
-    getCurrentTier
+    getCurrentTier,
+    hasSubscriptionTier,
+    getFeatureTier,
+    isTrialMode: isTrialMode(),
+    canAccessFeature,
+    currentTier
   };
 }

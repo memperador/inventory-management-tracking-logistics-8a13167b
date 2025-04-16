@@ -12,10 +12,8 @@ export const signUp = async (email: string, password: string, firstName: string,
       data: { firstName, lastName, companyNameProvided: !!companyName }
     });
 
-    // Get the absolute URL of the current origin
-    // Use muq.munetworks.io for production, but fallback to current origin for local development
-    const isProd = window.location.hostname === "muq.munetworks.io";
-    const domain = isProd ? "https://muq.munetworks.io" : window.location.origin;
+    // Get the absolute URL of the current origin for redirect
+    const domain = window.location.origin;
     console.log("Using domain for verification:", domain);
     
     // Create the user account with Supabase with proper redirect URL
@@ -28,7 +26,9 @@ export const signUp = async (email: string, password: string, firstName: string,
           last_name: lastName,
           company_name: companyName || `${firstName}'s Company`, // Ensure company name is always set
           needs_subscription: true, // Add flag to indicate subscription needed
-          role: 'admin' // Set the initial user role to admin
+          role: 'admin', // Set the initial user role to admin
+          is_new_tenant: true, // Flag to indicate this is a new tenant creation
+          is_tenant_admin: true // Flag to mark user as tenant admin
         },
         // Use the full URL to /auth route with a query parameter to indicate verification
         emailRedirectTo: `${domain}/auth?email_confirmed=true`,
@@ -47,8 +47,18 @@ export const signUp = async (email: string, password: string, firstName: string,
       }
     });
     
-    console.log("Signup complete for " + email + ", showing verification notice");
+    // After signup, create tenant (this will be handled through RLS triggers)
+    const tenantCreation = {
+      email,
+      userId: data.user?.id,
+      success: true
+    };
 
+    logAuth('SIGNUP', `Tenant creation process initiated`, {
+      level: AUTH_LOG_LEVELS.INFO,
+      data: tenantCreation
+    });
+    
     // Show success toast
     toast({
       title: 'Account created',
@@ -66,10 +76,9 @@ export const signUp = async (email: string, password: string, firstName: string,
       data: error
     });
     
-    // Check if error is related to tenant conflict
+    // Display appropriate error message
     if (error.message?.includes('Organization Already Exists') || 
         error.message?.includes('already exist in our system')) {
-      // Just pass the error through as this is a known error type we want to handle in the UI
       toast({
         title: 'Organization Already Exists',
         description: error.message,
