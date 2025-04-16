@@ -4,7 +4,9 @@ import {
   CONSTRUCTION_ERROR_CODES,
   ConstructionErrorCode,
   ConstructionErrorResponse,
-  ERROR_CATEGORIES 
+  ERROR_CATEGORIES,
+  ERROR_SEVERITY,
+  RECOVERY_STRATEGY
 } from './errorTypes';
 
 /**

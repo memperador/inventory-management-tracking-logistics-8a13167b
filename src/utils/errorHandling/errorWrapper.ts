@@ -91,23 +91,27 @@ export function withComponentErrorBoundary<P extends object>(
 
     render() {
       if (this.state.hasError) {
-        return options.fallback || (
-          <div className="p-4 border border-destructive rounded-md bg-destructive/10">
-            <h2 className="text-lg font-semibold text-destructive mb-2">Something went wrong</h2>
-            <p className="text-sm text-destructive/90">
-              {this.state.error?.message || 'An error occurred in this component'}
-            </p>
-            <button 
-              className="mt-2 text-xs underline" 
-              onClick={() => this.setState({ hasError: false, error: null })}
-            >
-              Try to recover
-            </button>
-          </div>
+        return options.fallback || React.createElement(
+          'div',
+          { className: 'p-4 border border-destructive rounded-md bg-destructive/10' },
+          React.createElement('h2', { className: 'text-lg font-semibold text-destructive mb-2' }, 'Something went wrong'),
+          React.createElement(
+            'p', 
+            { className: 'text-sm text-destructive/90' },
+            this.state.error?.message || 'An error occurred in this component'
+          ),
+          React.createElement(
+            'button',
+            {
+              className: 'mt-2 text-xs underline',
+              onClick: () => this.setState({ hasError: false, error: null })
+            },
+            'Try to recover'
+          )
         );
       }
 
-      return <Component {...this.props} />;
+      return React.createElement(Component, this.props);
     }
   };
 }
