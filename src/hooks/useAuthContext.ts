@@ -1,7 +1,7 @@
 
 import { useAuth } from '@/contexts/auth/AuthContext';
 
-// Re-export the useAuth hook from AuthContext
+// Re-export the useAuth hook
 export { useAuth };
 
 // For backward compatibility

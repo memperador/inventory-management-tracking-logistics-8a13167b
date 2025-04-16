@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2 } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -23,6 +24,8 @@ interface LoginFormProps {
 const LoginForm: React.FC<LoginFormProps> = ({ onForgotPassword }) => {
   const { signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -36,6 +39,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onForgotPassword }) => {
     setIsLoading(true);
     try {
       await signIn(data.email, data.password);
+      
+      // Get the return URL from query parameters, default to /dashboard
+      const searchParams = new URLSearchParams(location.search);
+      const returnTo = searchParams.get('returnTo') || '/dashboard';
+      
+      // Navigate to the return URL after successful login
+      console.log(`Login successful, navigating to ${returnTo}`);
+      navigate(decodeURIComponent(returnTo), { replace: true });
+      
     } catch (error) {
       console.error("Login failed", error);
     } finally {

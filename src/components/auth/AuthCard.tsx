@@ -1,114 +1,53 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import AuthTabs from '@/components/auth/AuthTabs';
 import ResetPasswordDialog from '@/components/auth/ResetPasswordDialog';
-import AuthErrorAlert from '@/components/auth/AuthErrorAlert';
-import VerifiedEmailAlert from '@/components/auth/verification/VerifiedEmailAlert';
-import EmailVerificationStatus from '@/components/auth/EmailVerificationStatus';
-import VerificationAlert from '@/components/auth/VerificationAlert';
-import AuthFooter from '@/components/auth/AuthFooter';
-import { useAuth } from '@/hooks/useAuthContext';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { CheckCircle } from 'lucide-react';
 
 interface AuthCardProps {
-  authError: string | null;
-  emailVerified: boolean;
-  isVerifying: boolean;
-  verificationSent: boolean;
-  verificationEmail: string;
-  isResendingVerification: boolean;
-  setIsResendingVerification: (isResending: boolean) => void;
-  emailProvider: string | null;
-  setVerificationSent: (sent: boolean) => void;
-  setVerificationEmail: (email: string) => void;
+  emailConfirmed?: boolean;
   onSignupComplete?: (email: string) => void;
 }
 
 const AuthCard: React.FC<AuthCardProps> = ({
-  authError,
-  emailVerified,
-  isVerifying,
-  verificationSent,
-  verificationEmail,
-  isResendingVerification,
-  setIsResendingVerification,
-  emailProvider,
-  setVerificationSent,
-  setVerificationEmail,
+  emailConfirmed = false,
   onSignupComplete
 }) => {
   const [activeTab, setActiveTab] = useState("login");
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
-  const { user } = useAuth();
-  
-  // Pre-fill the login form with labrat credentials if URL contains ?preset=labrat
-  const urlParams = new URLSearchParams(window.location.search);
-  const useLabratPreset = urlParams.get('preset') === 'labrat';
-  
-  useEffect(() => {
-    if (useLabratPreset && activeTab === 'login') {
-      // Find the email input
-      const emailInput = document.querySelector('input[type="email"]') as HTMLInputElement;
-      const passwordInput = document.querySelector('input[type="password"]') as HTMLInputElement;
-      
-      if (emailInput && passwordInput) {
-        emailInput.value = 'labrat@iaware.com';
-        passwordInput.value = 'testpassword1';
-      }
-    }
-  }, [useLabratPreset, activeTab]);
 
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl text-center">Inventory Track Pro</CardTitle>
         <CardDescription className="text-center">
-          {isVerifying 
-            ? "Verifying your email..." 
-            : "Enter your credentials to access your account"}
+          Enter your credentials to access your account
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {authError && <AuthErrorAlert errorMessage={authError} />}
-        
-        {emailVerified && <VerifiedEmailAlert />}
-        
-        {user && !user.email_confirmed_at && <EmailVerificationStatus />}
-        
-        {verificationSent && (
-          <VerificationAlert 
-            verificationEmail={verificationEmail}
-            isResendingVerification={isResendingVerification}
-            setIsResendingVerification={setIsResendingVerification}
-            emailProvider={emailProvider}
-          />
+        {emailConfirmed && (
+          <Alert className="mb-4 border-green-500 bg-green-50">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertTitle className="text-green-800">Email verified</AlertTitle>
+            <AlertDescription className="text-green-700">
+              Your email has been verified. You can now sign in.
+            </AlertDescription>
+          </Alert>
         )}
         
-        {(!user || user.email_confirmed_at) && !emailVerified && !isVerifying && (
-          <AuthTabs 
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            onForgotPassword={() => setResetPasswordDialogOpen(true)}
-            onSignupComplete={onSignupComplete}
-          />
-        )}
+        <AuthTabs 
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onForgotPassword={() => setResetPasswordDialogOpen(true)}
+          onSignupComplete={onSignupComplete}
+        />
         
-        {isVerifying && (
-          <div className="flex justify-center py-6">
-            <div className="flex flex-col items-center gap-2">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600"></div>
-              <p className="text-sm text-gray-600">Verifying your email address...</p>
-            </div>
-          </div>
-        )}
-        
-        <AuthFooter />
-      </CardContent>
-      <CardFooter className="flex justify-center">
-        <p className="text-xs text-gray-500">
+        <div className="mt-4 text-center text-xs text-gray-500">
           By continuing, you agree to our <a href="/terms-of-service" className="underline">Terms of Service</a> and <a href="/privacy-policy" className="underline">Privacy Policy</a>
-        </p>
-      </CardFooter>
+        </div>
+      </CardContent>
       
       <ResetPasswordDialog 
         open={resetPasswordDialogOpen} 

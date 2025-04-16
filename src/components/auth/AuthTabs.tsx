@@ -8,7 +8,7 @@ interface AuthTabsProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onForgotPassword: () => void;
-  onSignupComplete: (email: string) => void;
+  onSignupComplete?: (email: string) => void;
 }
 
 const AuthTabs: React.FC<AuthTabsProps> = ({ 

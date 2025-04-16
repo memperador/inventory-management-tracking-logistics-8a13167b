@@ -1,111 +1,40 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/contexts/auth/AuthContext';
 import AuthCard from '@/components/auth/AuthCard';
-import { useAuthVerification } from '@/hooks/useAuthVerification';
-import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
-import AuthRedirectManager from '@/components/auth/AuthRedirectManager';
-import AuthLoadingState from '@/components/auth/AuthLoadingState';
-import { LABRAT_EMAIL } from '@/utils/auth/labratUserUtils';
-import { emergencyFixLabratAdmin } from '@/utils/admin/fixLabratAdmin';
-import LabratLoginButton from '@/components/auth/LabratLoginButton';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 
 const Auth = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading } = useAuth();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   
-  const {
-    verificationSent,
-    setVerificationSent,
-    verificationEmail,
-    setVerificationEmail,
-    authError,
-    isResendingVerification,
-    setIsResendingVerification,
-    emailVerified,
-    isVerifying,
-    emailProvider,
-    loading: verificationLoading
-  } = useAuthVerification();
+  // Check if email is confirmed from URL params
+  const emailConfirmed = searchParams.get('email_confirmed') === 'true';
   
-  const isLoading = authLoading || verificationLoading;
-  
-  // Special handling for labrat user on auth page
-  useEffect(() => {
-    // Clear any existing session storage to prevent login loops
-    sessionStorage.removeItem('auth_processed_labrat@iaware.com');
-    
-    // Check if we're coming back to auth page after a labrat login attempt
-    const labratLoginDetected = sessionStorage.getItem('labrat_login_detected');
-    
-    if (labratLoginDetected) {
-      logAuth('AUTH-PAGE', 'Labrat login detected but redirected back to auth page, applying emergency fix', {
-        level: AUTH_LOG_LEVELS.WARN
-      });
-      
-      // Remove the flag to prevent infinite loops
-      sessionStorage.removeItem('labrat_login_detected');
-      
-      // Run emergency fix with slight delay
-      setTimeout(() => {
-        emergencyFixLabratAdmin();
-      }, 500);
+  // Redirect authenticated users to the dashboard or the page they were trying to access
+  React.useEffect(() => {
+    if (user && !loading) {
+      const returnTo = searchParams.get('returnTo');
+      navigate(returnTo ? decodeURIComponent(returnTo) : '/dashboard', { replace: true });
     }
-    
-    // Check URL for email parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    const emailParam = urlParams.get('email');
-    
-    // If email is labrat, prepare for special handling
-    if (emailParam === LABRAT_EMAIL) {
-      logAuth('AUTH-PAGE', 'Labrat email detected in URL params, setting up special handling', {
-        level: AUTH_LOG_LEVELS.INFO
-      });
-      
-      sessionStorage.setItem('labrat_login_attempt', 'true');
-      sessionStorage.setItem('force_dashboard_redirect', 'true');
-    }
-  }, []);
+  }, [user, loading, navigate, searchParams]);
   
   // Handle signup completion
   const handleSignupComplete = (email: string) => {
-    logAuth('AUTH', `Signup completed for ${email}, redirecting to onboarding`, {
-      level: AUTH_LOG_LEVELS.INFO,
-      force: true
-    });
-    
-    // Special handling for labrat signup
-    if (email === LABRAT_EMAIL) {
-      sessionStorage.setItem('labrat_signup', 'true');
-      sessionStorage.setItem('force_dashboard_redirect', 'true');
-    }
-    
-    setVerificationSent(true);
-    setVerificationEmail(email);
+    console.log(`Signup completed for ${email}`);
   };
   
+  // Display loading or auth card
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
-      {isLoading ? (
-        <AuthLoadingState />
-      ) : (
-        <div className="w-full max-w-md space-y-3">
-          <AuthCard 
-            authError={authError}
-            emailVerified={emailVerified}
-            isVerifying={isVerifying}
-            verificationSent={verificationSent}
-            verificationEmail={verificationEmail}
-            isResendingVerification={isResendingVerification}
-            setIsResendingVerification={setIsResendingVerification}
-            emailProvider={emailProvider}
-            setVerificationSent={setVerificationSent}
-            setVerificationEmail={setVerificationEmail}
-            onSignupComplete={handleSignupComplete}
-          />
-          <LabratLoginButton />
-          <AuthRedirectManager />
-        </div>
-      )}
+      <div className="w-full max-w-md">
+        <AuthCard 
+          emailConfirmed={emailConfirmed}
+          onSignupComplete={handleSignupComplete}
+        />
+      </div>
     </div>
   );
 };

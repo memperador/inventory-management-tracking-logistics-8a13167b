@@ -1,39 +1,53 @@
 
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import { AppProviders } from './providers/AppProviders';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from '@/components/ui/toaster';
 import { publicRoutes, protectedRoutes } from './routes/routeConfig';
-
-// Import emergency fix utilities
-import './utils/admin/fixLabratAdmin';
-import './utils/auth/breakLoginLoop';
+import { AuthProvider } from '@/contexts/auth/AuthContext';
+import { TenantProvider } from '@/contexts/TenantContext';
+import { RoleProvider } from '@/contexts/RoleContext';
+import NotFound from './pages/NotFound';
 
 function App() {
   return (
-    <AppProviders>
-      <Routes>
-        {publicRoutes.map((route) => {
-          const { element, path, children } = route;
-          return (
-            <Route key={path} path={path} element={element}>
-              {children?.map(child => (
-                <Route key={child.path} path={child.path} element={child.element} />
+    <BrowserRouter>
+      <AuthProvider>
+        <TenantProvider>
+          <RoleProvider>
+            <Routes>
+              {/* Public routes */}
+              {publicRoutes.map((route) => (
+                <Route
+                  key={route.path}
+                  path={route.path}
+                  element={route.element}
+                />
               ))}
-            </Route>
-          );
-        })}
-        {protectedRoutes.map((route) => {
-          const { element, path, children } = route;
-          return (
-            <Route key={path} path={path} element={element}>
-              {children?.map(child => (
-                <Route key={child.path} path={child.path} element={child.element} />
+              
+              {/* Protected routes */}
+              {protectedRoutes.map((route) => (
+                <Route
+                  key={route.path || 'protected-parent'}
+                  path={route.path}
+                  element={route.element}
+                >
+                  {route.children?.map((childRoute) => (
+                    <Route
+                      key={childRoute.path}
+                      path={childRoute.path}
+                      element={childRoute.element}
+                    />
+                  ))}
+                </Route>
               ))}
-            </Route>
-          );
-        })}
-      </Routes>
-    </AppProviders>
+              
+              {/* Catch all route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </RoleProvider>
+        </TenantProvider>
+      </AuthProvider>
+      <Toaster />
+    </BrowserRouter>
   );
 }
 

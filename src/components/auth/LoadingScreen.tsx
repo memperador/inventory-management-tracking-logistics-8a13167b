@@ -1,12 +1,13 @@
 
 import React from 'react';
+import { Loader2 } from 'lucide-react';
 
-export const LoadingScreen = () => {
+export const LoadingScreen: React.FC = () => {
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-100">
-      <div className="flex flex-col items-center gap-4">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-inventory-blue border-t-transparent"></div>
-        <p className="text-sm text-gray-500">Loading...</p>
+    <div className="flex h-screen w-screen items-center justify-center">
+      <div className="flex flex-col items-center gap-2">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Loading...</p>
       </div>
     </div>
   );
