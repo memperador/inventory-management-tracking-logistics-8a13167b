@@ -1,98 +1,104 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { LABRAT_EMAIL, LABRAT_USER_ID } from '@/utils/auth/labratUserUtils';
 import { toast } from '@/hooks/use-toast';
-import { useRole } from '@/hooks/useRoleContext';
-import { useAuth } from '@/hooks/useAuthContext';
+import { Shield } from 'lucide-react';
 
 const LabratAdminButton: React.FC = () => {
-  const [isFixing, setIsFixing] = React.useState(false);
-  const { refreshRole } = useRole();
-  const { refreshSession, user } = useAuth();
-  
-  const handleFix = async () => {
+  const [isFixing, setIsFixing] = useState(false);
+
+  const handleFixRole = async () => {
     setIsFixing(true);
     try {
-      // Only proceed for the labrat user
-      if (user?.email !== 'labrat@iaware.com') {
-        toast({
-          title: 'Error',
-          description: 'This button is only for the labrat@iaware.com user.',
-          variant: 'destructive'
-        });
-        return;
-      }
-      
-      console.log('LabratAdminButton: Setting labrat as admin');
-      
-      // Labrat's known ID
-      const userId = '9e32e738-5f44-44f8-bc15-6946b27296a6';
-      
-      // Update user role in DB
-      const { error } = await supabase
+      // Update in database
+      const { error: dbError } = await supabase
         .from('users')
         .update({ role: 'admin' })
-        .eq('id', userId);
+        .eq('id', LABRAT_USER_ID);
         
-      if (error) {
-        console.error('Error updating database role:', error);
-        throw error;
-      }
+      if (dbError) throw dbError;
       
-      // Update user metadata
-      const { error: metadataError } = await supabase.auth.updateUser({
+      // Update in auth metadata
+      const { error: authError } = await supabase.auth.updateUser({
         data: { role: 'admin' }
       });
       
-      if (metadataError) {
-        console.error('Error updating auth metadata:', metadataError);
-      }
+      if (authError) throw authError;
       
-      // Multiple session refresh attempts to ensure it takes
-      await refreshSession();
-      
-      // Refresh role context
-      await refreshRole();
-      
-      // Try another refresh after a delay
-      setTimeout(async () => {
-        await refreshSession();
-        await refreshRole();
-      }, 500);
+      // Refresh session
+      await supabase.auth.refreshSession();
       
       toast({
-        title: 'Admin Role Applied',
-        description: 'The labrat@iaware.com user now has admin privileges. The page will refresh shortly.',
+        title: 'Admin Role Fixed',
+        description: 'The admin role has been applied successfully.',
       });
       
-      // Force reload the application to ensure all context is updated
+      // Refresh page after short delay
       setTimeout(() => {
-        sessionStorage.setItem('admin_role_applied', 'true');
         window.location.reload();
-      }, 1500);
+      }, 1000);
       
-    } catch (error) {
-      console.error('Failed to fix admin role:', error);
+    } catch (error: any) {
+      console.error('Error fixing admin role:', error);
       toast({
         title: 'Error',
-        description: 'Failed to set admin role. Please try again.',
+        description: error.message || 'Failed to fix admin role',
         variant: 'destructive'
       });
     } finally {
       setIsFixing(false);
     }
   };
-  
+
+  const handleResetSession = async () => {
+    try {
+      // Clear storage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Sign out
+      await supabase.auth.signOut();
+      
+      toast({
+        title: 'Session Reset',
+        description: 'Your session has been reset. Redirecting to login...',
+      });
+      
+      // Redirect to login page
+      setTimeout(() => {
+        window.location.href = '/auth';
+      }, 1000);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to reset session',
+        variant: 'destructive'
+      });
+    }
+  };
+
   return (
-    <Button 
-      onClick={handleFix}
-      disabled={isFixing}
-      variant="destructive"
-      className="mt-4 w-full"
-    >
-      {isFixing ? 'Setting Admin Role...' : 'Emergency: Force Admin Role'}
-    </Button>
+    <div className="flex flex-wrap gap-2">
+      <Button
+        onClick={handleFixRole}
+        disabled={isFixing}
+        className="bg-red-600 hover:bg-red-700"
+        size="sm"
+      >
+        <Shield className="mr-1 h-4 w-4" />
+        {isFixing ? 'Fixing...' : 'Fix Admin Access'}
+      </Button>
+      <Button
+        onClick={handleResetSession}
+        variant="outline"
+        className="border-red-300"
+        size="sm"
+      >
+        Reset Session
+      </Button>
+    </div>
   );
 };
 

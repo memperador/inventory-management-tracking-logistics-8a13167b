@@ -32,14 +32,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Prevent redirect loops with a safety check
   useEffect(() => {
     // Check if we're being repeatedly redirected (potential loop)
-    const redirectCount = parseInt(sessionStorage.getItem('redirect_count') || '0');
-    const newCount = redirectCount + 1;
+    const redirectCount = parseInt(sessionStorage.getItem('redirect_count') || '0') + 1;
     
-    sessionStorage.setItem('redirect_count', newCount.toString());
+    sessionStorage.setItem('redirect_count', redirectCount.toString());
     sessionStorage.setItem('last_redirect_time', Date.now().toString());
     
     // If too many redirects in a short time, break the cycle
-    if (newCount > 5) {
+    if (redirectCount > 5) {
       const lastTime = parseInt(sessionStorage.getItem('last_redirect_time') || '0');
       const timeDiff = Date.now() - lastTime;
       
