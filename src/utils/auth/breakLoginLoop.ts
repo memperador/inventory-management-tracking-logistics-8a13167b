@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { createErrorResponse, handleError } from '@/utils/errorHandling/errorService';
 
 /**
  * Emergency utility to break authentication redirect loops
@@ -9,6 +10,15 @@ export const breakLoginLoop = async (): Promise<string> => {
   console.log('🔄 EMERGENCY: Breaking authentication loop');
   
   try {
+    // Create a structured error response
+    const errorResponse = createErrorResponse('AU-002', {
+      location: 'breakLoginLoop',
+      userGuidance: 'Authentication loop detected and broken. Emergency authentication has been initiated.'
+    });
+    
+    // Handle the error without throwing
+    handleError(errorResponse, { throwError: false });
+    
     // 1. Clear all storage
     console.log('Clearing local and session storage');
     localStorage.clear();

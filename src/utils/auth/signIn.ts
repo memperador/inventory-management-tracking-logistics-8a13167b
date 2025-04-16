@@ -4,6 +4,7 @@ import { toast } from '@/hooks/use-toast';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 import { findTenantByEmail } from '@/contexts/auth/handlers/checkTenant';
 import { LABRAT_EMAIL, LABRAT_USER_ID, ensureLabratAdminRole } from '@/utils/auth/labratUserUtils';
+import { createErrorResponse, handleError } from '@/utils/errorHandling/errorService';
 
 export const signIn = async (email: string, password: string) => {
   logAuth('AUTH-SIGNIN', `Sign in initiated for email: ${email}`, {
@@ -80,7 +81,19 @@ export const signIn = async (email: string, password: string) => {
       }
     });
     
-    if (error) throw error;
+    if (error) {
+      // Create a structured error response
+      const errorResponse = createErrorResponse('AU-001', {
+        message: 'Authentication failed',
+        technicalDetails: error.message,
+        userGuidance: error.message.includes('Invalid login') 
+          ? 'Please check your email and password and try again.'
+          : 'There was a problem signing you in. Please try again.',
+      });
+      
+      handleError(errorResponse);
+      throw error;
+    }
     
     // Handle special case for labrat user
     if (email === LABRAT_EMAIL && data?.session) {
@@ -234,11 +247,16 @@ export const signIn = async (email: string, password: string) => {
       data: error
     });
     
-    toast({
-      title: 'Error',
-      description: error.message || 'Failed to sign in',
-      variant: 'destructive',
+    // Create a structured error response
+    const errorResponse = createErrorResponse('AU-001', {
+      message: 'Authentication failed',
+      technicalDetails: error?.message || 'Unknown error during sign in',
+      userGuidance: 'There was a problem signing you in. Please try again.',
     });
+    
+    // Handle the error
+    handleError(errorResponse, { throwError: false });
+    
     throw error;
   }
 };

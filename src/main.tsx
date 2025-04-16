@@ -7,6 +7,8 @@ import './index.css';
 // Import emergency utilities
 import './utils/auth/emergencyLabratLogin';
 import './utils/auth/breakLoginLoop';
+import { createCustomErrorResponse, handleError } from './utils/errorHandling/errorService';
+import { ERROR_CATEGORIES, ERROR_SEVERITY, RECOVERY_STRATEGY } from './utils/errorHandling/errorTypes';
 
 // Log application initialization for debugging
 console.log('[MAIN] Application initializing', {
@@ -15,6 +17,46 @@ console.log('[MAIN] Application initializing', {
   currentPath: window.location.pathname,
   searchParams: window.location.search
 });
+
+// Global error handler for uncaught exceptions
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (event) => {
+    // Create structured error
+    const errorResponse = createCustomErrorResponse({
+      message: event.message || 'Uncaught error',
+      category: ERROR_CATEGORIES.SYSTEM,
+      severity: ERROR_SEVERITY.HIGH,
+      technicalDetails: `${event.filename}:${event.lineno}:${event.colno}\n${event.error?.stack || ''}`,
+      recoveryStrategy: RECOVERY_STRATEGY.NOTIFY,
+      shouldLog: true,
+      shouldAlert: true
+    });
+    
+    // Handle the error
+    handleError(errorResponse, { throwError: false });
+    
+    // Don't prevent default to allow browser's default error handling
+  });
+  
+  // Global handler for unhandled promise rejections
+  window.addEventListener('unhandledrejection', (event) => {
+    // Create structured error
+    const errorResponse = createCustomErrorResponse({
+      message: event.reason?.message || 'Unhandled promise rejection',
+      category: ERROR_CATEGORIES.SYSTEM,
+      severity: ERROR_SEVERITY.HIGH,
+      technicalDetails: event.reason?.stack || String(event.reason),
+      recoveryStrategy: RECOVERY_STRATEGY.NOTIFY,
+      shouldLog: true,
+      shouldAlert: true
+    });
+    
+    // Handle the error
+    handleError(errorResponse, { throwError: false });
+    
+    // Don't prevent default to allow browser's default rejection handling
+  });
+}
 
 // Make emergency recovery functions available globally
 if (typeof window !== 'undefined') {
@@ -42,6 +84,23 @@ if (typeof window !== 'undefined') {
       currentTime - lastRedirectAttempt < 2000 && 
       redirectCount > 3) {
     console.warn('[MAIN] Potential redirect loop detected, activating breaker');
+    
+    // Create a structured error
+    const errorResponse = createCustomErrorResponse({
+      message: 'Authentication redirect loop detected',
+      category: ERROR_CATEGORIES.AUTH,
+      severity: ERROR_SEVERITY.HIGH,
+      recoveryStrategy: RECOVERY_STRATEGY.FALLBACK,
+      userGuidance: 'The system detected a potential authentication loop and is attempting to break it.',
+      shouldLog: true,
+      shouldAlert: true,
+      code: 'AU-002'
+    });
+    
+    // Log the error but don't show toast yet as the app is still initializing
+    handleError(errorResponse, { showToast: false });
+    
+    // Set emergency flags to break the loop
     sessionStorage.setItem('break_auth_loop', 'true');
     sessionStorage.setItem('redirect_count', '0');
   }

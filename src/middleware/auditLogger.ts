@@ -1,5 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { createErrorResponse, handleError, withErrorHandling } from '@/utils/errorHandling/errorService';
+import { ERROR_CATEGORIES } from '@/utils/errorHandling/errorTypes';
 
 export interface AuditLogEntry {
   userId: string;
@@ -10,13 +12,14 @@ export interface AuditLogEntry {
   newValue?: any;
   timestamp: Date;
   metadata?: Record<string, any>;
+  status?: 'success' | 'error' | 'warning';
 }
 
 /**
  * Creates an audit log entry for data mutations
  */
-export const logAuditEvent = async (entry: Omit<AuditLogEntry, 'timestamp'>): Promise<void> => {
-  try {
+export const logAuditEvent = withErrorHandling(
+  async (entry: Omit<AuditLogEntry, 'timestamp'>): Promise<void> => {
     const logEntry: AuditLogEntry = {
       ...entry,
       timestamp: new Date(),
@@ -29,10 +32,13 @@ export const logAuditEvent = async (entry: Omit<AuditLogEntry, 'timestamp'>): Pr
     
     // Example implementation with Supabase:
     // await supabase.from('audit_logs').insert([logEntry]);
-  } catch (error) {
-    console.error('Failed to create audit log:', error);
+  },
+  { 
+    errorCode: 'SY-001',
+    location: 'logAuditEvent',
+    showToast: false 
   }
-};
+);
 
 /**
  * Higher-order function that wraps a mutation function with audit logging
@@ -65,10 +71,19 @@ export const withAuditLogging = <T extends (...args: any[]) => Promise<any>>(
         oldValue,
         newValue,
         metadata: { success: true },
+        status: 'success'
       });
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
+      // Create a structured error response
+      const errorResponse = createErrorResponse('SY-001', {
+        message: `Operation failed: ${options.action}`,
+        technicalDetails: error?.message || 'Unknown error during operation',
+        location: 'withAuditLogging'
+      });
+      
+      // Log the audit event with error status
       await logAuditEvent({
         userId,
         action: options.action,
@@ -76,7 +91,12 @@ export const withAuditLogging = <T extends (...args: any[]) => Promise<any>>(
         entityId,
         oldValue,
         metadata: { success: false, error: error.message },
+        status: 'error'
       });
+      
+      // Handle the error
+      handleError(errorResponse, { throwError: false });
+      
       throw error;
     }
   }) as T;

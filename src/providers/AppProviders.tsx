@@ -11,8 +11,21 @@ import { AIAssistantProvider } from '@/components/layout/AIAssistantProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AutoAdminRoleFixer } from '@/components/admin/AutoAdminRoleFixer';
 import { Toaster } from '@/components/ui/toaster';
+import { ErrorPanel } from '@/components/debug/ErrorPanel';
+import { DebugPanel } from '@/components/debug/DebugPanel';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      staleTime: 30 * 1000, // 30 seconds
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
+});
 
 export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
@@ -30,6 +43,8 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children
                       <AutoAdminRoleFixer />
                       {children}
                       <Toaster />
+                      <ErrorPanel />
+                      <DebugPanel />
                     </AIAssistantProvider>
                   </NotificationProvider>
                 </RoleProvider>

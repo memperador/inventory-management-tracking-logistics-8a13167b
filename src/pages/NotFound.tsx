@@ -1,9 +1,11 @@
+
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Home, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuthContext";
+import { createErrorResponse, handleError } from "@/utils/errorHandling/errorService";
 
 const NotFound = () => {
   const location = useLocation();
@@ -11,11 +13,17 @@ const NotFound = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
-  }, [location.pathname]);
+    // Log the 404 error with our error system
+    const errorResponse = createErrorResponse('SY-001', {
+      message: `404 Error: Page not found - ${location.pathname}`,
+      technicalDetails: `User attempted to access non-existent route: ${location.pathname}${location.search}`,
+      location: 'NotFound',
+      userGuidance: 'This page does not exist. Please use the navigation links to go to a valid page.',
+      severity: 'LOW'
+    });
+    
+    handleError(errorResponse, { showToast: false, throwError: false });
+  }, [location.pathname, location.search]);
 
   const handleLoginClick = () => {
     // If user was trying to access a protected route, remember it for redirect after login
@@ -39,7 +47,8 @@ const NotFound = () => {
           The page you're looking for doesn't exist or has been moved.
         </p>
         <div className="flex flex-col space-y-2">
-          <Button onClick={handleDashboardClick} className="w-full">
+          <Button onClick={handleDashboardClick} className="w-full flex gap-2 items-center justify-center" variant="default">
+            <Home size={16} />
             {user ? "Return to Dashboard" : "Go to Login"}
           </Button>
           {location.pathname !== '/auth' && !user && (
@@ -47,7 +56,8 @@ const NotFound = () => {
               Sign In / Sign Up
             </Button>
           )}
-          <Button onClick={() => navigate(-1)} variant="outline" className="w-full">
+          <Button onClick={() => navigate(-1)} variant="outline" className="w-full flex gap-2 items-center justify-center">
+            <ArrowLeft size={16} />
             Go Back
           </Button>
         </div>
