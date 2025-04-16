@@ -1,10 +1,10 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 import { findTenantByEmail } from '@/contexts/auth/handlers/checkTenant';
 import { LABRAT_EMAIL, LABRAT_USER_ID, ensureLabratAdminRole } from '@/utils/auth/labratUserUtils';
 import { createErrorResponse, handleError } from '@/utils/errorHandling/errorService';
+import { clearAuthSessionStorage } from '@/contexts/auth/handlers/sessionUtils';
 
 export const signIn = async (email: string, password: string) => {
   logAuth('AUTH-SIGNIN', `Sign in initiated for email: ${email}`, {
@@ -12,250 +12,47 @@ export const signIn = async (email: string, password: string) => {
   });
   
   try {
-    // Clear any previous login state to prevent loops
-    logAuth('AUTH-SIGNIN', 'Clearing previous session storage items', {
-      level: AUTH_LOG_LEVELS.INFO
-    });
+    // Clear any previous auth state
+    clearAuthSessionStorage();
     
-    const keysToRemove = [];
-    sessionStorage.removeItem(`auth_processed_${email}`);
-    
-    // Also clear any other session storage items that might cause loops
-    for (let i = 0; i < sessionStorage.length; i++) {
-      const key = sessionStorage.key(i);
-      if (key && (
-        key.startsWith('auth_processed_') || 
-        key.startsWith('processing_') || 
-        key === 'login_toast_shown'
-      )) {
-        keysToRemove.push(key);
-      }
-    }
-    
-    // Remove items in a separate loop to avoid index issues
-    keysToRemove.forEach(key => {
-      logAuth('AUTH-SIGNIN', `Removing session storage key: ${key}`, {
-        level: AUTH_LOG_LEVELS.DEBUG
-      });
-      sessionStorage.removeItem(key);
-    });
-    
-    // Special case for labrat user login
+    // Special case for labrat user
     if (email === LABRAT_EMAIL) {
-      logAuth('AUTH-SIGNIN', 'Labrat user login detected, setting special handling flag', {
+      logAuth('AUTH-SIGNIN', 'Labrat user login detected', {
         level: AUTH_LOG_LEVELS.INFO
       });
       sessionStorage.setItem('labrat_login', 'true');
     }
     
-    // Check if there is an existing tenant for this email before signing in
-    // This will help with returning users who already have a tenant
-    logAuth('AUTH-SIGNIN', `Checking for existing tenant before login for email: ${email}`, {
-      level: AUTH_LOG_LEVELS.INFO
-    });
-    
-    const preLoginTenantCheck = await findTenantByEmail(email);
-    const existingTenantId = preLoginTenantCheck.tenantId;
-    const existingTenantName = preLoginTenantCheck.tenantName;
-    
-    logAuth('AUTH-SIGNIN', `Calling supabase.auth.signInWithPassword`, {
-      level: AUTH_LOG_LEVELS.INFO,
-      data: {
-        existingTenantFound: !!existingTenantId,
-        tenantName: existingTenantName
-      }
-    });
-    
+    // Perform login
     const { data, error } = await supabase.auth.signInWithPassword({ 
       email, 
       password 
     });
     
-    logAuth('AUTH-SIGNIN', 'Sign in response received', { 
-      level: AUTH_LOG_LEVELS.INFO,
-      data: {
-        success: !error,
-        hasSession: !!data?.session,
-        hasUser: !!data?.user,
-        email: email
-      }
-    });
+    if (error) throw error;
     
-    if (error) {
-      // Create a structured error response
-      const errorResponse = createErrorResponse('AU-001', {
-        message: 'Authentication failed',
-        technicalDetails: error.message,
-        userGuidance: error.message.includes('Invalid login') 
-          ? 'Please check your email and password and try again.'
-          : 'There was a problem signing you in. Please try again.',
-      });
-      
-      handleError(errorResponse);
-      throw error;
-    }
-    
-    // Handle special case for labrat user
-    if (email === LABRAT_EMAIL && data?.session) {
-      logAuth('AUTH-SIGNIN', 'Detected labrat user login, ensuring admin role', {
-        level: AUTH_LOG_LEVELS.INFO
-      });
-      
-      // Ensure admin role
-      await ensureLabratAdminRole(false);
-      
-      // Special marker to always allow dashboard redirect
-      sessionStorage.setItem('labrat_login_success', 'true');
-    }
-    
-    if (data?.session === null && data?.user !== null) {
-      logAuth('AUTH-SIGNIN', 'Session is null but user is not null - checking for MFA', {
-        level: AUTH_LOG_LEVELS.INFO
-      });
-      
-      const { data: factorData } = await supabase.auth.mfa.listFactors();
-      
-      if (factorData?.totp && factorData.totp.length > 0) {
-        logAuth('AUTH-SIGNIN', 'MFA required, redirecting to two-factor page', {
-          level: AUTH_LOG_LEVELS.INFO
-        });
-        localStorage.setItem('pendingTwoFactorEmail', email);
-        localStorage.setItem('factorId', factorData.totp[0].id);
-        window.location.href = '/auth/two-factor';
-        return;
-      }
-    }
-
-    // Check if this is a returning user who already has a tenant
-    const userId = data?.user?.id;
-    if (userId) {
-      logAuth('AUTH-SIGNIN', `Checking for existing tenant for user: ${userId}`, {
-        level: AUTH_LOG_LEVELS.INFO
-      });
-      
-      // If we already found a tenant before login, use that
-      if (existingTenantId) {
-        logAuth('AUTH-SIGNIN', `Using tenant found before login: ${existingTenantId}`, {
-          level: AUTH_LOG_LEVELS.INFO
-        });
-        
-        // Associate this user with the existing tenant if needed
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('tenant_id')
-          .eq('id', userId)
-          .single();
-          
-        if (!userError && !userData?.tenant_id) {
-          // User exists but doesn't have a tenant association, connect them
-          logAuth('AUTH-SIGNIN', `Associating user with existing tenant: ${existingTenantId}`, {
-            level: AUTH_LOG_LEVELS.INFO
-          });
-          
-          await supabase
-            .from('users')
-            .update({ tenant_id: existingTenantId })
-            .eq('id', userId);
-        }
-        
-        // Store tenant information in user metadata
-        await supabase.auth.updateUser({
-          data: { 
-            tenant_id: existingTenantId,
-            tenant_name: existingTenantName,
-            needs_subscription: false // They're joining an existing tenant, so no subscription needed
-          }
-        });
-      } else {
-        // Query for existing tenant association if we didn't find one earlier
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('tenant_id')
-          .eq('id', userId)
-          .single();
-          
-        if (!userError && userData?.tenant_id) {
-          logAuth('AUTH-SIGNIN', `Found existing tenant for user: ${userData.tenant_id}`, {
-            level: AUTH_LOG_LEVELS.INFO
-          });
-          
-          // Store tenant information in user metadata if it's not already there
-          if (!data.user.user_metadata?.tenant_id) {
-            await supabase.auth.updateUser({
-              data: { 
-                tenant_id: userData.tenant_id,
-                needs_subscription: false
-              }
-            });
-            
-            logAuth('AUTH-SIGNIN', `Updated user metadata with existing tenant_id: ${userData.tenant_id}`, {
-              level: AUTH_LOG_LEVELS.INFO
-            });
-          }
-        }
-      }
-    }
-    
-    // Set a flag to prevent duplicate toasts with a unique timestamp
-    const toastId = `login_toast_${Date.now()}`;
+    // Success toast
     if (!sessionStorage.getItem('login_toast_shown')) {
-      logAuth('AUTH-SIGNIN', 'Showing login toast notification', {
-        level: AUTH_LOG_LEVELS.INFO
-      });
-      
       toast({
         title: 'Welcome back!',
         description: 'You have been signed in successfully',
       });
-      sessionStorage.setItem('login_toast_shown', toastId);
-      
-      // Clear this flag after 5 seconds
-      logAuth('AUTH-SIGNIN', 'Setting timeout to clear login toast flag', {
-        level: AUTH_LOG_LEVELS.DEBUG
-      });
-      
-      setTimeout(() => {
-        if (sessionStorage.getItem('login_toast_shown') === toastId) {
-          logAuth('AUTH-SIGNIN', 'Clearing login toast flag', {
-            level: AUTH_LOG_LEVELS.DEBUG
-          });
-          sessionStorage.removeItem('login_toast_shown');
-        }
-      }, 5000);
+      sessionStorage.setItem('login_toast_shown', Date.now().toString());
     }
     
-    // Force redirect to dashboard for labrat user
-    if (email === LABRAT_EMAIL) {
-      logAuth('AUTH-SIGNIN', 'Forcing dashboard redirect for labrat user', {
-        level: AUTH_LOG_LEVELS.INFO
-      });
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 500);
-    }
-    
-    logAuth('AUTH-SIGNIN', 'Sign in process completed successfully', {
-      level: AUTH_LOG_LEVELS.INFO
-    });
-    
-    // Return the session and user data
     return { session: data.session, user: data.user };
     
-  } catch (error: any) {
-    logAuth('AUTH-SIGNIN', 'Error during sign in:', {
+  } catch (error) {
+    logAuth('AUTH-SIGNIN', 'Sign in error:', {
       level: AUTH_LOG_LEVELS.ERROR,
       data: error
     });
     
-    // Create a structured error response
-    const errorResponse = createErrorResponse('AU-001', {
-      message: 'Authentication failed',
-      technicalDetails: error?.message || 'Unknown error during sign in',
-      userGuidance: 'There was a problem signing you in. Please try again.',
+    toast({
+      title: 'Error',
+      description: error instanceof Error ? error.message : 'Failed to sign in',
+      variant: 'destructive'
     });
-    
-    // Handle the error
-    handleError(errorResponse, { throwError: false });
     
     throw error;
   }
