@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ConstructionErrorCode, ConstructionErrorResponse, ERROR_CATEGORIES, RECOVERY_STRATEGY } from './errorTypes';
+import { ConstructionErrorCode, ConstructionErrorResponse, ERROR_CATEGORIES, ERROR_SEVERITY, RECOVERY_STRATEGY } from './errorTypes';
 import { createErrorResponse, createCustomErrorResponse } from './createError';
 import { handleError } from './handleError';
 
