@@ -3,17 +3,29 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 import { LABRAT_EMAIL, ensureLabratAdminRole } from '@/utils/auth/labratUserUtils';
+import { clearAuthSessionStorage } from '@/contexts/auth/handlers/sessionUtils';
 
 export const signIn = async (email: string, password: string) => {
+  logAuth('AUTH-SIGNIN', `Sign in initiated for email: ${email}`, {
+    level: AUTH_LOG_LEVELS.INFO
+  });
+  
   try {
-    // Clean up any existing auth state
-    logAuth('AUTH-SIGNIN', `Clearing auth state for new sign in attempt`, {
-      level: AUTH_LOG_LEVELS.INFO
-    });
+    // Clear any previous auth state
+    clearAuthSessionStorage();
     
-    // Sign out any existing session first
+    // Sign out any existing session first to prevent conflicts
     await supabase.auth.signOut({ scope: 'local' });
     sessionStorage.clear();
+    
+    // Special case for labrat user
+    if (email === LABRAT_EMAIL) {
+      logAuth('AUTH-SIGNIN', 'Labrat user login detected', {
+        level: AUTH_LOG_LEVELS.INFO
+      });
+      sessionStorage.setItem('labrat_login', 'true');
+      sessionStorage.setItem('force_dashboard_redirect', 'true');
+    }
     
     // Perform login
     const { data, error } = await supabase.auth.signInWithPassword({ 

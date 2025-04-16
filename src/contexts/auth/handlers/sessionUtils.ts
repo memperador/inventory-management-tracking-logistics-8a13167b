@@ -1,4 +1,7 @@
-// Create this file to centralize session management utilities
+
+/**
+ * Centralized session management utilities to prevent auth loops and improve reliability
+ */
 
 /**
  * Check if we've already processed the current path for this user session
