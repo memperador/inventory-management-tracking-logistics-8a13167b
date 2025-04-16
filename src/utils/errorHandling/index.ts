@@ -1,7 +1,19 @@
 
 export * from './createError';
-export * from './handleError';
+export * from './errorTypes';
 export * from './errorWrapper';
 export * from './uiUtils';
-export * from './errorTypes';
-export * from './errorService';
+
+// Export from errorService instead of re-exporting from both files
+export { 
+  handleError,
+  createErrorResponse, 
+  createCustomErrorResponse,
+  getErrorHistory,
+  filterErrors,
+  withErrorHandling,
+  withComponentErrorBoundary,
+  getSeverityLabel,
+  mapSeverityToVariant,
+  mapSeverityToDuration
+} from './errorService';

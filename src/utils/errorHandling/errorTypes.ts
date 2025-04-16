@@ -47,8 +47,8 @@ export interface ConstructionErrorResponse {
   userGuidance?: string; // Instructions for user to resolve
   shouldLog: boolean; // Should this be logged
   shouldAlert: boolean; // Should this generate alert notification
-  requiredRoles?: string[]; // Roles that need to be notified (e.g., 'safety-officer')
-  relatedRegulations?: string[]; // Related construction codes/regulations
+  requiredRoles: string[]; // Roles that need to be notified (e.g., 'safety-officer')
+  relatedRegulations: string[]; // Related construction codes/regulations
 }
 
 // Define the error codes with complete types (making sure each has all required fields)
@@ -146,7 +146,9 @@ export const CONSTRUCTION_ERROR_CODES = {
     recoveryStrategy: RECOVERY_STRATEGY.FALLBACK,
     shouldLog: true,
     shouldAlert: true,
-    userGuidance: 'The system detected a login loop. Emergency authentication has been activated.'
+    userGuidance: 'The system detected a login loop. Emergency authentication has been activated.',
+    requiredRoles: [],
+    relatedRegulations: []
   }
 } as const;
 
