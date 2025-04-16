@@ -44,7 +44,7 @@ export interface ConstructionErrorResponse {
   technicalDetails?: string; // Technical details for developers
   location?: string; // Where error occurred (component, function)
   recoveryStrategy: typeof RECOVERY_STRATEGY[keyof typeof RECOVERY_STRATEGY];
-  userGuidance?: string; // Instructions for user to resolve
+  userGuidance: string; // Instructions for user to resolve
   shouldLog: boolean; // Should this be logged
   shouldAlert: boolean; // Should this generate alert notification
   requiredRoles: string[]; // Roles that need to be notified (e.g., 'safety-officer')
@@ -63,8 +63,8 @@ export const CONSTRUCTION_ERROR_CODES = {
     shouldLog: true,
     shouldAlert: true,
     userGuidance: 'Contact safety officer immediately for a manual intervention.',
-    requiredRoles: ['safety-officer', 'site-manager'],
-    relatedRegulations: ['OSHA 1926.20(b)(2)']
+    requiredRoles: ['safety-officer', 'site-manager'] as string[],
+    relatedRegulations: ['OSHA 1926.20(b)(2)'] as string[]
   },
   
   // Compliance error codes (CP)
@@ -77,8 +77,8 @@ export const CONSTRUCTION_ERROR_CODES = {
     shouldLog: true,
     shouldAlert: true,
     userGuidance: 'Contact compliance manager to acquire the required permit.',
-    requiredRoles: ['compliance-manager', 'site-manager'],
-    relatedRegulations: ['IBC 105.1']
+    requiredRoles: ['compliance-manager', 'site-manager'] as string[],
+    relatedRegulations: ['IBC 105.1'] as string[]
   },
   
   // Equipment error codes (EQ)
@@ -91,8 +91,8 @@ export const CONSTRUCTION_ERROR_CODES = {
     shouldLog: true,
     shouldAlert: false,
     userGuidance: 'Try allocating alternative equipment or reschedule the task.',
-    requiredRoles: [],
-    relatedRegulations: []
+    requiredRoles: [] as string[],
+    relatedRegulations: [] as string[]
   },
   
   // Workflow error codes (WF)
@@ -105,8 +105,8 @@ export const CONSTRUCTION_ERROR_CODES = {
     shouldLog: true,
     shouldAlert: true,
     userGuidance: 'Review workflow requirements and correct the sequence.',
-    requiredRoles: ['project-manager'],
-    relatedRegulations: []
+    requiredRoles: ['project-manager'] as string[],
+    relatedRegulations: [] as string[]
   },
   
   // System error codes (SY)
@@ -119,8 +119,8 @@ export const CONSTRUCTION_ERROR_CODES = {
     shouldLog: true,
     shouldAlert: false,
     userGuidance: 'The system will attempt to recover automatically.',
-    requiredRoles: [],
-    relatedRegulations: []
+    requiredRoles: [] as string[],
+    relatedRegulations: [] as string[]
   },
   
   // Authentication error codes (AU)
@@ -133,8 +133,8 @@ export const CONSTRUCTION_ERROR_CODES = {
     shouldLog: true,
     shouldAlert: true,
     userGuidance: 'Please try to log in again or contact support.',
-    requiredRoles: [],
-    relatedRegulations: []
+    requiredRoles: [] as string[],
+    relatedRegulations: [] as string[]
   },
   
   // Auth loop protection
@@ -147,8 +147,8 @@ export const CONSTRUCTION_ERROR_CODES = {
     shouldLog: true,
     shouldAlert: true,
     userGuidance: 'The system detected a login loop. Emergency authentication has been activated.',
-    requiredRoles: [],
-    relatedRegulations: []
+    requiredRoles: [] as string[],
+    relatedRegulations: [] as string[]
   }
 } as const;
 

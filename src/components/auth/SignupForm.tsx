@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from '@/hooks/use-toast';
+import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 
 type SignupFormProps = {
   setVerificationSent?: (value: boolean) => void;
@@ -21,6 +23,7 @@ const SignupForm = ({
   const { signUp } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -29,11 +32,56 @@ const SignupForm = ({
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+
+    // Basic validation
+    if (!email.trim() || !password.trim() || !firstName.trim() || !lastName.trim() || !companyName.trim()) {
+      setError("All fields are required");
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    // Password validation
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return;
+    }
+
+    // Confirm password
+    if (password !== confirmPassword) {
+      setError("Passwords don't match");
+      return;
+    }
+
+    // Company name validation
+    if (companyName.length < 2) {
+      setError("Company name must be at least 2 characters long");
+      return;
+    }
+    
+    logAuth('SIGNUP-FORM', `Starting signup for: ${email} with company: ${companyName}`, {
+      level: AUTH_LOG_LEVELS.INFO
+    });
+    
+    setLoading(true);
     
     try {
       const result = await signUp(email, password, firstName, lastName, companyName);
+      
+      logAuth('SIGNUP-FORM', `Signup successful for: ${email}`, {
+        level: AUTH_LOG_LEVELS.INFO
+      });
+      
+      toast({
+        title: 'Account created',
+        description: 'Welcome! You will now be redirected to set up your subscription.',
+      });
       
       // If we have verification handlers, update them with the email
       if (setVerificationSent && setVerificationEmail) {
@@ -46,11 +94,17 @@ const SignupForm = ({
         onSignupComplete(result.email);
       }
     } catch (error: any) {
-      console.error("Signup error:", error);
+      logAuth('SIGNUP-FORM', `Signup failed for: ${email}`, {
+        level: AUTH_LOG_LEVELS.ERROR,
+        data: error
+      });
+      
       if (error.message?.includes("Organization Already Exists") || error.message?.includes("company name already exists")) {
-        setError("An organization with this name already exists. Please contact your administrator to get access.");
+        setError("An organization with this name already exists. Please try a different name or contact your administrator for access.");
       } else if (error.message?.includes("Users from your organization already exist")) {
         setError("Users from your organization already exist in our system. Please contact your administrator for access.");
+      } else if (error.message?.includes("User already registered")) {
+        setError("A user with this email already exists. Please use the sign in option instead.");
       } else {
         setError(error.message || "An error occurred during signup");
       }
@@ -100,7 +154,7 @@ const SignupForm = ({
           required
         />
         <p className="text-xs text-muted-foreground">
-          Each organization has a single tenant. New users from existing organizations should contact their administrator.
+          Your company name will be used to create your tenant. Each company has a separate tenant with its own data.
         </p>
       </div>
       
@@ -129,8 +183,21 @@ const SignupForm = ({
         />
       </div>
       
+      <div className="space-y-2">
+        <Label htmlFor="confirmPassword">Confirm Password</Label>
+        <Input
+          id="confirmPassword"
+          type="password"
+          placeholder="Confirm your password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required
+          minLength={6}
+        />
+      </div>
+      
       <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? 'Signing up...' : 'Sign up'}
+        {loading ? 'Creating account...' : 'Sign up'}
       </Button>
     </form>
   );

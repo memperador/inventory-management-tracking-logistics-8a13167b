@@ -1,95 +1,169 @@
 
-import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
+import { createErrorResponse } from '@/utils/errorHandling';
+import { toast } from '@/hooks/use-toast';
 
-export const checkTenantAndOnboarding = async (userId: string) => {
+/**
+ * Check tenant and onboarding status for navigation
+ */
+export const checkTenantAndOnboarding = async (userId: string): Promise<{
+  needsOnboarding: boolean;
+  needsSubscription: boolean;
+  targetPath: string;
+}> => {
   try {
-    // First check if user has a tenant
+    // Check if user has a tenant
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('tenant_id')
+      .select('tenant_id, role')
       .eq('id', userId)
-      .single();
-    
+      .maybeSingle();
+      
     if (userError) {
-      logAuth('AUTH', `Error fetching user tenant: ${userError.message}`, {
-        level: AUTH_LOG_LEVELS.ERROR,
-        force: true
-      });
-      return { needsOnboarding: false, needsSubscription: false, targetPath: '/dashboard' };
+      throw userError;
     }
     
-    if (!userData?.tenant_id) {
-      // No tenant assigned yet, new user
-      logAuth('AUTH', `User has no tenant, needs subscription setup`, {
-        level: AUTH_LOG_LEVELS.INFO,
-        force: true
-      });
-      return { needsOnboarding: false, needsSubscription: true, targetPath: '/payment' };
+    // If no tenant association, redirect to onboarding
+    if (!userData || !userData.tenant_id) {
+      return {
+        needsOnboarding: true,
+        needsSubscription: false,
+        targetPath: '/onboarding'
+      };
     }
     
-    // Check tenant's onboarding status
+    // Get tenant information
     const { data: tenantData, error: tenantError } = await supabase
       .from('tenants')
-      .select('onboarding_completed, subscription_status, trial_ends_at')
+      .select('onboarding_completed, subscription_status, subscription_tier, trial_ends_at')
       .eq('id', userData.tenant_id)
-      .single();
+      .maybeSingle();
       
     if (tenantError) {
-      logAuth('AUTH', `Error fetching tenant: ${tenantError.message}`, {
-        level: AUTH_LOG_LEVELS.ERROR,
-        force: true
-      });
-      return { needsOnboarding: false, needsSubscription: false, targetPath: '/dashboard' };
+      throw tenantError;
     }
     
-    // Check subscription status first
-    const hasActiveSubscription = tenantData.subscription_status === 'active';
-    const inTrialPeriod = tenantData.subscription_status === 'trialing' && 
-                          tenantData.trial_ends_at && 
-                          new Date(tenantData.trial_ends_at) > new Date();
-                          
-    const needsSubscription = !hasActiveSubscription && !inTrialPeriod;
+    // If tenant exists but onboarding not completed
+    if (tenantData && tenantData.onboarding_completed === false) {
+      return {
+        needsOnboarding: true,
+        needsSubscription: false,
+        targetPath: '/onboarding'
+      };
+    }
     
-    // Then check if onboarding is completed - strictly compare with false
-    const needsOnboarding = tenantData.onboarding_completed === false;
+    // Check subscription status
+    const needsSubscription = checkIfSubscriptionNeeded(tenantData);
     
-    logAuth('AUTH', `User onboarding status check: ${needsOnboarding ? 'needs onboarding' : 'onboarding completed'}`, {
-      level: AUTH_LOG_LEVELS.INFO,
-      force: true,
-      data: {
-        onboardingCompleted: tenantData.onboarding_completed,
-        needsSubscription,
-        explicitFalseCheck: tenantData.onboarding_completed === false
-      }
-    });
-    
-    // Determine where to redirect the user
-    let targetPath = '/dashboard';
     if (needsSubscription) {
-      targetPath = '/payment';
-    } else if (needsOnboarding) {
-      targetPath = '/customer-onboarding';
+      return {
+        needsOnboarding: false,
+        needsSubscription: true,
+        targetPath: '/payment'
+      };
     }
     
-    return { needsOnboarding, needsSubscription, targetPath };
+    // All checks passed, go to dashboard
+    return {
+      needsOnboarding: false,
+      needsSubscription: false,
+      targetPath: '/dashboard'
+    };
   } catch (error) {
-    logAuth('AUTH', `Error during tenant/onboarding check: ${error instanceof Error ? error.message : 'Unknown error'}`, {
-      level: AUTH_LOG_LEVELS.ERROR,
-      force: true
+    const errorResponse = createErrorResponse('SY-001', {
+      message: 'Error checking user tenant status',
+      technicalDetails: error instanceof Error ? error.message : String(error),
     });
-    return { needsOnboarding: false, needsSubscription: false, targetPath: '/dashboard' };
+    
+    logAuth('AUTH-VERIFICATION', `Error checking tenant status: ${errorResponse.message}`, {
+      level: AUTH_LOG_LEVELS.ERROR,
+      data: error
+    });
+    
+    // For auth errors, default to dashboard to avoid login loops
+    return {
+      needsOnboarding: false,
+      needsSubscription: false,
+      targetPath: '/dashboard'
+    };
   }
 };
 
-export const handleRedirect = (targetPath: string, returnTo: string | null) => {
-  const finalPath = returnTo ? decodeURIComponent(returnTo) : targetPath;
+/**
+ * Handle redirect with fallback for return URL
+ */
+export const handleRedirect = (targetPath: string, returnTo: string | null): string => {
+  // If returnTo exists and is a valid path (starts with /), use it
+  // But filter out authentication related paths to prevent loops
+  if (returnTo && 
+      returnTo.startsWith('/') && 
+      !['/auth', '/login', '/register', '/reset-password'].includes(returnTo)) {
+    return returnTo;
+  }
   
-  logAuth('AUTH', `Redirecting user to ${finalPath}`, {
-    level: AUTH_LOG_LEVELS.INFO,
-    force: true
+  return targetPath;
+};
+
+/**
+ * Check if user needs subscription setup
+ */
+const checkIfSubscriptionNeeded = (tenantData: any): boolean => {
+  if (!tenantData) return true;
+  
+  // Active subscription
+  if (tenantData.subscription_status === 'active') {
+    return false;
+  }
+  
+  // Check if trial is active
+  if (tenantData.subscription_status === 'trialing' && tenantData.trial_ends_at) {
+    const trialEndDate = new Date(tenantData.trial_ends_at);
+    const now = new Date();
+    
+    // Trial still active
+    if (trialEndDate > now) {
+      return false;
+    }
+  }
+  
+  // All other cases need subscription
+  return true;
+};
+
+/**
+ * Clear authentication-related session storage to prevent loops
+ */
+export const clearAuthSessionStorage = (email?: string): void => {
+  // Clear specific auth item for this user if email provided
+  if (email) {
+    sessionStorage.removeItem(`auth_processed_${email}`);
+  }
+  
+  // Clear any items that might cause auth loops
+  const keysToRemove = [];
+  
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const key = sessionStorage.key(i);
+    if (key && (
+      key.startsWith('auth_processed_') || 
+      key.startsWith('processing_') ||
+      key === 'login_toast_shown' ||
+      key === 'redirect_after_auth' ||
+      key === 'auth_error' ||
+      key === 'auth_redirect_attempted'
+    )) {
+      keysToRemove.push(key);
+    }
+  }
+  
+  // Remove items in a separate loop to avoid index issues
+  keysToRemove.forEach(key => {
+    sessionStorage.removeItem(key);
   });
   
-  return finalPath;
+  logAuth('AUTH-VERIFICATION', 'Cleared auth-related session storage items', {
+    level: AUTH_LOG_LEVELS.INFO,
+    data: { clearedItems: keysToRemove }
+  });
 };

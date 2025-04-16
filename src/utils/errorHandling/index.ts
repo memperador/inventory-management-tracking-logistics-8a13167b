@@ -4,16 +4,19 @@ export * from './errorTypes';
 export * from './errorWrapper';
 export * from './uiUtils';
 
-// Export from errorService instead of re-exporting from both files
+// Export from handleError
 export { 
   handleError,
-  createErrorResponse, 
-  createCustomErrorResponse,
   getErrorHistory,
   filterErrors,
-  withErrorHandling,
-  withComponentErrorBoundary,
+  clearErrorHistory
+} from './handleError';
+
+// Export from errorService for backward compatibility
+export { 
   getSeverityLabel,
   mapSeverityToVariant,
-  mapSeverityToDuration
+  mapSeverityToDuration,
+  withErrorHandling,
+  withComponentErrorBoundary
 } from './errorService';

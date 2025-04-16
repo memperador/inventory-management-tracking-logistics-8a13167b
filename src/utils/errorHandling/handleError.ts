@@ -112,8 +112,14 @@ export const handleError = (
     }
   }
   
-  if (showToast && !window.sessionStorage.getItem(`error_displayed_${errorResponse.code}`)) {
-    window.sessionStorage.setItem(`error_displayed_${errorResponse.code}`, 'true');
+  // Prevent showing too many of the same error toasts in one session
+  // Store shown errors in sessionStorage rather than a local variable to persist across page refreshes
+  const errorKey = `error_displayed_${errorResponse.code}`;
+  const hasShown = window.sessionStorage.getItem(errorKey);
+  
+  if (showToast && !hasShown) {
+    // Store that we've shown this error
+    window.sessionStorage.setItem(errorKey, 'true');
     
     toast({
       title: `${getSeverityLabel(errorResponse.severity)}: ${errorResponse.message}`,
@@ -176,6 +182,20 @@ export const filterErrors = (
     }
     
     return match;
+  });
+};
+
+/**
+ * Clears error history
+ */
+export const clearErrorHistory = (): void => {
+  errorHistory.length = 0;
+  
+  // Clear all error_displayed keys from sessionStorage
+  Object.keys(sessionStorage).forEach(key => {
+    if (key.startsWith('error_displayed_')) {
+      sessionStorage.removeItem(key);
+    }
   });
 };
 
