@@ -8,12 +8,12 @@ import { toast } from '@/hooks/use-toast';
 import { LABRAT_EMAIL } from '@/utils/auth/labratUserUtils';
 import {
   hasProcessedPathForSession,
-  isAlreadyProcessing,
   setProcessingFlag,
   removeProcessingFlag,
   clearAuthSessionStorage,
   detectAuthLoop,
-  breakAuthLoop
+  breakAuthLoop,
+  setProcessedPath
 } from '@/contexts/auth/handlers/sessionUtils';
 
 const AuthRedirectManager: React.FC = () => {
@@ -25,7 +25,7 @@ const AuthRedirectManager: React.FC = () => {
 
   useEffect(() => {
     const handleNavigation = async () => {
-      // Skip if loading or no user
+      // Skip if loading, no user, or navigation already processed
       if (loading || !user || navigationProcessed) return;
       
       // Prevent processing the same path multiple times
@@ -51,6 +51,7 @@ const AuthRedirectManager: React.FC = () => {
       try {
         // Special handling for test users
         if (user.email === LABRAT_EMAIL) {
+          setProcessedPath(user.id, location.pathname);
           if (location.pathname !== '/dashboard') {
             navigate('/dashboard', { replace: true });
           }
@@ -65,23 +66,28 @@ const AuthRedirectManager: React.FC = () => {
         
         // Handle initial auth redirects
         if (location.pathname === '/auth' || location.pathname === '/login') {
-          navigate(returnTo || '/dashboard', { replace: true });
+          const redirectTo = handleRedirect(null, returnTo);
+          setProcessedPath(user.id, redirectTo);
+          navigate(redirectTo, { replace: true });
           return;
         }
         
         // Handle onboarding redirects
         if (needsOnboarding && location.pathname !== '/onboarding') {
+          setProcessedPath(user.id, '/onboarding');
           navigate('/onboarding', { replace: true });
           return;
         }
         
         // Handle subscription redirects
         if (needsSubscription && location.pathname !== '/subscription') {
+          setProcessedPath(user.id, '/subscription');
           navigate('/subscription', { replace: true });
           return;
         }
         
         setNavigationProcessed(true);
+        setProcessedPath(user.id, location.pathname);
         
       } catch (error) {
         logAuth('AUTH', `Error during navigation: ${error instanceof Error ? error.message : 'Unknown error'}`, {

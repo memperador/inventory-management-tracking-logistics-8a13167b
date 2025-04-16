@@ -4,25 +4,40 @@ import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 
 export const checkTenantAndOnboarding = async (userId: string) => {
   try {
-    const { data, error } = await supabase
+    // First, get the user's tenant_id
+    const { data: userData, error: userError } = await supabase
       .from('users')
-      .select(`
-        tenant_id,
-        tenants (
-          onboarding_completed,
-          subscription_status,
-          subscription_tier
-        )
-      `)
+      .select('tenant_id')
       .eq('id', userId)
       .single();
       
-    if (error) throw error;
+    if (userError) throw userError;
+    
+    if (!userData?.tenant_id) {
+      logAuth('AUTH', `User has no tenant_id: ${userId}`, {
+        level: AUTH_LOG_LEVELS.WARN
+      });
+      
+      return {
+        needsOnboarding: true,
+        needsSubscription: false,
+        targetPath: null
+      };
+    }
+    
+    // Next, query the tenant data separately
+    const { data: tenantData, error: tenantError } = await supabase
+      .from('tenants')
+      .select('onboarding_completed, subscription_status, subscription_tier')
+      .eq('id', userData.tenant_id)
+      .single();
+    
+    if (tenantError) throw tenantError;
     
     return {
-      needsOnboarding: !data?.tenants?.onboarding_completed,
-      needsSubscription: !data?.tenants?.subscription_status || 
-                        data?.tenants?.subscription_status === 'inactive',
+      needsOnboarding: !tenantData?.onboarding_completed,
+      needsSubscription: !tenantData?.subscription_status || 
+                        tenantData?.subscription_status === 'inactive',
       targetPath: null
     };
   } catch (error) {

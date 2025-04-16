@@ -1,9 +1,8 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
-import { findTenantByEmail } from '@/contexts/auth/handlers/checkTenant';
 import { LABRAT_EMAIL, LABRAT_USER_ID, ensureLabratAdminRole } from '@/utils/auth/labratUserUtils';
-import { createErrorResponse, handleError } from '@/utils/errorHandling/errorService';
 import { clearAuthSessionStorage } from '@/contexts/auth/handlers/sessionUtils';
 
 export const signIn = async (email: string, password: string) => {
@@ -31,7 +30,7 @@ export const signIn = async (email: string, password: string) => {
     
     if (error) throw error;
     
-    // Success toast
+    // Success toast - only show once per session
     if (!sessionStorage.getItem('login_toast_shown')) {
       toast({
         title: 'Welcome back!',
