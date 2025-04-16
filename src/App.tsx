@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { NotificationProvider } from '@/contexts/NotificationContext';
@@ -39,9 +38,8 @@ import CustomerOnboarding from './pages/CustomerOnboarding';
 import { AutoAdminRoleFixer } from './components/admin/AutoAdminRoleFixer';
 import EmergencyLabratLogin from './components/admin/EmergencyLabratLogin';
 
-// Import our emergency fix utility - will auto-execute
+// Import our emergency fix utilities
 import './utils/admin/fixLabratAdmin';
-// Import break login loop utility - makes it available in console
 import './utils/auth/breakLoginLoop';
 
 // Create a new query client
@@ -49,10 +47,25 @@ const queryClient = new QueryClient();
 
 // Special direct login page for Labrat user
 const LabratLoginPage = () => {
+  // Track page loads to detect potential issues
+  useEffect(() => {
+    console.log('[LABRAT-LOGIN] Page loaded at', new Date().toISOString());
+    
+    // Store login page visit in session
+    const visits = parseInt(sessionStorage.getItem('login_page_visits') || '0') + 1;
+    sessionStorage.setItem('login_page_visits', visits.toString());
+    
+    // Check for excessive visits (potential loop)
+    if (visits > 5) {
+      console.warn('[LABRAT-LOGIN] Multiple login page visits detected, possible loop');
+      sessionStorage.setItem('potential_auth_loop', 'true');
+    }
+  }, []);
+  
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">FleetTrack</h1>
+        <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">FleetTrack Emergency Access</h1>
         <EmergencyLabratLogin />
         <p className="text-center mt-4">
           <a href="/auth" className="text-blue-600 hover:underline">
@@ -72,8 +85,17 @@ const ProjectRedirect = () => {
 const RootRedirect = () => {
   console.log('[APP] RootRedirect component rendering');
   
-  // Direct to labrat emergency login page
-  // This bypasses all normal auth flow for easier debugging/testing
+  // Check for auth loop detection
+  const potentialLoop = sessionStorage.getItem('potential_auth_loop') === 'true';
+  const breakLoop = sessionStorage.getItem('break_auth_loop') === 'true';
+  
+  // If loop detected, force to auth directly
+  if (potentialLoop || breakLoop) {
+    console.log('[APP] Loop detected, redirecting to auth with bypass');
+    return <Navigate to="/auth?bypass=loop&emergency=true" replace />;
+  }
+  
+  // Otherwise, direct to labrat emergency login page
   return <Navigate to="/labrat-login" replace />;
 };
 
@@ -92,7 +114,8 @@ function App() {
     console.log('[APP] Initializing App component', {
       timestamp: new Date().toISOString(),
       currentPath: window.location.pathname,
-      url: window.location.href
+      url: window.location.href,
+      redirectCount: sessionStorage.getItem('redirect_count') || '0'
     });
     
     // Log any navigation state in the URL
@@ -105,7 +128,7 @@ function App() {
     // Log any auth-related URL parameters
     const authParams = [
       'email_confirmed', 'token', 'error_code', 'error_description', 
-      'type', 'access_token', 'refresh_token'
+      'type', 'access_token', 'refresh_token', 'emergency', 'bypass', 'recovery'
     ];
     
     const foundAuthParams: Record<string, string> = {};
@@ -119,21 +142,13 @@ function App() {
     if (Object.keys(foundAuthParams).length > 0) {
       console.log('[APP] Auth-related URL parameters detected:', foundAuthParams);
     }
-  }, []);
-  
-  // Add special handling for labrat user
-  useEffect(() => {
-    // Make labrat emergency login available in console
-    if (typeof window !== 'undefined') {
-      (window as any).emergencyLabratLogin = async () => {
-        // Clear ALL storage
-        localStorage.clear();
-        sessionStorage.clear();
-        
-        // Go to labrat emergency login page
-        window.location.href = '/labrat-login';
-        return 'Redirecting to emergency labrat login page...';
-      };
+    
+    // Self-healing: Check for too many redirects
+    const redirectCount = parseInt(sessionStorage.getItem('redirect_count') || '0');
+    if (redirectCount > 10) {
+      console.warn('[APP] Too many redirects detected, resetting counters and breaking potential loop');
+      sessionStorage.setItem('redirect_count', '0');
+      sessionStorage.setItem('break_auth_loop', 'true');
     }
   }, []);
   

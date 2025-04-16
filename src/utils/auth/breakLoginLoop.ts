@@ -1,133 +1,46 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
-import { LABRAT_EMAIL, LABRAT_USER_ID } from './labratUserUtils';
 
 /**
- * This utility is meant to be used from the browser console to break login loops
+ * Emergency utility to break authentication redirect loops
+ * This can be called from the browser console when stuck in a loop
  */
-export const breakLoginLoop = async () => {
+export const breakLoginLoop = async (): Promise<string> => {
+  console.log('🔄 EMERGENCY: Breaking authentication loop');
+  
   try {
-    logAuth('EMERGENCY', 'Manual login loop breaker triggered', {
-      level: AUTH_LOG_LEVELS.WARN
-    });
-    
-    // AGGRESSIVE SESSION STORAGE CLEARING - Remove ALL items
+    // 1. Clear all storage
+    console.log('Clearing local and session storage');
+    localStorage.clear();
     sessionStorage.clear();
     
-    // Set force flags
-    sessionStorage.setItem('force_dashboard_redirect', 'true');
-    sessionStorage.setItem('bypass_auth_checks', 'true');
-    sessionStorage.setItem('emergency_loop_break', Date.now().toString());
+    // 2. Set special flags
+    sessionStorage.setItem('break_auth_loop', 'true');
+    sessionStorage.setItem('auth_loop_detected', Date.now().toString());
     
-    // Try to get current session
-    const { data: sessionData } = await supabase.auth.getSession();
+    // 3. Force signout
+    console.log('Force signing out any current user');
+    await supabase.auth.signOut({ scope: 'global' });
     
-    if (sessionData?.session?.user) {
-      logAuth('EMERGENCY', `User authenticated, id: ${sessionData.session.user.id}`, {
-        level: AUTH_LOG_LEVELS.INFO
-      });
-      
-      // If it's labrat, ensure admin role
-      if (sessionData.session.user.email === LABRAT_EMAIL) {
-        logAuth('EMERGENCY', 'Labrat user detected, fixing admin role', {
-          level: AUTH_LOG_LEVELS.INFO
-        });
-        
-        // Update user role in database
-        await supabase
-          .from('users')
-          .update({ role: 'admin' })
-          .eq('id', LABRAT_USER_ID);
-          
-        // Update metadata
-        await supabase.auth.updateUser({
-          data: { role: 'admin' }
-        });
-        
-        // Refresh session
-        await supabase.auth.refreshSession();
-      }
-      
-      // Force reload to dashboard
-      window.location.href = '/dashboard';
-    } else {
-      // Get the current URL path
-      const currentPath = window.location.pathname;
-      
-      // Check if we're on auth page but might be in a loop
-      if (currentPath === '/auth' || currentPath === '/login') {
-        logAuth('EMERGENCY', 'On auth page without session, attempting full reload', {
-          level: AUTH_LOG_LEVELS.INFO
-        });
-        
-        // Force complete page reload to clean state
-        window.location.reload();
-      } else {
-        // Not logged in, go to auth page with clear state
-        window.location.href = '/auth';
-      }
-    }
+    // 4. Redirect to auth page with special parameter
+    console.log('Redirecting to auth page with loop breaker parameter');
+    window.location.href = '/auth?loop_breaker=true';
     
-    return 'Login loop breaker executed';
+    return 'Auth loop breaker activated. Redirecting to login page...';
   } catch (error) {
-    console.error('Error in breakLoginLoop:', error);
-    return `Error: ${error instanceof Error ? error.message : String(error)}`;
+    console.error('Failed to break auth loop:', error);
+    
+    // Ultimate fallback - force reload to auth
+    alert('Emergency auth reset activated. Click OK to continue to login page.');
+    window.location.href = '/auth?emergency=true';
+    
+    return 'Emergency redirect initiated.';
   }
 };
 
-// Make function available globally for console access
+// Make this function available globally
 if (typeof window !== 'undefined') {
   (window as any).breakLoginLoop = breakLoginLoop;
-  
-  // Add special labrat emergency login function
-  (window as any).labratLogin = async () => {
-    try {
-      // Clear any previous session
-      await supabase.auth.signOut();
-      
-      // Clear storage
-      sessionStorage.clear();
-      
-      // Set special flags
-      sessionStorage.setItem('force_dashboard_redirect', 'true');
-      sessionStorage.setItem('bypass_auth_checks', 'true');
-      sessionStorage.setItem('labrat_emergency_login', 'true');
-      
-      // Sign in as labrat with hardcoded credentials (for emergency use only)
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: LABRAT_EMAIL,
-        password: 'testpassword1'
-      });
-      
-      if (error) {
-        console.error('Labrat login failed:', error);
-        return `Error: ${error.message}`;
-      }
-      
-      if (data?.user) {
-        // Set admin role
-        await supabase
-          .from('users')
-          .update({ role: 'admin' })
-          .eq('id', LABRAT_USER_ID);
-          
-        // Update metadata
-        await supabase.auth.updateUser({
-          data: { role: 'admin' }
-        });
-        
-        // Go to dashboard
-        window.location.href = '/dashboard';
-        return 'Labrat emergency login successful';
-      }
-      
-      return 'Labrat login attempted but no user returned';
-    } catch (error) {
-      console.error('Error in labrat emergency login:', error);
-      return `Error: ${error instanceof Error ? error.message : String(error)}`;
-    }
-  };
 }
 
 export default breakLoginLoop;
