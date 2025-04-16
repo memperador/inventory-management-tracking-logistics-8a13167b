@@ -26,6 +26,11 @@ export const createErrorResponse = (
     });
   }
   
+  // Extract the mutable properties
+  const requiredRoles = [...(baseError.requiredRoles || [])];
+  const relatedRegulations = [...(baseError.relatedRegulations || [])];
+  
+  // Create the response with mutable arrays
   const response: ConstructionErrorResponse = {
     ...baseError,
     id: uuidv4(),
@@ -33,6 +38,8 @@ export const createErrorResponse = (
     technicalDetails: additionalDetails?.technicalDetails || '',
     location: additionalDetails?.location || '',
     userGuidance: additionalDetails?.userGuidance || baseError.userGuidance || '',
+    requiredRoles,
+    relatedRegulations,
     ...additionalDetails
   };
   

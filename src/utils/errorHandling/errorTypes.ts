@@ -51,7 +51,7 @@ export interface ConstructionErrorResponse {
   relatedRegulations?: string[]; // Related construction codes/regulations
 }
 
-// Standard construction error codes for common scenarios
+// Define the error codes with complete types (making sure each has all required fields)
 export const CONSTRUCTION_ERROR_CODES = {
   // Safety error codes (SF)
   'SF-001': {
@@ -62,6 +62,7 @@ export const CONSTRUCTION_ERROR_CODES = {
     recoveryStrategy: RECOVERY_STRATEGY.MANUAL_INTERVENTION,
     shouldLog: true,
     shouldAlert: true,
+    userGuidance: 'Contact safety officer immediately for a manual intervention.',
     requiredRoles: ['safety-officer', 'site-manager'],
     relatedRegulations: ['OSHA 1926.20(b)(2)']
   },
@@ -75,6 +76,7 @@ export const CONSTRUCTION_ERROR_CODES = {
     recoveryStrategy: RECOVERY_STRATEGY.MANUAL_INTERVENTION,
     shouldLog: true,
     shouldAlert: true,
+    userGuidance: 'Contact compliance manager to acquire the required permit.',
     requiredRoles: ['compliance-manager', 'site-manager'],
     relatedRegulations: ['IBC 105.1']
   },
@@ -88,6 +90,9 @@ export const CONSTRUCTION_ERROR_CODES = {
     recoveryStrategy: RECOVERY_STRATEGY.FALLBACK,
     shouldLog: true,
     shouldAlert: false,
+    userGuidance: 'Try allocating alternative equipment or reschedule the task.',
+    requiredRoles: [],
+    relatedRegulations: []
   },
   
   // Workflow error codes (WF)
@@ -99,7 +104,9 @@ export const CONSTRUCTION_ERROR_CODES = {
     recoveryStrategy: RECOVERY_STRATEGY.MANUAL_INTERVENTION,
     shouldLog: true,
     shouldAlert: true,
-    requiredRoles: ['project-manager']
+    userGuidance: 'Review workflow requirements and correct the sequence.',
+    requiredRoles: ['project-manager'],
+    relatedRegulations: []
   },
   
   // System error codes (SY)
@@ -110,7 +117,10 @@ export const CONSTRUCTION_ERROR_CODES = {
     severity: ERROR_SEVERITY.MEDIUM,
     recoveryStrategy: RECOVERY_STRATEGY.AUTO_RETRY,
     shouldLog: true,
-    shouldAlert: false
+    shouldAlert: false,
+    userGuidance: 'The system will attempt to recover automatically.',
+    requiredRoles: [],
+    relatedRegulations: []
   },
   
   // Authentication error codes (AU)
@@ -121,7 +131,10 @@ export const CONSTRUCTION_ERROR_CODES = {
     severity: ERROR_SEVERITY.HIGH,
     recoveryStrategy: RECOVERY_STRATEGY.FALLBACK,
     shouldLog: true,
-    shouldAlert: true
+    shouldAlert: true,
+    userGuidance: 'Please try to log in again or contact support.',
+    requiredRoles: [],
+    relatedRegulations: []
   },
   
   // Auth loop protection
