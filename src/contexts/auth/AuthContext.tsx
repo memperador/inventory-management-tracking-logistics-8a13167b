@@ -8,19 +8,21 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<any>;
   signUp: (email: string, password: string, firstName: string, lastName: string, companyName: string) => Promise<any>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  refreshSession: () => Promise<any>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
+  onUserChange?: (userId: string | null) => void;
 }
 
-export const AuthProvider = ({ children }: AuthProviderProps) => {
+export const AuthProvider = ({ children, onUserChange }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,6 +34,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         console.log(`Auth event: ${event}`, currentSession?.user?.email);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+        
+        // Call onUserChange if provided
+        if (onUserChange) {
+          onUserChange(currentSession?.user?.id || null);
+        }
         
         // Handle navigation based on auth events
         if (event === 'SIGNED_IN') {
@@ -52,12 +59,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
       setLoading(false);
+      
+      // Call onUserChange with initial user
+      if (onUserChange) {
+        onUserChange(initialSession?.user?.id || null);
+      }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [onUserChange]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -173,6 +185,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const refreshSession = async () => {
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) {
+        console.error("Error refreshing session:", error);
+        throw error;
+      }
+      
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
+      
+      return data;
+    } catch (error) {
+      console.error("Failed to refresh session:", error);
+      throw error;
+    }
+  };
+
   const value = {
     user,
     session,
@@ -181,6 +211,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signUp,
     signOut,
     resetPassword,
+    refreshSession,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
