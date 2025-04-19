@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/auth/AuthContext';
 import { TenantProvider } from '@/contexts/TenantContext';
@@ -31,27 +30,24 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <Router>
-          <AuthProvider onUserChange={(userId) => {
-            console.log(`[APP] Auth user change detected, userId: ${userId || 'null'}`);
-          }}>
-            <TenantProvider>
-              <ThemeProvider>
-                <RoleProvider>
-                  <NotificationProvider>
-                    <AIAssistantProvider>
-                      <AutoAdminRoleFixer />
-                      {children}
-                      <Toaster />
-                      <ErrorPanel />
-                      <DebugPanel />
-                    </AIAssistantProvider>
-                  </NotificationProvider>
-                </RoleProvider>
-              </ThemeProvider>
-            </TenantProvider>
-          </AuthProvider>
-        </Router>
+        <AuthProvider onUserChange={(userId) => {
+          console.log(`[APP] Auth user change detected, userId: ${userId || 'null'}`);
+        }}>
+          <TenantProvider>
+            <ThemeProvider>
+              <RoleProvider>
+                <NotificationProvider>
+                  <AIAssistantProvider>
+                    <AutoAdminRoleFixer />
+                    {children}
+                    <ErrorPanel />
+                    <DebugPanel />
+                  </AIAssistantProvider>
+                </NotificationProvider>
+              </RoleProvider>
+            </ThemeProvider>
+          </TenantProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

@@ -39,6 +39,7 @@ export const RoleProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [refreshSession]);
 
+  // Only use the query if there's a user
   const { 
     data, 
     isLoading: isRoleLoading, 
