@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -12,35 +13,52 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuthContext';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Settings, User } from 'lucide-react';
+import { LogOut, Settings, User, Shield } from 'lucide-react';
+import { getUserDisplayName } from '@/contexts/auth/utils/authorizationUtils';
 
 export function UserNav() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isProcessing } = useAuth();
   const navigate = useNavigate();
   
-  // Extract initials from email or name
+  // Extract initials from email or name safely
   const getInitials = () => {
     if (!user) return 'U';
     
-    // If we have a display name
-    if (user.user_metadata?.full_name) {
-      return user.user_metadata.full_name.split(' ')
-        .map((name: string) => name[0])
-        .join('')
-        .toUpperCase()
-        .substring(0, 2);
-    }
+    const displayName = getUserDisplayName(user);
     
-    // Otherwise use email
-    return user.email?.[0].toUpperCase() || 'U';
+    // Get first letter of each word, max 2 letters
+    return displayName
+      .split(' ')
+      .map(part => part[0]?.toUpperCase() || '')
+      .slice(0, 2)
+      .join('')
+      || user.email?.[0]?.toUpperCase()
+      || 'U';
   };
+
+  // Safely handle sign out
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      // Error will be handled inside signOut function
+      console.error('Error during sign out:', error);
+    }
+  };
+
+  // Check for admin role
+  const isAdmin = user?.user_metadata?.role === 'admin';
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={user?.user_metadata?.avatar_url} alt={user?.email || 'User'} />
+            <AvatarImage 
+              src={user?.user_metadata?.avatar_url} 
+              alt={getUserDisplayName(user)} 
+              referrerPolicy="no-referrer"
+            />
             <AvatarFallback>{getInitials()}</AvatarFallback>
           </Avatar>
         </Button>
@@ -48,8 +66,13 @@ export function UserNav() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user?.user_metadata?.full_name || 'User'}</p>
-            <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+            <p className="text-sm font-medium leading-none flex items-center gap-1">
+              {getUserDisplayName(user)}
+              {isAdmin && <Shield className="h-3 w-3 text-primary" />}
+            </p>
+            <p className="text-xs leading-none text-muted-foreground">
+              {user?.email}
+            </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -64,9 +87,12 @@ export function UserNav() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut()}>
+        <DropdownMenuItem 
+          onClick={handleSignOut}
+          disabled={isProcessing?.signOut}
+        >
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
+          <span>{isProcessing?.signOut ? 'Signing out...' : 'Log out'}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

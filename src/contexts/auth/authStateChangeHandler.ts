@@ -1,8 +1,8 @@
-
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
 import { toast } from '@/hooks/use-toast';
+import { isSessionValid, sessionNeedsRefresh } from './utils/sessionUtils';
 
 // Import from the modular handlers
 import { 
@@ -27,10 +27,63 @@ import {
 import { handleSubscriptionForNewSignup } from './handlers/subscriptionHandler';
 import { LABRAT_EMAIL, LABRAT_USER_ID, ensureLabratAdminRole } from '@/utils/auth/labratUserUtils';
 
+// Rate limiting for auth state handler to prevent excessive processing
+const DEBOUNCE_TIME = 300; // ms
+let lastProcessedTime = 0;
+let processingQueue: Array<() => void> = [];
+let isProcessingQueue = false;
+
+/**
+ * Process the queued auth state change handlers
+ */
+const processQueue = async () => {
+  if (isProcessingQueue || processingQueue.length === 0) return;
+  
+  isProcessingQueue = true;
+  
+  try {
+    const handler = processingQueue.shift();
+    if (handler) {
+      await handler();
+    }
+  } finally {
+    isProcessingQueue = false;
+    
+    // Process next item if queue is not empty
+    if (processingQueue.length > 0) {
+      setTimeout(processQueue, DEBOUNCE_TIME);
+    }
+  }
+};
+
 /**
  * Handles post-login checks and redirects based on auth state changes
  */
 export const handleAuthStateChange = (event: string, currentSession: Session | null) => {
+  // Skip processing if rate limit is hit
+  const now = Date.now();
+  if (now - lastProcessedTime < DEBOUNCE_TIME) {
+    // Queue handler for later execution
+    processingQueue.push(() => handleAuthStateChangeImpl(event, currentSession));
+    
+    // Start processing queue if not already processing
+    if (!isProcessingQueue) {
+      setTimeout(processQueue, DEBOUNCE_TIME);
+    }
+    return;
+  }
+  
+  // Update last processed time
+  lastProcessedTime = now;
+  
+  // Process immediately
+  handleAuthStateChangeImpl(event, currentSession);
+};
+
+/**
+ * Implementation of auth state change handler logic
+ */
+const handleAuthStateChangeImpl = async (event: string, currentSession: Session | null) => {
   logAuth('AUTH-HANDLER', `Starting handle auth state change for event: ${event}`, {
     level: AUTH_LOG_LEVELS.INFO,
     data: {
@@ -47,6 +100,57 @@ export const handleAuthStateChange = (event: string, currentSession: Session | n
       level: AUTH_LOG_LEVELS.INFO
     });
     return;
+  }
+  
+  // Validate session for security
+  if (currentSession && !isSessionValid(currentSession)) {
+    logAuth('AUTH-HANDLER', 'Invalid session detected, forcing refresh', {
+      level: AUTH_LOG_LEVELS.WARN
+    });
+    
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      
+      if (error || !data.session) {
+        logAuth('AUTH-HANDLER', 'Failed to refresh session, forcing sign out', {
+          level: AUTH_LOG_LEVELS.ERROR,
+          data: error
+        });
+        
+        await supabase.auth.signOut();
+        toast({
+          title: 'Session expired',
+          description: 'Your session has expired. Please sign in again.',
+          variant: 'destructive'
+        });
+        
+        return;
+      }
+      
+      // Continue with refreshed session
+      currentSession = data.session;
+    } catch (error) {
+      logAuth('AUTH-HANDLER', 'Error refreshing session', {
+        level: AUTH_LOG_LEVELS.ERROR,
+        data: error
+      });
+      return;
+    }
+  }
+  
+  // If session needs refresh soon, refresh it
+  if (currentSession && sessionNeedsRefresh(currentSession)) {
+    try {
+      await supabase.auth.refreshSession();
+      logAuth('AUTH-HANDLER', 'Session refreshed proactively', {
+        level: AUTH_LOG_LEVELS.INFO
+      });
+    } catch (error) {
+      logAuth('AUTH-HANDLER', 'Failed to refresh session proactively', {
+        level: AUTH_LOG_LEVELS.WARN,
+        data: error
+      });
+    }
   }
   
   // Special handling for labrat user sign in
