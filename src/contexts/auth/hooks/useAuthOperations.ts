@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
+import { ProcessingState } from '../types';
 
 // Rate limiting implementation
 const rateLimitRegistry = new Map<string, { count: number; timestamp: number }>();
@@ -42,7 +43,7 @@ const checkRateLimit = (operation: string, identifier: string): boolean => {
 }
 
 export const useAuthOperations = () => {
-  const [isProcessing, setIsProcessing] = useState<{[key: string]: boolean}>({
+  const [isProcessing, setIsProcessing] = useState<ProcessingState>({
     signIn: false,
     signUp: false,
     signOut: false,
