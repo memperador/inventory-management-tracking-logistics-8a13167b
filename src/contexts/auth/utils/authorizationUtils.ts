@@ -7,7 +7,8 @@ const ROLE_HIERARCHY: Record<UserRole, number> = {
   'manager': 75,
   'operator': 50,
   'viewer': 25,
-  'user': 10
+  'editor': 30,
+  'superadmin': 150
 };
 
 /**
@@ -19,7 +20,7 @@ const ROLE_HIERARCHY: Record<UserRole, number> = {
 export function hasRole(user: User | null, requiredRole: UserRole): boolean {
   if (!user) return false;
   
-  const userRole = user.user_metadata?.role as UserRole || 'user';
+  const userRole = user.user_metadata?.role as UserRole || 'viewer';
   return userRole === requiredRole;
 }
 
@@ -33,7 +34,7 @@ export function hasAnyRole(user: User | null, requiredRoles: UserRole[]): boolea
   if (!user) return false;
   if (!requiredRoles.length) return true; // No roles required
   
-  const userRole = user.user_metadata?.role as UserRole || 'user';
+  const userRole = user.user_metadata?.role as UserRole || 'viewer';
   return requiredRoles.includes(userRole);
 }
 
@@ -46,7 +47,7 @@ export function hasAnyRole(user: User | null, requiredRoles: UserRole[]): boolea
 export function hasRoleLevel(user: User | null, requiredRole: UserRole): boolean {
   if (!user) return false;
   
-  const userRole = user.user_metadata?.role as UserRole || 'user';
+  const userRole = user.user_metadata?.role as UserRole || 'viewer';
   const userLevel = ROLE_HIERARCHY[userRole] || 0;
   const requiredLevel = ROLE_HIERARCHY[requiredRole] || 0;
   
