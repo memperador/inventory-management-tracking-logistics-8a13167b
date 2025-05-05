@@ -1,10 +1,7 @@
 
 import { Session } from '@supabase/supabase-js';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
-
-// Cache to optimize repeated session validity checks
-const validationCache = new Map<string, { isValid: boolean; timestamp: number }>();
-const CACHE_TTL = 30 * 1000; // 30 seconds
+import { SecureCache } from './secureCache';
 
 /**
  * Checks if a session token is valid and not expired
@@ -14,12 +11,12 @@ const CACHE_TTL = 30 * 1000; // 30 seconds
 export function isSessionValid(session: Session | null): boolean {
   if (!session) return false;
   
-  // Check cache first
-  const cacheKey = `${session.user.id}:${session.access_token.slice(-10)}`;
-  const cachedResult = validationCache.get(cacheKey);
+  // Generate a unique cache key for this session
+  const cacheKey = `session_valid:${session.user.id}:${session.access_token.slice(-10)}`;
   
-  if (cachedResult && Date.now() - cachedResult.timestamp < CACHE_TTL) {
-    return cachedResult.isValid;
+  // Check cache first for performance
+  if (SecureCache.has(cacheKey)) {
+    return SecureCache.get<boolean>(cacheKey) || false;
   }
   
   // Real validation logic
@@ -29,8 +26,8 @@ export function isSessionValid(session: Session | null): boolean {
   const now = Math.floor(Date.now() / 1000);
   const isValid = expiresAt > now;
   
-  // Cache result
-  validationCache.set(cacheKey, { isValid, timestamp: Date.now() });
+  // Cache result for 30 seconds
+  SecureCache.set(cacheKey, isValid, 30);
   
   if (!isValid) {
     logAuth('SESSION-UTILS', 'Session token expired', {
@@ -51,8 +48,19 @@ export function isSessionValid(session: Session | null): boolean {
 export function sessionNeedsRefresh(session: Session | null, refreshWindowSeconds = 300): boolean {
   if (!session || !session.expires_at) return false;
   
+  // Generate unique cache key
+  const cacheKey = `session_refresh:${session.user.id}:${session.access_token.slice(-10)}`;
+  
+  // Check cache first
+  if (SecureCache.has(cacheKey)) {
+    return SecureCache.get<boolean>(cacheKey) || false;
+  }
+  
   const now = Math.floor(Date.now() / 1000);
   const shouldRefresh = session.expires_at - now < refreshWindowSeconds;
+  
+  // Cache result for 30 seconds
+  SecureCache.set(cacheKey, shouldRefresh, 30);
   
   if (shouldRefresh) {
     logAuth('SESSION-UTILS', 'Session needs refresh', {
@@ -84,11 +92,5 @@ export function getSessionTimeRemaining(session: Session | null): number {
  * Cleans up the validation cache (call periodically to prevent memory leaks)
  */
 export function cleanSessionCache(): void {
-  const now = Date.now();
-  
-  for (const [key, value] of validationCache.entries()) {
-    if (now - value.timestamp > CACHE_TTL) {
-      validationCache.delete(key);
-    }
-  }
+  // This is now handled by the SecureCache auto-expiration
 }
