@@ -153,34 +153,6 @@ const handleAuthStateChangeImpl = async (event: string, currentSession: Session 
     }
   }
   
-  // Special handling for labrat user sign in
-  if (event === 'SIGNED_IN' && currentSession?.user?.email === LABRAT_EMAIL) {
-    logAuth('AUTH-HANDLER', 'Labrat user signed in, ensuring admin role and redirecting to dashboard', {
-      level: AUTH_LOG_LEVELS.INFO
-    });
-    
-    // Clear any session storage items that might cause loops
-    clearAuthSessionStorage();
-    
-    // Immediately redirect to dashboard for labrat user
-    if (window.location.pathname === '/auth' || window.location.pathname === '/login') {
-      setTimeout(() => {
-        logAuth('AUTH-HANDLER', 'Forcing dashboard redirect for labrat user', {
-          level: AUTH_LOG_LEVELS.INFO
-        });
-        
-        // Set a flag to show we're coming from a direct login
-        sessionStorage.setItem('labrat_direct_login', 'true');
-        
-        // Force admin role and redirect to dashboard
-        ensureLabratAdminRole(false).then(() => {
-          executeRedirect('/dashboard', LABRAT_USER_ID);
-        });
-      }, 500);
-      return;
-    }
-  }
-  
   // For SIGNED_IN event, log additional info
   if (event === 'SIGNED_IN') {
     logAuth('AUTH-HANDLER', 'User signed in, checking tenant and subscription status', {
@@ -239,34 +211,6 @@ const handleAuthStateChangeImpl = async (event: string, currentSession: Session 
     }
     
     try {
-      // Special handling for labrat user to ensure admin role
-      if (currentSession.user.email === LABRAT_EMAIL) {
-        logAuth('AUTH-HANDLER', 'Processing labrat user login, ensuring admin access', {
-          level: AUTH_LOG_LEVELS.INFO
-        });
-        
-        await ensureLabratAdminRole(false);
-        
-        // If we're already on the dashboard, don't redirect
-        if (currentPath === '/dashboard') {
-          logAuth('AUTH-HANDLER', 'Labrat user already on dashboard, not redirecting', {
-            level: AUTH_LOG_LEVELS.INFO
-          });
-          removeProcessingFlag(processingFlag);
-          return;
-        }
-        
-        // Direct to dashboard from auth page
-        if (currentPath === '/auth' || currentPath === '/login') {
-          logAuth('AUTH-HANDLER', 'Redirecting labrat user to dashboard from auth page', {
-            level: AUTH_LOG_LEVELS.INFO
-          });
-          executeRedirect('/dashboard', currentSession.user.id);
-          removeProcessingFlag(processingFlag);
-          return;
-        }
-      }
-      
       // Check if this is a brand new signup with needs_subscription flag
       const needsSubscription = currentSession.user.user_metadata?.needs_subscription === true;
       const isNewSignup = currentSession.user.app_metadata?.provider === 'email' && 
@@ -335,17 +279,6 @@ const handleAuthStateChangeImpl = async (event: string, currentSession: Session 
         level: AUTH_LOG_LEVELS.INFO,
         data: { tenantId, onboardingCompleted }
       });
-      
-      // Special case for labrat user to force dashboard redirect
-      if (currentSession.user.email === LABRAT_EMAIL && currentPath === '/auth') {
-        logAuth('AUTH-HANDLER', 'Labrat user detected on auth page - forcing redirect to dashboard', {
-          level: AUTH_LOG_LEVELS.INFO
-        });
-        
-        executeRedirect('/dashboard', currentSession.user.id);
-        removeProcessingFlag(processingFlag);
-        return;
-      }
       
       // Determine redirect path with onboarding status
       const targetPath = determineRedirectPath({

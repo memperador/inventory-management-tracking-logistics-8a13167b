@@ -1,4 +1,3 @@
-
 import { RouteObject } from 'react-router-dom';
 import { Navigate } from 'react-router-dom';
 import Dashboard from '@/pages/Dashboard';
@@ -27,10 +26,9 @@ import Notifications from '@/pages/Notifications';
 import TermsOfService from '@/pages/TermsOfService';
 import PrivacyPolicy from '@/pages/PrivacyPolicy';
 import CustomerOnboarding from '@/pages/CustomerOnboarding';
-import { LabratLoginPage, ProjectRedirect, RootRedirect } from './specialRoutes';
+import { ProjectRedirect, RootRedirect } from './specialRoutes';
 
 export const publicRoutes: RouteObject[] = [
-  { path: '/labrat-login', element: <LabratLoginPage /> },
   { path: '/auth', element: <Auth /> },
   { path: '/auth/reset-password', element: <ResetPassword /> },
   { path: '/auth/two-factor', element: <TwoFactorAuth /> },
