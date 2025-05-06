@@ -8,15 +8,6 @@ export const ProjectRedirect: React.FC = () => {
 };
 
 export const RootRedirect: React.FC = () => {
-  console.log('[APP] RootRedirect component rendering');
-  
-  const potentialLoop = sessionStorage.getItem('potential_auth_loop') === 'true';
-  const breakLoop = sessionStorage.getItem('break_auth_loop') === 'true';
-  
-  if (potentialLoop || breakLoop) {
-    console.log('[APP] Loop detected, redirecting to auth with bypass');
-    return <Navigate to="/auth?bypass=loop&emergency=true" replace />;
-  }
-  
-  return <Navigate to="/auth" replace />;
+  // Simple redirect to the dashboard if user is authenticated, otherwise to auth
+  return <Navigate to="/dashboard" replace />;
 };

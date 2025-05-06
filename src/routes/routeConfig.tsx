@@ -1,3 +1,4 @@
+
 import { RouteObject } from 'react-router-dom';
 import { Navigate } from 'react-router-dom';
 import Dashboard from '@/pages/Dashboard';
@@ -34,10 +35,11 @@ export const publicRoutes: RouteObject[] = [
   { path: '/auth/two-factor', element: <TwoFactorAuth /> },
   { path: '/unauthorized', element: <Unauthorized /> },
   { path: '/login', element: <Navigate to="/auth" replace /> },
-  { path: '/', element: <RootRedirect /> },
-  { path: '/404', element: <NotFound /> },
   { path: '/terms-of-service', element: <TermsOfService /> },
   { path: '/privacy-policy', element: <PrivacyPolicy /> },
+  // Default route - checks auth state and redirects appropriately
+  { path: '/', element: <RootRedirect /> },
+  { path: '/404', element: <NotFound /> },
 ];
 
 export const protectedRoutes: RouteObject[] = [

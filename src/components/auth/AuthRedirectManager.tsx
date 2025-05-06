@@ -3,17 +3,13 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth/AuthContext';
 import { logAuth, AUTH_LOG_LEVELS } from '@/utils/debug/authLogger';
-import { checkTenantAndOnboarding, handleRedirect } from './verification/utils/authVerificationUtils';
+import { checkTenantAndOnboarding } from './verification/utils/authVerificationUtils';
 import { toast } from '@/hooks/use-toast';
-import { LABRAT_EMAIL } from '@/utils/auth/labratUserUtils';
 import {
   hasProcessedPathForSession,
-  setProcessingFlag,
-  removeProcessingFlag,
-  clearAuthSessionStorage,
+  setProcessedPath,
   detectAuthLoop,
-  breakAuthLoop,
-  setProcessedPath
+  breakAuthLoop
 } from '@/contexts/auth/handlers/sessionUtils';
 
 const AuthRedirectManager: React.FC = () => {
@@ -28,6 +24,14 @@ const AuthRedirectManager: React.FC = () => {
       // Skip if loading, no user, or navigation already processed
       if (loading || !user || navigationProcessed) return;
       
+      // Emergency bypass for loop detection
+      if (sessionStorage.getItem('break_auth_loop') === 'true') {
+        logAuth('AUTH-MANAGER', 'Auth loop breaker active, skipping redirects', {
+          level: AUTH_LOG_LEVELS.WARN
+        });
+        return;
+      }
+      
       // Prevent processing the same path multiple times
       if (hasProcessedPathForSession(user.id, location.pathname)) {
         return;
@@ -35,7 +39,7 @@ const AuthRedirectManager: React.FC = () => {
       
       // Check for auth loops
       if (detectAuthLoop()) {
-        logAuth('AUTH', 'Auth loop detected, breaking cycle', {
+        logAuth('AUTH-MANAGER', 'Auth loop detected, breaking cycle', {
           level: AUTH_LOG_LEVELS.WARN,
           force: true
         });
@@ -45,61 +49,29 @@ const AuthRedirectManager: React.FC = () => {
         return;
       }
       
-      // Set processing flag
-      const processingKey = setProcessingFlag(user.id);
-      
       try {
-        // Special handling for test users
-        if (user.email === LABRAT_EMAIL) {
-          setProcessedPath(user.id, location.pathname);
-          if (location.pathname !== '/dashboard') {
-            navigate('/dashboard', { replace: true });
-          }
-          return;
-        }
-        
-        // Check tenant and onboarding status
-        const { needsOnboarding, needsSubscription } = await checkTenantAndOnboarding(user.id);
-        
-        // Get return URL from query params
-        const returnTo = searchParams.get('returnTo');
-        
-        // Handle initial auth redirects
+        // Handle direct login to auth page
         if (location.pathname === '/auth' || location.pathname === '/login') {
-          const redirectTo = handleRedirect(null, returnTo);
-          setProcessedPath(user.id, redirectTo);
-          navigate(redirectTo, { replace: true });
+          const returnTo = searchParams.get('returnTo');
+          const targetPath = returnTo ? decodeURIComponent(returnTo) : '/dashboard';
+          
+          logAuth('AUTH-MANAGER', `User authenticated on auth page, redirecting to ${targetPath}`, {
+            level: AUTH_LOG_LEVELS.INFO
+          });
+          
+          setProcessedPath(user.id, targetPath);
+          navigate(targetPath, { replace: true });
           return;
         }
         
-        // Handle onboarding redirects
-        if (needsOnboarding && location.pathname !== '/onboarding') {
-          setProcessedPath(user.id, '/onboarding');
-          navigate('/onboarding', { replace: true });
-          return;
-        }
-        
-        // Handle subscription redirects
-        if (needsSubscription && location.pathname !== '/subscription') {
-          setProcessedPath(user.id, '/subscription');
-          navigate('/subscription', { replace: true });
-          return;
-        }
-        
-        setNavigationProcessed(true);
+        // For all other authenticated pages, just mark as processed
         setProcessedPath(user.id, location.pathname);
+        setNavigationProcessed(true);
         
       } catch (error) {
-        logAuth('AUTH', `Error during navigation: ${error instanceof Error ? error.message : 'Unknown error'}`, {
-          level: AUTH_LOG_LEVELS.ERROR,
-          force: true
+        logAuth('AUTH-MANAGER', `Error during navigation: ${error instanceof Error ? error.message : 'Unknown error'}`, {
+          level: AUTH_LOG_LEVELS.ERROR
         });
-        
-        // On error, try to redirect to dashboard as fallback
-        navigate('/dashboard', { replace: true });
-        
-      } finally {
-        removeProcessingFlag(processingKey);
       }
     };
     
